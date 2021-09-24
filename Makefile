@@ -13,6 +13,14 @@ notebook:  ## Run the notebook
 	poetry run jupyter notebook
 .PHONY: notebook
 
+docs:  ## Build docs
+	poetry run sphinx-build -b html docs/source docs/build
+.PHONY: docs
+
+docs-open:  ## Open docs
+	python -m webbrowser -t "file://$(abspath docs/build)/index.html"
+.PHONY: docs-open
+
 ##@ Tests
 
 ci: lint test  ## Run all checks

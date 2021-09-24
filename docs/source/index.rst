@@ -10,9 +10,7 @@ Welcome to Saiph's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-.. automodule:: saiph
-   :members:
-   :undoc-members:
+.. autofunction:: saiph.fit
 
 
 

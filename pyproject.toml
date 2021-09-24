@@ -2,7 +2,7 @@
 name = "saiph"
 version = "0.1.0"
 description = ""
-authors = ["Julien Petot <julien.petot@yahoo.fr>"]
+authors = ["Zineb Bennis", "Julien Petot <julien@octopize-md.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
@@ -13,6 +13,7 @@ matplotlib = "^3.4.3"
 numpy = "^1.21.2"
 
 [tool.poetry.dev-dependencies]
+Sphinx = "^4.2.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

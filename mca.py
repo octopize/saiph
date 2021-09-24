@@ -1,0 +1,244 @@
+"""MCQ projection."""
+from typing import Union, Optional, Tuple
+from itertools import chain, repeat
+
+import pandas as pd
+import numpy as np
+from scipy import linalg
+from scipy.sparse import diags
+
+from svd import SVD
+from data_class import Model, Parameters
+
+ListLike = Union[np.array, list]  # check correct
+dfLike = Union[pd.DataFrame, np.array]
+
+
+def fit(
+    df: pd.DataFrame,
+    nf: int,
+    col_w: Optional[ListLike] = None,
+    scale: Optional[bool] = None,
+) -> Tuple[pd.DataFrame, Model, Parameters]:
+    """Project data into a lower dimensional space using MCA.
+
+    Arguments:
+        df -- data to project
+        nf -- number of components to keep (default: {min(df.shape[0], 5)})
+        col_w -- importance of each variable in the projection \
+            (more weight = more importance in the axes)
+
+        Return the transformed variables, model and parameters.
+    """
+    # Verify some parameters
+    if nf is None:
+        nf = min(df.shape)
+    elif nf <= 0:
+        raise ValueError("nf", "The number of components must be positive.")
+
+    if col_w is None:
+        col_w = np.ones(df.shape[1])
+    elif len(col_w) != df.shape[1]:
+        raise ValueError(
+            "col_w",
+            f"The weight parameter should be of size {str(df.shape[1])}.",
+        )
+
+    # check type
+    if not isinstance(df, pd.DataFrame):
+        df = pd.DataFrame(df)
+
+    df_original = df.copy()
+
+    # initiate row and columns weights
+    row_w = [1 / len(df) for i in range(len(df))]
+    modality_numbers = []
+    for column in df.columns:
+        modality_numbers += [len(df[column].unique())]
+    col_w = list(
+        chain.from_iterable(repeat(i, j) for i, j in zip(col_w, modality_numbers))
+    )
+
+    df_scale, _modalities, r, c = center(df)
+    df_scale, T, D_c = diag_compute(df_scale, r, c)
+
+    # apply the weights and compute the svd
+    Z = ((T * col_w).T * row_w).T
+    U, s, V = SVD(Z)
+
+    # compute eigenvalues and explained variance
+    explained_var = (s ** 2) / (df.shape[0] - 1)
+    explained_var_ratio = (explained_var / explained_var.sum())[:nf]
+    explained_var = explained_var[:nf]
+
+    s = s[:nf]
+    V = V[:nf, :]
+
+    columns = [f"Dim. {i + 1}" for i in range(min(nf, s.shape[0]))]
+
+    model = Model(
+        df=df_original,
+        V=V,
+        explained_var=explained_var,
+        explained_var_ratio=explained_var_ratio,
+        variable_coord=pd.DataFrame(np.dot(D_c, V.T)),
+        _modalities=_modalities,
+        D_c=D_c,
+    )
+    param = Parameters(nf=nf, col_w=col_w, row_w=row_w, columns=columns)
+
+    coord = pd.DataFrame(np.dot(df_scale, np.dot(D_c, V.T)), columns=columns)
+    return coord, model, param
+
+
+def center(df: dfLike) -> Tuple[dfLike, ListLike, ListLike, ListLike]:
+    """Center data and compute sums over columns and rows."""
+    df_scale = pd.get_dummies(df.astype("category"))
+    _modalities = df_scale.columns.values
+
+    # scale data
+    df_scale /= df_scale.sum().sum()
+    c = np.sum(df_scale, axis=0)
+    r = np.sum(df_scale, axis=1)
+    return df_scale, _modalities, r, c
+
+
+def scaler(model: Model, df: Optional[dfLike] = None) -> dfLike:
+    """Scale new data."""
+    if df is None:
+        df = model.df
+
+    if not isinstance(df, pd.DataFrame):
+        df = pd.DataFrame(df)
+
+    df_scaled = pd.get_dummies(df.astype("category"))
+    for mod in model._modalities:
+        if mod not in df_scaled:
+            df_scaled[mod] = 0
+    df_scaled = df_scaled[model._modalities]
+
+    # scale
+    df_scaled /= df_scaled.sum().sum()
+    df_scaled /= np.array(np.sum(df_scaled, axis=1))[:, None]
+    return df_scaled
+
+
+def diag_compute(
+    df_scale: dfLike, r: ListLike, c: ListLike
+) -> Tuple[dfLike, dfLike, dfLike]:
+    """Compute diagonal matrices and scale data."""
+    eps = np.finfo(float).eps
+    if df_scale.shape[0] >= 10000:
+        D_r = diags(1 / (eps + np.sqrt(r)))
+    else:
+        D_r = np.diag(1 / (eps + np.sqrt(r)))
+    D_c = np.diag(1 / (eps + np.sqrt(c)))
+
+    T = D_r @ (df_scale - np.outer(r, c)) @ D_c
+    df_scale /= np.array(r)[:, None]
+    return df_scale, T, D_c
+
+
+def transform(df: dfLike, model: Model, param: Parameters) -> dfLike:
+    """Scale and transform new data."""
+    df_scaled = scaler(model, df)
+    return pd.DataFrame(
+        np.dot(df_scaled, np.dot(model.D_c, model.V.T)), columns=param.columns
+    )
+
+
+def stats(model: Model, param: Parameters) -> Parameters:
+    """Compute the contributions of each variable in each axis."""
+    V = np.dot(model.D_c, model.V.T)
+    total = pd.get_dummies(model.df.astype("category")).sum().sum()
+    df = pd.get_dummies(model.df.astype("category"))
+    F = df / total
+
+    # Column and row weights
+    marge_col = F.sum(axis=0)
+    marge_row = F.sum(axis=1)
+    fsurmargerow = _rdivision(F, marge_row)
+    fmargerowT = pd.DataFrame(
+        np.array(fsurmargerow).T,
+        columns=list(fsurmargerow.index),
+        index=list(fsurmargerow.columns),
+    )
+    fmargecol = _rdivision(fmargerowT, marge_col)
+    Tc = (
+        pd.DataFrame(
+            np.array(fmargecol).T,
+            columns=list(fmargecol.index),
+            index=list(fmargecol.columns),
+        )
+        - 1
+    )
+
+    # Weights and svd of Tc
+    weightedTc = _rmultiplication(
+        _rmultiplication(Tc.T, np.sqrt(marge_col)).T, np.sqrt(marge_row)
+    )
+    U, s, V = linalg.svd(weightedTc.T, full_matrices=False)
+    ncp0 = min(len(weightedTc.iloc[0]), len(weightedTc), param.nf)
+    U = U[:, :ncp0]
+    V = V.T[:, :ncp0]
+    s = s[:ncp0]
+    tmp = V
+    V = U
+    U = tmp
+    mult = np.sign(np.sum(V, axis=0))
+
+    # final V
+    mult1 = pd.DataFrame(
+        np.array(pd.DataFrame(np.array(_rmultiplication(pd.DataFrame(V.T), mult)))).T
+    )
+    V = pd.DataFrame()
+    for i in range(len(mult1)):
+        V[i] = mult1.iloc[i] / np.sqrt(marge_col[i])
+    V = np.array(V).T
+
+    # final U
+    mult1 = pd.DataFrame(
+        np.array(pd.DataFrame(np.array(_rmultiplication(pd.DataFrame(U.T), mult)))).T
+    )
+    U = pd.DataFrame()
+    for i in range(len(mult1)):
+        U[i] = mult1.iloc[i] / np.sqrt(marge_row[i])
+    U = np.array(U).T
+
+    # computing the contribution
+    eig = s ** 2
+    for i in range(len(V[0])):
+        V[:, i] = V[:, i] * np.sqrt(eig[i])
+    coord_col = V
+
+    for i in range(len(U[0])):
+        U[:, i] = U[:, i] * np.sqrt(eig[i])
+
+    coord_col = coord_col ** 2
+
+    for i in range(len(coord_col[0])):
+        coord_col[:, i] = (coord_col[:, i] * marge_col) / eig[i]
+
+    param.contrib = coord_col * 100
+
+    return param
+
+
+def _rmultiplication(F: dfLike, marge: ListLike) -> dfLike:
+    """Multiply each column with the same vector."""
+    df_dict = F.to_dict("list")
+    for col in df_dict.keys():
+        df_dict[col] = df_dict[col] * marge
+    df = pd.DataFrame.from_dict(df_dict)
+    df.index = F.index
+    return df
+
+
+def _rdivision(F: dfLike, marge: ListLike) -> dfLike:
+    """Divide each column with the same vector."""
+    df_dict = F.to_dict("list")
+    for col in df_dict.keys():
+        df_dict[col] = df_dict[col] / marge
+    df = pd.DataFrame.from_dict(df_dict)
+    df.index = F.index
+    return df

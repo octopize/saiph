@@ -4,9 +4,9 @@ from typing import Optional, Union, Tuple
 import numpy as np
 import pandas as pd
 
-from . import pca
-from . import mca
-from . import famd
+import saiph.pca as pca
+import saiph.mca as mca
+import saiph.famd as famd
 
 from .data_class import Model, Parameters
 

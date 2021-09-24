@@ -4,11 +4,11 @@ from typing import Optional, Union, Tuple
 import numpy as np
 import pandas as pd
 
-import pca
-import mca
-import famd
+from . import pca
+from . import mca
+from . import famd
 
-from data_class import Model, Parameters
+from .data_class import Model, Parameters
 
 ListLike = Union[np.array, list]  # check correct
 dfLike = Union[pd.DataFrame, np.array]

@@ -5,8 +5,8 @@ import sys
 import pandas as pd
 import numpy as np
 
-from svd import SVD
-from data_class import Model, Parameters
+from .svd import SVD
+from .data_class import Model, Parameters
 
 ListLike = Union[np.array, list]  # check correct
 dfLike = Union[pd.DataFrame, np.array]

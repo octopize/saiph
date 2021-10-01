@@ -1,8 +1,14 @@
+from typing import Union
+
+import numpy as np
+import pandas as pd
 from scipy import linalg
 from sklearn.utils import extmath
 
+DFLike = Union[pd.DataFrame, np.array]
 
-def SVD(df):
+
+def SVD(df: DFLike):
     """Singular Value Decomposition.
 
     Arguments:

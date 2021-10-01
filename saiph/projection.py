@@ -10,15 +10,15 @@ import saiph.pca as pca
 from saiph.models import Model, Parameters
 
 ListLike = Union[np.array, list]  # check correct
-dfLike = Union[pd.DataFrame, np.array]
+DFLike = Union[pd.DataFrame, np.array]
 
 
 def fit(
-    df: dfLike,
+    df: DFLike,
     nf: Optional[Union[int, str]] = None,
     col_w: Optional[ListLike] = None,
     scale: bool = True,
-) -> Tuple[dfLike, Model, Parameters]:
+) -> Tuple[DFLike, Model, Parameters]:
     """Project data into a lower dimensional space using PCA,MCA or FAMD.
 
     Arguments:
@@ -103,7 +103,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     return param
 
 
-def transform(df: dfLike, model: Model, param: Parameters) -> dfLike:
+def transform(df: DFLike, model: Model, param: Parameters) -> DFLike:
     """Project new data into the fitted numerical space."""
     for i in param.datetime_variables:
         df.iloc[:, i] = (
@@ -118,7 +118,7 @@ def transform(df: dfLike, model: Model, param: Parameters) -> dfLike:
     return coord
 
 
-def _variable_correlation(model: Model, param: Parameters) -> dfLike:
+def _variable_correlation(model: Model, param: Parameters) -> DFLike:
     """Compute the correlation between the axis' and the variables."""
     # select columns and project data
     df_quanti = model.df[param.quanti]
@@ -144,8 +144,8 @@ def _variable_correlation(model: Model, param: Parameters) -> dfLike:
 
 
 def inverse_transform(
-    coord: dfLike, model: Model, param: Parameters, shuffle: bool = False
-) -> dfLike:  # ---------------------------------------finish this
+    coord: DFLike, model: Model, param: Parameters, shuffle: bool = False
+) -> DFLike:  # ---------------------------------------finish this
     """Compute the inverse transform of data coordinates."""
     # if PCA or FAMD compute the continuous variables
     if len(param.quanti) != 0:

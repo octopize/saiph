@@ -10,23 +10,24 @@ from scipy import linalg
 from saiph.models import Model, Parameters
 from saiph.svd import SVD
 
-ListLike = Union[np.array, list]  # check correct
-dfLike = Union[pd.DataFrame, np.array]  # plutot DFLike
+ListLike = Union[np.array, list]
+DFLike = Union[pd.DataFrame, np.array]
 
 
 def fit(
-    df: dfLike, nf: int, col_w: Optional[ListLike] = None, scale: Optional[bool] = None
+    df: DFLike, nf: int, col_w: Optional[ListLike] = None, scale: Optional[bool] = None
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using FAMD.
 
-    Arguments:
-        df -- data to project
-        nf -- number of components to keep (default: {min(df.shape[0], 5)})
-        col_w -- importance of each variable in the projection
+    Args:
+        df: data to project
+        nf: number of components to keep (default: {min(df.shape[0], 5)})
+        col_w: importance of each variable in the projection
             (more weight = more importance in the axes)
-        scale -- not used
+        scale: not used
 
-    Return the transformed variables, model and parameters.
+    Returns:
+        The transformed variables, model and parameters.
     """
     # Verify some parameters
     if nf is None:
@@ -90,7 +91,7 @@ def fit(
 
 
 def weight_compute(
-    df: dfLike, col_w: list, quanti: list, quali: list
+    df: DFLike, col_w: list, quanti: list, quali: list
 ) -> Tuple[list, list]:
     """Initiate the weight vectors."""
     # Set the columns and row weights
@@ -117,8 +118,8 @@ def weight_compute(
 
 
 def center(
-    df: dfLike, quanti: list, quali: list
-) -> Tuple[dfLike, float, float, float, list]:
+    df: DFLike, quanti: list, quali: list
+) -> Tuple[DFLike, float, float, float, list]:
     """Scale data and compute mean, pro and std."""
     # Scale the continuous data
     df_quanti = df[quanti]
@@ -141,13 +142,13 @@ def center(
     return df_array, mean, std, prop, _modalities
 
 
-def transform(df: dfLike, model: Model, param: Parameters) -> dfLike:
+def transform(df: DFLike, model: Model, param: Parameters) -> DFLike:
     """Project new data into the fitted numerical space."""
     df_scaled = scaler(model, param, df)
     return pd.DataFrame(np.dot(df_scaled, model.V.T), columns=param.columns)
 
 
-def scaler(model: Model, param: Parameters, df: Optional[dfLike] = None) -> dfLike:
+def scaler(model: Model, param: Parameters, df: Optional[DFLike] = None) -> DFLike:
     """Scale data using prop, std and mean."""
     if df is None:
         df = model.df
@@ -265,7 +266,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     return param
 
 
-def _rmultiplication(F: dfLike, marge: ListLike) -> dfLike:
+def _rmultiplication(F: DFLike, marge: ListLike) -> DFLike:
     """Multiply each column with the same vector."""
     df_dict = F.to_dict("list")
     for col in df_dict.keys():

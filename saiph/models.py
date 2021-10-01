@@ -5,16 +5,16 @@ import numpy as np
 import pandas as pd
 
 ListLike = Union[np.array, list]
-dfLike = Union[pd.DataFrame, np.array]
+DFLike = Union[pd.DataFrame, np.array]
 
 
 @dataclass
 class Model:
-    df: dfLike
+    df: DFLike
     V: ListLike
     explained_var: ListLike
     explained_var_ratio: ListLike
-    variable_coord: dfLike
+    variable_coord: DFLike
     U: Optional[ListLike] = None
     s: Optional[ListLike] = None
     mean: Optional[float] = None
@@ -33,6 +33,6 @@ class Parameters:
     quanti: Optional[ListLike] = None
     quali: Optional[ListLike] = None
     datetime_variables: Optional[list] = field(default_factory=list)
-    cor: Optional[dfLike] = None
-    contrib: Optional[dfLike] = None
-    cos2: Optional[dfLike] = None
+    cor: Optional[DFLike] = None
+    contrib: Optional[DFLike] = None
+    cos2: Optional[DFLike] = None

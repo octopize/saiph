@@ -11,7 +11,7 @@ from saiph.models import Model, Parameters
 from saiph.svd import SVD
 
 ListLike = Union[np.array, list]  # check correct
-dfLike = Union[pd.DataFrame, np.array]
+DFLike = Union[pd.DataFrame, np.array]
 
 
 def fit(
@@ -91,7 +91,7 @@ def fit(
     return coord, model, param
 
 
-def center(df: dfLike) -> Tuple[dfLike, ListLike, ListLike, ListLike]:
+def center(df: DFLike) -> Tuple[DFLike, ListLike, ListLike, ListLike]:
     """Center data and compute sums over columns and rows."""
     df_scale = pd.get_dummies(df.astype("category"))
     _modalities = df_scale.columns.values
@@ -103,7 +103,7 @@ def center(df: dfLike) -> Tuple[dfLike, ListLike, ListLike, ListLike]:
     return df_scale, _modalities, r, c
 
 
-def scaler(model: Model, df: Optional[dfLike] = None) -> dfLike:
+def scaler(model: Model, df: Optional[DFLike] = None) -> DFLike:
     """Scale new data."""
     if df is None:
         df = model.df
@@ -124,8 +124,8 @@ def scaler(model: Model, df: Optional[dfLike] = None) -> dfLike:
 
 
 def diag_compute(
-    df_scale: dfLike, r: ListLike, c: ListLike
-) -> Tuple[dfLike, dfLike, dfLike]:
+    df_scale: DFLike, r: ListLike, c: ListLike
+) -> Tuple[DFLike, DFLike, DFLike]:
     """Compute diagonal matrices and scale data."""
     eps = np.finfo(float).eps
     if df_scale.shape[0] >= 10000:
@@ -139,7 +139,7 @@ def diag_compute(
     return df_scale, T, D_c
 
 
-def transform(df: dfLike, model: Model, param: Parameters) -> dfLike:
+def transform(df: DFLike, model: Model, param: Parameters) -> DFLike:
     """Scale and transform new data."""
     df_scaled = scaler(model, df)
     return pd.DataFrame(
@@ -224,7 +224,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     return param
 
 
-def _rmultiplication(F: dfLike, marge: ListLike) -> dfLike:
+def _rmultiplication(F: DFLike, marge: ListLike) -> DFLike:
     """Multiply each column with the same vector."""
     df_dict = F.to_dict("list")
     for col in df_dict.keys():
@@ -234,7 +234,7 @@ def _rmultiplication(F: dfLike, marge: ListLike) -> dfLike:
     return df
 
 
-def _rdivision(F: dfLike, marge: ListLike) -> dfLike:
+def _rdivision(F: DFLike, marge: ListLike) -> DFLike:
     """Divide each column with the same vector."""
     df_dict = F.to_dict("list")
     for col in df_dict.keys():

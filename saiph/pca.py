@@ -9,11 +9,11 @@ from saiph.models import Model, Parameters
 from saiph.svd import SVD
 
 ListLike = Union[np.array, list]  # check correct
-dfLike = Union[pd.DataFrame, np.array]
+DFLike = Union[pd.DataFrame, np.array]
 
 
 def fit(
-    df: dfLike, nf: int, col_w: Optional[ListLike] = None, scale: bool = True
+    df: DFLike, nf: int, col_w: Optional[ListLike] = None, scale: bool = True
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using PCA.
 
@@ -82,7 +82,7 @@ def fit(
     return coord, model, param
 
 
-def center(df: dfLike, scale: bool) -> Tuple[dfLike, dfLike, dfLike]:
+def center(df: DFLike, scale: bool) -> Tuple[DFLike, DFLike, DFLike]:
     """Scale data and compute std and mean."""
     mean = np.mean(df, axis=0)
     df -= mean
@@ -94,7 +94,7 @@ def center(df: dfLike, scale: bool) -> Tuple[dfLike, dfLike, dfLike]:
     return df, mean, std
 
 
-def scaler(model: Model, param: Parameters, df: Optional[dfLike]) -> dfLike:
+def scaler(model: Model, param: Parameters, df: Optional[DFLike]) -> DFLike:
     """Scale data using mean and std."""
     if df is None:
         df = model.df
@@ -107,7 +107,7 @@ def scaler(model: Model, param: Parameters, df: Optional[dfLike]) -> dfLike:
     return df_scaled
 
 
-def transform(df: dfLike, model: Model, param: Parameters) -> dfLike:
+def transform(df: DFLike, model: Model, param: Parameters) -> DFLike:
     """Scale and Project new data."""
     df_scaled = scaler(model, param, df)
     return pd.DataFrame(np.dot(df_scaled, model.V.T), columns=param.columns)

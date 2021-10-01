@@ -30,7 +30,7 @@ lci: lint-fix ci  ## Autofix then run CI
 .PHONY: lci
 
 test:  ## Run tests
-	poetry run pytest .
+	poetry run pytest saiph
 .PHONY: test
 
 lint:  ## Run linting

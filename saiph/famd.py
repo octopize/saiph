@@ -8,7 +8,7 @@ import pandas as pd
 from scipy import linalg
 
 from saiph.svd import SVD
-from saiph.data_class import Model, Parameters
+from saiph.models import Model, Parameters
 
 
 ListLike = Union[np.array, list]  # check correct

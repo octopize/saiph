@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from saiph.data_class import Model, Parameters
+from saiph.models import Model, Parameters
 
 
 def plot_circle(

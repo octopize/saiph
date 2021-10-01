@@ -8,7 +8,7 @@ from scipy import linalg
 from scipy.sparse import diags
 
 from saiph.svd import SVD
-from saiph.data_class import Model, Parameters
+from saiph.models import Model, Parameters
 
 ListLike = Union[np.array, list]  # check correct
 dfLike = Union[pd.DataFrame, np.array]

@@ -8,7 +8,7 @@ import saiph.pca as pca
 import saiph.mca as mca
 import saiph.famd as famd
 
-from .data_class import Model, Parameters
+from saiph.models import Model, Parameters
 
 ListLike = Union[np.array, list]  # check correct
 dfLike = Union[pd.DataFrame, np.array]

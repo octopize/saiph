@@ -7,10 +7,10 @@ saiph
 .. automodule:: saiph
    :members:
 
-saiph.data\_class
------------------
+saiph.models
+------------
 
-.. automodule:: saiph.data_class
+.. automodule:: saiph.models
    :members:
    :undoc-members:
    :show-inheritance:

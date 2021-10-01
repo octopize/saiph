@@ -26,7 +26,7 @@ docs-open:  ## Open docs
 ci: lint test  ## Run all checks
 .PHONY: ci
 
-lci: lint-fix ci  ## Autofix then run CI
+lci: lint-fix ci docs ## Autofix then run CI
 .PHONY: lci
 
 test:  ## Run tests
@@ -38,6 +38,7 @@ lint:  ## Run linting
 	poetry run isort -c .
 	poetry run flake8 .
 	poetry run pydocstyle .
+	poetry run mypy .
 .PHONY: lint
 
 lint-fix:  ## Run autoformatters

@@ -22,13 +22,15 @@ def fit(
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using MCA.
 
-    Arguments:
-        df -- data to project
-        nf -- number of components to keep (default: {min(df.shape[0], 5)})
-        col_w -- importance of each variable in the projection \
+    Args:
+        df: data to project
+        nf: number of components to keep (default: {min(df.shape[0], 5)})
+        col_w: importance of each variable in the projection
             (more weight = more importance in the axes)
+        scale: not used
 
-        Return the transformed variables, model and parameters.
+    Returns:
+        The transformed variables, model and parameters.
     """
     # Verify some parameters
     if nf is None:

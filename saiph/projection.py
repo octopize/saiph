@@ -7,28 +7,32 @@ import pandas as pd
 import saiph.famd as famd
 import saiph.mca as mca
 import saiph.pca as pca
-from saiph.models import Model, Parameters
+from saiph.models import Model, Parameters, DFLike
 
 ListLike = Union[np.array, list]  # check correct
-DFLike = Union[pd.DataFrame, np.array]
 
 
 def fit(
-    df: DFLike,
+    df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
     col_w: Optional[ListLike] = None,
     scale: bool = True,
 ) -> Tuple[DFLike, Model, Parameters]:
-    """Project data into a lower dimensional space using PCA,MCA or FAMD.
+    """Project data into a lower dimensional space using PCA, MCA or FAMD.
 
-    Arguments:
-        df -- data to project
-        nf -- number of components to keep (default: {min(df.shape[0], 5)})
-        col_w -- importance of each variable in the projection
+    Args:
+        df: data to project
+        nf: number of components to keep (default: {min(df.shape[0], 5)})
+        col_w: importance of each variable in the projection
             more weight = more importance in the axes)
-        scale -- wether to scale data or not (only for PCA)
+        df: data to project
+        nf: number of components to keep (default: {min(df.shape[0], 5)})
+        col_w: importance of each variable in the projection
+            (more weight = more importance in the axes)
+        scale: whether to scale data or not (only for PCA)
 
-        Return the transformed variables, model and parameters
+    Returns:
+        The transformed variables, model and parameters
     """
     datetime_variables = []
     for i in range(0, df.shape[1]):

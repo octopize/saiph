@@ -12,10 +12,10 @@ def plot_circle(
     """Plot correlation graph.
 
     Arguments:
-    dimensions {list} -- list of the dimensions to help by each axis
+        dimensions: dimensions to help by each axis
 
     Returns:
-        graph -- plot of the correlation circle
+        plot of the correlation circle
     """
     # Dimensions start from 1
 
@@ -88,12 +88,10 @@ def plot_var_contribution(
 ):
     """Plot the variable contribution for a given dimension.
 
-    Arguments:
-        dim {int} -- value of the dimension to plot
-
-    Keyword Arguments:
-        max_var {int} -- maximum number of variables to plot
-        min_contrib {int} -- lower threshold for the variable contributions
+    Args:
+        dim: value of the dimension to plot
+        max_var: maximum number of variables to plot
+        min_contrib: lower threshold for the variable contributions
 
     Returns:
         graph of the contribution percentages per variables
@@ -127,11 +125,11 @@ def plot_var_contribution(
 def plot_explained_var(model: Model, param: Parameters, max_dims=10):
     """Plot explained variance per dimension.
 
-    Arguments:
-        max_dims {int} -- maximum number of dimensions to plot
+    Args:
+        max_dims: maximum number of dimensions to plot
 
     Return:
-        graph -- plot of the explained variance
+        plot of the explained variance
     """
     explained_percentage = model.explained_var_ratio * 100
     if len(explained_percentage) > max_dims:

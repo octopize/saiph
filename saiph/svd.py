@@ -1,23 +1,23 @@
-from typing import Union
+from typing import Tuple
 
-import numpy as np
-import pandas as pd
+from numpy.typing import ArrayLike
 from scipy import linalg
 from sklearn.utils import extmath
 
-DFLike = Union[pd.DataFrame, np.array]
+from saiph.models import DFLike
 
 
-def SVD(df: DFLike):
-    """Singular Value Decomposition.
+# Technically it returns three ndarray, which is a generic type
+def SVD(df: DFLike) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:
+    """Compute Singular Value Decomposition.
 
-    Arguments:
-        X {array-like} -- matrix to decompose
+    Args:
+        df: matrix to decompose
 
     Returns:
-        array -- unitary matrix having left singular vectors as columns
-        array -- the singular values
-        array -- unitary matrix having right singular vectors as rows
+        U: unitary matrix having left singular vectors as columns
+        s: the singular values
+        V: unitary matrix having right singular vectors as rows
     """
     U, s, V = linalg.svd(df, full_matrices=False)
     U, V = extmath.svd_flip(U, V)

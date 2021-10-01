@@ -1,7 +1,5 @@
 .. Saiph documentation master file, created by
    sphinx-quickstart on Fri Sep 24 09:52:44 2021.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
 
 Welcome to Saiph's documentation!
 =================================
@@ -10,8 +8,8 @@ Welcome to Saiph's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-.. autofunction:: saiph.fit
-
+   tutorial
+   reference
 
 
 Indices and tables

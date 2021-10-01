@@ -1,69 +1,64 @@
-saiph package
+API Reference
 =============
 
-Submodules
-----------
+saiph
+-----
 
-saiph.data\_class module
-------------------------
+.. automodule:: saiph
+   :members:
+
+saiph.data\_class
+-----------------
 
 .. automodule:: saiph.data_class
    :members:
    :undoc-members:
    :show-inheritance:
 
-saiph.famd module
------------------
+saiph.famd
+----------
 
 .. automodule:: saiph.famd
    :members:
    :undoc-members:
    :show-inheritance:
 
-saiph.mca module
-----------------
+saiph.mca
+---------
 
 .. automodule:: saiph.mca
    :members:
    :undoc-members:
    :show-inheritance:
 
-saiph.pca module
-----------------
+saiph.pca
+---------
 
 .. automodule:: saiph.pca
    :members:
    :undoc-members:
    :show-inheritance:
 
-saiph.projection module
------------------------
+saiph.projection
+----------------
 
 .. automodule:: saiph.projection
    :members:
    :undoc-members:
    :show-inheritance:
 
-saiph.svd module
-----------------
+saiph.svd
+---------
 
 .. automodule:: saiph.svd
    :members:
    :undoc-members:
    :show-inheritance:
 
-saiph.visualization module
---------------------------
+saiph.visualization
+-------------------
 
 .. automodule:: saiph.visualization
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: saiph
    :members:
    :undoc-members:
    :show-inheritance:

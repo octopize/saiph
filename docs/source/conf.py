@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 # -- Project information -----------------------------------------------------
 
 project = 'Saiph'
-copyright = '2021, Zineb Bennis, Morgan Guillaudeux'
+copyright = '2021, Octopize'
 author = 'Zineb Bennis, Morgan Guillaudeux'
 
 # The full version, including alpha/beta/rc tags

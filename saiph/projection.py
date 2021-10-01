@@ -1,13 +1,12 @@
 """Project any dataframe, iverse transform and compute stats."""
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 
-import saiph.pca as pca
-import saiph.mca as mca
 import saiph.famd as famd
-
+import saiph.mca as mca
+import saiph.pca as pca
 from saiph.models import Model, Parameters
 
 ListLike = Union[np.array, list]  # check correct

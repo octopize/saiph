@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
-from typing import Union, Optional
-import pandas as pd
+from typing import Optional, Union
+
 import numpy as np
+import pandas as pd
 
 ListLike = Union[np.array, list]
 dfLike = Union[pd.DataFrame, np.array]

@@ -1,18 +1,17 @@
 """FAMD projection."""
 import sys
-from typing import Union, Optional, Tuple
 from itertools import chain, repeat
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from scipy import linalg
 
-from saiph.svd import SVD
 from saiph.models import Model, Parameters
-
+from saiph.svd import SVD
 
 ListLike = Union[np.array, list]  # check correct
-dfLike = Union[pd.DataFrame, np.array] #plutot DFLike
+dfLike = Union[pd.DataFrame, np.array]  # plutot DFLike
 
 
 def fit(

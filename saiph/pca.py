@@ -1,23 +1,24 @@
 """PCA projection."""
 import sys
-from typing import Optional, Tuple, Union  # not principal package
+from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
+from numpy.typing import ArrayLike
 
 from saiph.models import Model, Parameters
 from saiph.svd import SVD
 
-ListLike = Union[np.array, list]  # check correct
-DFLike = Union[pd.DataFrame, np.array]
-
 
 def fit(
-    df: DFLike, nf: int, col_w: Optional[ListLike] = None, scale: bool = True
+    df: pd.DataFrame,
+    nf: int = None,
+    col_w: Optional[ArrayLike] = None,
+    scale: Optional[bool] = None,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using PCA.
 
-    Arguments:
+    Args:
         df: data to project
         nf: number of components to keep (default: {min(df.shape[0], 5)})
         col_w: importance of each variable in the projection
@@ -27,16 +28,14 @@ def fit(
     Returns:
         The transformed variables, model and parameters
     """
-    # Verify some parameters
-
-    if nf is None:
+    if not nf:
         nf = min(df.shape)
     elif nf <= 0:
         raise ValueError("nf", "The number of components must be positive.")
 
-    if col_w is None:
+    if not col_w:
         col_w = np.ones(df.shape[1])
-    elif len(col_w) != df.shape[1]:
+    elif len(col_w) != df.shape[1]:  # type: ignore
         raise ValueError(
             "col_w",
             f"The weight parameter should be of size {str(df.shape[1])}.",
@@ -58,7 +57,7 @@ def fit(
     V = V / np.sqrt(col_w)
 
     # compute eigenvalues and explained variance
-    explained_var = (s ** 2) / (df.shape[0] - 1)
+    explained_var = (s ** 2) / (df.shape[0] - 1)  # type: ignore
     explained_var_ratio = (explained_var / explained_var.sum())[:nf]
     explained_var = explained_var[:nf]
 
@@ -83,7 +82,7 @@ def fit(
     return coord, model, param
 
 
-def center(df: DFLike, scale: bool) -> Tuple[DFLike, DFLike, DFLike]:
+def center(df: pd.DataFrame, scale: Optional[bool]) -> Tuple[pd.DataFrame, float, float]:
     """Scale data and compute std and mean."""
     mean = np.mean(df, axis=0)
     df -= mean
@@ -95,7 +94,7 @@ def center(df: DFLike, scale: bool) -> Tuple[DFLike, DFLike, DFLike]:
     return df, mean, std
 
 
-def scaler(model: Model, param: Parameters, df: Optional[DFLike]) -> DFLike:
+def scaler(model: Model, param: Parameters, df: Optional[pd.DataFrame]) -> pd.DataFrame:
     """Scale data using mean and std."""
     if df is None:
         df = model.df
@@ -108,7 +107,7 @@ def scaler(model: Model, param: Parameters, df: Optional[DFLike]) -> DFLike:
     return df_scaled
 
 
-def transform(df: DFLike, model: Model, param: Parameters) -> DFLike:
+def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
     """Scale and Project new data."""
     df_scaled = scaler(model, param, df)
     return pd.DataFrame(np.dot(df_scaled, model.V.T), columns=param.columns)

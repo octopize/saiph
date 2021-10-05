@@ -6,18 +6,16 @@ import numpy as np
 import pandas as pd
 from scipy import linalg
 from scipy.sparse import diags
+from numpy.typing import ArrayLike
 
 from saiph.models import Model, Parameters
 from saiph.svd import SVD
 
-ListLike = Union[np.array, list]  # check correct
-DFLike = Union[pd.DataFrame, np.array]
-
 
 def fit(
     df: pd.DataFrame,
-    nf: int,
-    col_w: Optional[ListLike] = None,
+    nf: Optional[int] = None,
+    col_w: Optional[ArrayLike] = None,
     scale: Optional[bool] = None,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using MCA.
@@ -33,7 +31,7 @@ def fit(
         The transformed variables, model and parameters.
     """
     # Verify some parameters
-    if nf is None:
+    if not nf:
         nf = min(df.shape)
     elif nf <= 0:
         raise ValueError("nf", "The number of components must be positive.")
@@ -93,7 +91,7 @@ def fit(
     return coord, model, param
 
 
-def center(df: DFLike) -> Tuple[DFLike, ListLike, ListLike, ListLike]:
+def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, ArrayLike, ArrayLike, ArrayLike]:
     """Center data and compute sums over columns and rows."""
     df_scale = pd.get_dummies(df.astype("category"))
     _modalities = df_scale.columns.values
@@ -105,7 +103,7 @@ def center(df: DFLike) -> Tuple[DFLike, ListLike, ListLike, ListLike]:
     return df_scale, _modalities, r, c
 
 
-def scaler(model: Model, df: Optional[DFLike] = None) -> DFLike:
+def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     """Scale new data."""
     if df is None:
         df = model.df
@@ -126,8 +124,8 @@ def scaler(model: Model, df: Optional[DFLike] = None) -> DFLike:
 
 
 def diag_compute(
-    df_scale: DFLike, r: ListLike, c: ListLike
-) -> Tuple[DFLike, DFLike, DFLike]:
+    df_scale: pd.DataFrame, r: ArrayLike, c: ArrayLike
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Compute diagonal matrices and scale data."""
     eps = np.finfo(float).eps
     if df_scale.shape[0] >= 10000:
@@ -141,7 +139,7 @@ def diag_compute(
     return df_scale, T, D_c
 
 
-def transform(df: DFLike, model: Model, param: Parameters) -> DFLike:
+def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
     """Scale and transform new data."""
     df_scaled = scaler(model, df)
     return pd.DataFrame(
@@ -226,7 +224,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     return param
 
 
-def _rmultiplication(F: DFLike, marge: ListLike) -> DFLike:
+def _rmultiplication(F: pd.DataFrame, marge: ArrayLike) -> pd.DataFrame:
     """Multiply each column with the same vector."""
     df_dict = F.to_dict("list")
     for col in df_dict.keys():
@@ -236,7 +234,7 @@ def _rmultiplication(F: DFLike, marge: ListLike) -> DFLike:
     return df
 
 
-def _rdivision(F: DFLike, marge: ListLike) -> DFLike:
+def _rdivision(F: pd.DataFrame, marge: ArrayLike) -> pd.DataFrame:
     """Divide each column with the same vector."""
     df_dict = F.to_dict("list")
     for col in df_dict.keys():

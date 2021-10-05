@@ -3,19 +3,18 @@ from typing import Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from numpy.typing import ArrayLike
 
 import saiph.famd as famd
 import saiph.mca as mca
 import saiph.pca as pca
 from saiph.models import Model, Parameters, DFLike
 
-ListLike = Union[np.array, list]  # check correct
-
 
 def fit(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
-    col_w: Optional[ListLike] = None,
+    col_w: Optional[ArrayLike] = None,
     scale: bool = True,
 ) -> Tuple[DFLike, Model, Parameters]:
     """Project data into a lower dimensional space using PCA, MCA or FAMD.

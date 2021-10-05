@@ -1,5 +1,7 @@
+import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
+from numpy.testing import assert_allclose
 
 from saiph.pca import fit
 
@@ -12,7 +14,7 @@ def test_fit() -> None:
         }
     )
 
-    result, _, _ = fit(df)
+    result, model, _ = fit(df)
 
     expected = pd.DataFrame(
         {
@@ -21,6 +23,9 @@ def test_fit() -> None:
         }
     )
     assert_frame_equal(result, expected, check_exact=False, atol=0.01)
+
+    expected_v = np.array([[0.71, 0.71], [-0.71, 0.71]])
+    assert_allclose(model.V, expected_v, atol=0.01)
 
 
 def test_fit_2() -> None:

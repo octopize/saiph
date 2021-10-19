@@ -14,7 +14,7 @@ def fit(
     df: pd.DataFrame,
     nf: int = None,
     col_w: Optional[ArrayLike] = None,
-    scale: Optional[bool] = None,
+    scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using PCA.
 
@@ -57,9 +57,12 @@ def fit(
     V = V / np.sqrt(col_w)
 
     # compute eigenvalues and explained variance
-    explained_var = (s ** 2) / (df.shape[0] - 1)  # type: ignore
-    explained_var_ratio = (explained_var / explained_var.sum())[:nf]
-    explained_var = explained_var[:nf]
+    explained_var = ((s ** 2) / (df.shape[0] - 1))[:nf]  # type: ignore
+    summed_explained_var = explained_var.sum()
+    if summed_explained_var == 0:
+        explained_var_ratio = np.nan
+    else:
+        explained_var_ratio = (explained_var / explained_var.sum())
 
     U = U[:, :nf]
     s = s[:nf]
@@ -82,8 +85,8 @@ def fit(
     return coord, model, param
 
 
-def center(df: pd.DataFrame, scale: Optional[bool]) -> Tuple[pd.DataFrame, float, float]:
-    """Scale data and compute std and mean."""
+def center(df: pd.DataFrame, scale: Optional[bool] = True) -> Tuple[pd.DataFrame, float, float]:
+    """Center data. standardize data if scale == true. Compute mean and std."""
     mean = np.mean(df, axis=0)
     df -= mean
     std = 0
@@ -94,7 +97,7 @@ def center(df: pd.DataFrame, scale: Optional[bool]) -> Tuple[pd.DataFrame, float
     return df, mean, std
 
 
-def scaler(model: Model, param: Parameters, df: Optional[pd.DataFrame]) -> pd.DataFrame:
+def scaler(model: Model, df: Optional[pd.DataFrame]) -> pd.DataFrame:
     """Scale data using mean and std."""
     if df is None:
         df = model.df
@@ -109,5 +112,5 @@ def scaler(model: Model, param: Parameters, df: Optional[pd.DataFrame]) -> pd.Da
 
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
     """Scale and Project new data."""
-    df_scaled = scaler(model, param, df)
+    df_scaled = scaler(model, df)
     return pd.DataFrame(np.dot(df_scaled, model.V.T), columns=param.columns)

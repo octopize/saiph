@@ -16,7 +16,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[ArrayLike] = None,
-    scale: Optional[bool] = None,
+    scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using MCA.
 
@@ -30,7 +30,6 @@ def fit(
     Returns:
         The transformed variables, model and parameters.
     """
-    # Verify some parameters
     if not nf:
         nf = min(df.shape)
     elif nf <= 0:
@@ -67,9 +66,12 @@ def fit(
     U, s, V = SVD(Z)
 
     # compute eigenvalues and explained variance
-    explained_var = (s ** 2) / (df.shape[0] - 1)
-    explained_var_ratio = (explained_var / explained_var.sum())[:nf]
-    explained_var = explained_var[:nf]
+    explained_var = ((s ** 2) / (df.shape[0] - 1))[:nf]  # type: ignore
+    summed_explained_var = explained_var.sum()
+    if summed_explained_var == 0:
+        explained_var_ratio = np.nan
+    else:
+        explained_var_ratio = (explained_var / explained_var.sum())
 
     s = s[:nf]
     V = V[:nf, :]

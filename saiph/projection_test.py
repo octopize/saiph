@@ -12,6 +12,10 @@ def df() -> pd.DataFrame:
 
 def test_fit(df: pd.DataFrame) -> None:
     coord, model, param = fit(df, nf="all")
+    print(coord)
+    # print(model)
+    print(param)
+    # assert False
 
 
 def test_fit_numeric() -> None:

@@ -16,7 +16,7 @@ def fit(
     df: pd.DataFrame,
     nf: int = None,
     col_w: Optional[ArrayLike] = None,
-    scale: Optional[bool] = None,
+    scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using FAMD.
 
@@ -30,7 +30,6 @@ def fit(
     Returns:
         The transformed variables, model and parameters.
     """
-    # Verify some parameters
     if not nf:
         nf = min(df.shape)
     elif nf <= 0:
@@ -64,7 +63,15 @@ def fit(
     V = V / np.sqrt(col_w)
 
     explained_var = (s ** 2) / (df.shape[0] - 1)
+    # summed_explained_var = explained_var.sum()
+    # if summed_explained_var == 0:
+    #     raise ValueError(
+    #         'explained_var',
+    #         "The explained variance is 0. What kind of matrix did you try to fit ?"
+    #     )
+    # print("FAMD explained var", explained_var, explained_var.sum())
     explained_var_ratio = (explained_var / explained_var.sum())[:nf]
+    # TODO: Becomes nan if explained_var.sum() == 0. What should it do in that case ?
     explained_var = explained_var[:nf]
 
     s = s[:nf]

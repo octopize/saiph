@@ -3,6 +3,7 @@ from typing import Optional, Union
 
 from numpy.typing import ArrayLike
 import pandas as pd
+import numpy as np
 
 DFLike = Union[pd.DataFrame, ArrayLike]
 

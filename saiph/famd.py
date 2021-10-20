@@ -1,12 +1,12 @@
 """FAMD projection."""
 import sys
 from itertools import chain, repeat
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from scipy import linalg
 from numpy.typing import ArrayLike
+from scipy import linalg
 
 from saiph.models import Model, Parameters
 from saiph.svd import SVD
@@ -156,7 +156,9 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     return pd.DataFrame(np.dot(df_scaled, model.V.T), columns=param.columns)
 
 
-def scaler(model: Model, param: Parameters, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+def scaler(
+    model: Model, param: Parameters, df: Optional[pd.DataFrame] = None
+) -> pd.DataFrame:
     """Scale data using prop, std and mean."""
     if df is None:
         df = model.df

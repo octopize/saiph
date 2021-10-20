@@ -1,6 +1,5 @@
-from numpy.core.numeric import allclose
-import pandas as pd
 import numpy as np
+import pandas as pd
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
@@ -23,9 +22,9 @@ def test_fit() -> None:
             "Dim. 2": [-0.7, -0.7],
         }
     )
-    expected_v = np.array([[-0.707107,  0.707107, -0.],[-0.707107, -0.707107,  0.]])
+    expected_v = np.array([[-0.707107, 0.707107, -0.0], [-0.707107, -0.707107, 0.0]])
     expected_explained_var = np.array([1.25000e-01, 3.85186e-34])
-    expected_explained_var_ratio = np.array([1., 0.])
+    expected_explained_var_ratio = np.array([1.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
 
@@ -36,8 +35,14 @@ def test_fit() -> None:
     # TODO: Why is it different in MCA ???
     # D_c only used in MCA, not even FAMD. Tu remove ????
     # assert_allclose(model.variable_coord, model.V.T, atol=0.01)
-    assert np.array_equal(model._modalities, np.array(['tool_hammer', 'tool_toaster', 'score_aa']))
-    assert_allclose(model.D_c, np.array([[2., 0., 0.],[0., 2., 0.],[0., 0., 1.41421356]]), atol=0.01)
+    assert np.array_equal(
+        model._modalities, np.array(["tool_hammer", "tool_toaster", "score_aa"])
+    )
+    assert_allclose(
+        model.D_c,
+        np.array([[2.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 1.41421356]]),
+        atol=0.01,
+    )
     assert model.mean is None
     assert model.std is None
 
@@ -81,7 +86,17 @@ def test_fit_zero_same_df() -> None:
 
     assert_frame_equal(result1, result2)
 
-    for k in ["explained_var", "variable_coord", "variable_coord", "U", "s", "mean", "std", "prop", "D_c"]: # removed "_modalities", "df", "explained_var_ratio" 
+    for k in [
+        "explained_var",
+        "variable_coord",
+        "variable_coord",
+        "U",
+        "s",
+        "mean",
+        "std",
+        "prop",
+        "D_c",
+    ]:  # removed "_modalities", "df", "explained_var_ratio"
         k1 = getattr(model1, k)
         k2 = getattr(model2, k)
         if isinstance(k1, pd.DataFrame):

@@ -1,12 +1,12 @@
 """MCQ projection."""
 from itertools import chain, repeat
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
+from numpy.typing import ArrayLike
 from scipy import linalg
 from scipy.sparse import diags
-from numpy.typing import ArrayLike
 
 from saiph.models import Model, Parameters
 from saiph.svd import SVD
@@ -43,7 +43,6 @@ def fit(
             f"The weight parameter should be of size {str(df.shape[1])}.",
         )
 
-    # check type
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
 
@@ -71,7 +70,7 @@ def fit(
     if summed_explained_var == 0:
         explained_var_ratio = np.nan
     else:
-        explained_var_ratio = (explained_var / explained_var.sum())
+        explained_var_ratio = explained_var / explained_var.sum()
 
     s = s[:nf]
     V = V[:nf, :]

@@ -41,6 +41,9 @@ def fit(
             f"The weight parameter should be of size {str(df.shape[1])}.",
         )
 
+    if not isinstance(df, pd.DataFrame):
+        df = pd.DataFrame(df)
+
     df_original = df.copy()
     df = np.array(df, copy=True, dtype="float64")
 
@@ -62,7 +65,7 @@ def fit(
     if summed_explained_var == 0:
         explained_var_ratio = np.nan
     else:
-        explained_var_ratio = (explained_var / explained_var.sum())
+        explained_var_ratio = explained_var / explained_var.sum()
 
     U = U[:, :nf]
     s = s[:nf]
@@ -85,7 +88,9 @@ def fit(
     return coord, model, param
 
 
-def center(df: pd.DataFrame, scale: Optional[bool] = True) -> Tuple[pd.DataFrame, float, float]:
+def center(
+    df: pd.DataFrame, scale: Optional[bool] = True
+) -> Tuple[pd.DataFrame, float, float]:
     """Center data. standardize data if scale == true. Compute mean and std."""
     mean = np.mean(df, axis=0)
     df -= mean

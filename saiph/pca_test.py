@@ -1,14 +1,14 @@
 import numpy as np
 import pandas as pd
-from pandas.testing import assert_frame_equal
 from numpy.testing import assert_allclose
+from pandas.testing import assert_frame_equal
 
-from saiph.pca import fit, center, scaler
+from saiph.pca import center, fit, scaler
 
 
 def test_fit_scale() -> None:
     scale = True
-    
+
     df = pd.DataFrame(
         {
             "one": [1.0, 3.0],
@@ -25,8 +25,8 @@ def test_fit_scale() -> None:
         }
     )
     expected_v = np.array([[0.71, 0.71], [-0.71, 0.71]])
-    expected_explained_var = np.array([1., 0.])
-    expected_explained_var_ratio = np.array([1., 0.])
+    expected_explained_var = np.array([1.0, 0.0])
+    expected_explained_var_ratio = np.array([1.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
 
@@ -35,8 +35,8 @@ def test_fit_scale() -> None:
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01)
     assert_allclose(model.variable_coord, model.V.T, atol=0.01)
-    assert_allclose(model.mean, [2., 3.])
-    assert_allclose(model.std, [1., 1.])
+    assert_allclose(model.mean, [2.0, 3.0])
+    assert_allclose(model.std, [1.0, 1.0])
 
 
 def test_fit_not_scale() -> None:
@@ -57,9 +57,9 @@ def test_fit_not_scale() -> None:
             "Dim. 1": [-0.07, 0.18, -0.11],
         }
     )
-    expected_v = np.array([[-0.544914, -0.838492], [-0.838492,  0.544914]])
+    expected_v = np.array([[-0.544914, -0.838492], [-0.838492, 0.544914]])
     expected_explained_var = np.array([0.367571, 0.002799])
-    expected_explained_var_ratio = np.array([1., 0.])
+    expected_explained_var_ratio = np.array([1.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
 
@@ -68,9 +68,9 @@ def test_fit_not_scale() -> None:
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01)
     assert_allclose(model.variable_coord, model.V.T, atol=0.01)
-    assert_allclose(model.mean, [2., 3.666667])
+    assert_allclose(model.mean, [2.0, 3.666667])
     # Default value when not scaling
-    assert_allclose(model.std, 0.)
+    assert_allclose(model.std, 0.0)
 
 
 def test_fit_zero() -> None:
@@ -91,9 +91,9 @@ def test_fit_zero() -> None:
             "Dim. 1": [0.0, 0.0],
         }
     )
-    expected_v = np.array([[1., 0.], [0., 1.]])
-    expected_explained_var = np.array([0., 0.])
-    
+    expected_v = np.array([[1.0, 0.0], [0.0, 1.0]])
+    expected_explained_var = np.array([0.0, 0.0])
+
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
 
     assert_frame_equal(model.df, df)
@@ -102,14 +102,13 @@ def test_fit_zero() -> None:
     # np.nan == np.nan returns False
     assert pd.isnull(model.explained_var_ratio)
     assert_allclose(model.variable_coord, model.V.T, atol=0.01)
-    assert_allclose(model.mean, [1., 2.])
-    assert_allclose(model.std, [1., 1.])
+    assert_allclose(model.mean, [1.0, 2.0])
+    assert_allclose(model.std, [1.0, 1.0])
 
 
-
-    
 # TODO: Unify center and scale
 # Return type should be a parameter
+
 
 def test_center_scaler() -> None:
     df = pd.DataFrame(
@@ -121,17 +120,19 @@ def test_center_scaler() -> None:
 
     _, model, _ = fit(df, scale=True)
 
-    print('original')
+    print("original")
     print(model.df)
-    print('Center')
+    print("Center")
     df1, mean, std = center(model.df.copy(), scale=True)
     print(df1)
     print("type1")
     print(df1.dtypes)
-    #print(mean)
-    #print(std)
-    print('scaler')
+    # print(mean)
+    # print(std)
+    print("scaler")
     df2 = scaler(model, None)
     print(df2)
 
-    assert_frame_equal(df1, pd.DataFrame(df2), check_column_type=False, check_names=False)
+    assert_frame_equal(
+        df1, pd.DataFrame(df2), check_column_type=False, check_names=False
+    )

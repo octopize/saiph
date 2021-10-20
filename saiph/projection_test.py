@@ -1,8 +1,8 @@
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 from saiph import fit
-from pandas.testing import assert_frame_equal
 
 
 @pytest.fixture

@@ -8,7 +8,7 @@ from numpy.typing import ArrayLike
 import saiph.famd as famd
 import saiph.mca as mca
 import saiph.pca as pca
-from saiph.models import Model, Parameters, DFLike
+from saiph.models import DFLike, Model, Parameters
 
 
 def fit(

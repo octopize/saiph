@@ -30,8 +30,8 @@ def test_fit_numeric() -> None:
 
     expected = pd.DataFrame(
         {
-            "Dim. 0": [-1.41, 1.41],
-            "Dim. 1": [0.0, 0.0],
+            "Dim. 1": [-1.41, 1.41],
+            "Dim. 2": [0.0, 0.0],
         }
     )
     assert_frame_equal(result, expected, check_exact=False, atol=0.01)

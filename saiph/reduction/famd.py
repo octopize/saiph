@@ -9,7 +9,7 @@ from numpy.typing import ArrayLike
 
 from saiph.models import Model, Parameters
 from saiph.reduction.utils.svd import SVD
-
+from saiph.reduction.utils.bulk import column_names
 
 def fit(
     df: pd.DataFrame,
@@ -71,7 +71,7 @@ def fit(
     s = s[:nf]
     V = V[:nf, :]
 
-    columns = [f"Dim. {i + 1}" for i in range(len(s))]
+    columns = column_names(nf)
 
     coord = pd.DataFrame(np.dot(df_array, V.T), columns=columns)
     model = Model(

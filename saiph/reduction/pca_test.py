@@ -20,8 +20,8 @@ def test_fit_scale() -> None:
 
     expected_result = pd.DataFrame(
         {
-            "Dim. 0": [-1.41, 1.41],
-            "Dim. 1": [0.0, 0.0],
+            "Dim. 1": [-1.41, 1.41],
+            "Dim. 2": [0.0, 0.0],
         }
     )
     expected_v = np.array([[0.71, 0.71], [-0.71, 0.71]])
@@ -53,8 +53,8 @@ def test_fit_not_scale() -> None:
 
     expected_result = pd.DataFrame(
         {
-            "Dim. 0": [1.94, -0.28, -1.66],
-            "Dim. 1": [-0.07, 0.18, -0.11],
+            "Dim. 1": [1.94, -0.28, -1.66],
+            "Dim. 2": [-0.07, 0.18, -0.11],
         }
     )
     expected_v = np.array([[-0.544914, -0.838492], [-0.838492, 0.544914]])
@@ -87,8 +87,8 @@ def test_fit_zero() -> None:
 
     expected_result = pd.DataFrame(
         {
-            "Dim. 0": [0.0, 0.0],
             "Dim. 1": [0.0, 0.0],
+            "Dim. 2": [0.0, 0.0],
         }
     )
     expected_v = np.array([[1.0, 0.0], [0.0, 1.0]])

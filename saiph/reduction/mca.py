@@ -9,6 +9,7 @@ from scipy.sparse import diags
 
 from saiph.models import Model, Parameters
 from saiph.reduction.utils.svd import SVD
+from saiph.reduction.utils.bulk import column_names
 
 
 def fit(
@@ -74,7 +75,7 @@ def fit(
     s = s[:nf]
     V = V[:nf, :]
 
-    columns = [f"Dim. {i + 1}" for i in range(min(nf, s.shape[0]))]
+    columns = column_names(min(nf, s.shape[0]))
 
     model = Model(
         df=df_original,

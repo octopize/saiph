@@ -8,6 +8,7 @@ from numpy.typing import ArrayLike
 
 from saiph.models import Model, Parameters
 from saiph.reduction.utils.svd import SVD
+from saiph.reduction.utils.bulk import column_names
 
 
 def fit(
@@ -67,11 +68,10 @@ def fit(
     else:
         explained_var_ratio = explained_var / explained_var.sum()
 
-    U = U[:, :nf]
     s = s[:nf]
     V = V[:nf, :]
 
-    columns = [f"Dim. {i}" for i in range(min(nf, len(df)))]
+    columns = column_names(min(nf, s.shape[0]))
 
     coord = pd.DataFrame(np.dot(df, V.T), columns=columns)
     model = Model(

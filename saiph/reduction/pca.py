@@ -7,12 +7,12 @@ import pandas as pd
 from numpy.typing import ArrayLike
 
 from saiph.models import Model, Parameters
+from saiph.reduction.utils.bulk import column_names, explain_variance
 from saiph.reduction.utils.svd import SVD
-from saiph.reduction.utils.bulk import column_names
 
 
 def fit(
-    df: pd.DataFrame,
+    _df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[ArrayLike] = None,
     scale: Optional[bool] = True,
@@ -30,23 +30,24 @@ def fit(
         The transformed variables, model and parameters
     """
     if not nf:
-        nf = min(df.shape)
+        nf = min(_df.shape)
     elif nf <= 0:
         raise ValueError("nf", "The number of components must be positive.")
 
     if not col_w:
-        col_w = np.ones(df.shape[1])
-    elif len(col_w) != df.shape[1]:
+        col_w = np.ones(_df.shape[1])
+    elif len(col_w) != _df.shape[1]:
         raise ValueError(
             "col_w",
-            f"The weight parameter should be of size {str(df.shape[1])}.",
+            f"The weight parameter should be of size {str(_df.shape[1])}.",
         )
 
-    if not isinstance(df, pd.DataFrame):
-        df = pd.DataFrame(df)
+    if not isinstance(_df, pd.DataFrame):
+        _df = pd.DataFrame(_df)
+    df = _df.copy()
 
     df_original = df.copy()
-    df = np.array(df, copy=True, dtype="float64")
+    # df = np.array(df, copy=True, dtype="float64")
 
     # set row weights
     row_w = [1 / len(df) for i in range(len(df))]
@@ -60,13 +61,7 @@ def fit(
     U = ((U.T) / np.sqrt(row_w)).T
     V = V / np.sqrt(col_w)
 
-    # compute eigenvalues and explained variance
-    explained_var = ((s ** 2) / (df.shape[0] - 1))[:nf]  # type: ignore
-    summed_explained_var = explained_var.sum()
-    if summed_explained_var == 0:
-        explained_var_ratio = np.nan
-    else:
-        explained_var_ratio = explained_var / explained_var.sum()
+    explained_var, explained_var_ratio = explain_variance(s, df, nf)
 
     U = U[:, :nf]
     s = s[:nf]
@@ -86,7 +81,7 @@ def fit(
         mean=mean,
         std=std,
     )
-    
+
     param = Parameters(nf=nf, col_w=col_w, row_w=row_w, columns=columns)
 
     return coord, model, param
@@ -111,7 +106,9 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     if df is None:
         df = model.df
 
-    df_scaled = np.array(df, copy=True, dtype="float64")
+    df = df.copy()
+
+    # df_scaled = np.array(df, copy=True, dtype="float64")
 
     # scale
     # df_scaled -= model.mean

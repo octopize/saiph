@@ -8,8 +8,9 @@ import pandas as pd
 from numpy.typing import ArrayLike
 
 from saiph.models import Model, Parameters
+from saiph.reduction.utils.bulk import column_names, explain_variance
 from saiph.reduction.utils.svd import SVD
-from saiph.reduction.utils.bulk import column_names
+
 
 def fit(
     df: pd.DataFrame,
@@ -61,12 +62,7 @@ def fit(
     U = ((U.T) / np.sqrt(row_w)).T
     V = V / np.sqrt(col_w)
 
-    explained_var = ((s ** 2) / (df.shape[0] - 1))[:nf]  # type: ignore
-    summed_explained_var = explained_var.sum()
-    if summed_explained_var == 0:
-        explained_var_ratio = np.nan
-    else:
-        explained_var_ratio = explained_var / explained_var.sum()
+    explained_var, explained_var_ratio = explain_variance(s, df, nf)
 
     U = U[:, :nf]
     s = s[:nf]

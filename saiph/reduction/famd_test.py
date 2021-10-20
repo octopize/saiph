@@ -4,13 +4,16 @@ from numpy.testing import assert_allclose
 from pandas._testing.asserters import assert_series_equal
 from pandas.testing import assert_frame_equal
 
-from saiph.reduction.famd import fit, center, scaler
-from saiph.reduction.pca import fit as fit_pca
-from saiph.reduction.pca import center as center_pca
-from saiph.reduction.pca import scaler as scaler_pca
+from saiph.reduction.famd import fit
+
+# from saiph.reduction.famd import center, scaler
+# from saiph.reduction.mca import center as center_mca
 from saiph.reduction.mca import fit as fit_mca
-from saiph.reduction.mca import center as center_mca
-from saiph.reduction.mca import scaler as scaler_mca
+
+# from saiph.reduction.mca import scaler as scaler_mca
+# from saiph.reduction.pca import center as center_pca
+# from saiph.reduction.pca import fit as fit_pca
+# from saiph.reduction.pca import scaler as scaler_pca
 
 
 def test_fit_mix() -> None:
@@ -83,15 +86,15 @@ def test_fit_mix() -> None:
 #     result, model, _ = fit(df)
 #     result2, model2, _ = fit_pca(df)
 
-    # assert_frame_equal(result, result2, check_exact=False, atol=0.01)
+# assert_frame_equal(result, result2, check_exact=False, atol=0.01)
 
-    # assert_frame_equal(model.df, df)
-    # assert_allclose(model.V, expected_v, atol=0.01)
-    # assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
-    # assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01)
-    # assert_allclose(model.variable_coord, model.V.T, atol=0.01)
-    # assert_allclose(model.mean, [2.0, 3.0])
-    # assert_allclose(model.std, [1.0, 1.0])
+# assert_frame_equal(model.df, df)
+# assert_allclose(model.V, expected_v, atol=0.01)
+# assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
+# assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01)
+# assert_allclose(model.variable_coord, model.V.T, atol=0.01)
+# assert_allclose(model.mean, [2.0, 3.0])
+# assert_allclose(model.std, [1.0, 1.0])
 
 
 def test_fit_mca() -> None:
@@ -102,8 +105,8 @@ def test_fit_mca() -> None:
         }
     )
 
-    result, model, _ = fit(df)
-    result2, model2, _ = fit_mca(df)
+    result, model, _ = fit(df.copy())
+    result2, model2, _ = fit_mca(df.copy())
 
     expected = pd.DataFrame(
         {
@@ -115,6 +118,8 @@ def test_fit_mca() -> None:
     assert_frame_equal(result, expected, check_exact=False, atol=0.01)
 
     # TODO: DOES NOT WORK !!
+    # print(result)
+    # print(result2)
     # assert_frame_equal(result, result2)
 
 
@@ -135,7 +140,6 @@ def test_fit_zero() -> None:
         }
     )
     assert_frame_equal(result, expected, check_exact=False, atol=0.01)
-
 
 
 # TODO:
@@ -161,9 +165,9 @@ def test_fit_zero() -> None:
 
 #     assert False
 
-    # return df, mean, std
-    # return df_scale, _modalities, r, c
-    # return df_array, mean, std, prop, _modalities
+# return df, mean, std
+# return df_scale, _modalities, r, c
+# return df_array, mean, std, prop, _modalities
 
 # TODO:
 # def test_center_pca_mca() -> None:

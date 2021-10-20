@@ -1,10 +1,12 @@
 import numpy as np
 import pandas as pd
+import prince
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
-from saiph.reduction.mca import fit, center, scaler, transform
-import prince
+# from saiph.reduction.mca import center, scaler, transform
+from saiph.reduction.mca import fit
+
 
 def test_fit() -> None:
     df = pd.DataFrame(
@@ -33,7 +35,7 @@ def test_fit() -> None:
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),
     # TODO: Why is it different in MCA ???
-    # D_c only used in MCA, not even FAMD. Tu remove ????
+    # D_c only used in MCA, not even FAMD. To be removed ????
     # assert_allclose(model.variable_coord, model.V.T, atol=0.01)
     assert np.array_equal(
         model._modalities, ["tool_hammer", "tool_toaster", "score_aa"]
@@ -137,8 +139,8 @@ def test_fit_zero_same_df() -> None:
 #     )
 
 
-# TODO; Gotta remove that, prince raises warnings. STILL, it shows tranfsorm returns the right thing !!
-# To be continued
+# TODO; Gotta remove that, prince raises warnings. STILL, it shows fit returns the right coord !!
+# To be continued ...
 def test_compare_prince_full() -> None:
     df = pd.DataFrame(
         {

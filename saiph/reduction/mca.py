@@ -8,8 +8,8 @@ from numpy.typing import ArrayLike
 from scipy.sparse import diags
 
 from saiph.models import Model, Parameters
+from saiph.reduction.utils.bulk import column_names, explain_variance
 from saiph.reduction.utils.svd import SVD
-from saiph.reduction.utils.bulk import column_names
 
 
 def fit(
@@ -50,6 +50,7 @@ def fit(
 
     # initiate row and columns weights
     row_w = [1 / len(df) for i in range(len(df))]
+
     modality_numbers = []
     for column in df.columns:
         modality_numbers += [len(df[column].unique())]
@@ -64,13 +65,7 @@ def fit(
     Z = ((T * col_w).T * row_w).T
     U, s, V = SVD(Z)
 
-    # compute eigenvalues and explained variance
-    explained_var = ((s ** 2) / (df.shape[0] - 1))[:nf]  # type: ignore
-    summed_explained_var = explained_var.sum()
-    if summed_explained_var == 0:
-        explained_var_ratio = np.nan
-    else:
-        explained_var_ratio = explained_var / explained_var.sum()
+    explained_var, explained_var_ratio = explain_variance(s, df, nf)
 
     U = U[:, :nf]
     s = s[:nf]

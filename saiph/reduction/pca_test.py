@@ -1,12 +1,11 @@
 import numpy as np
 import pandas as pd
+import prince
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
-import pytest
-from saiph.reduction.pca import center, fit, scaler, transform
-
 from sklearn import decomposition
-import prince
+
+from saiph.reduction.pca import center, fit, scaler, transform
 
 
 def test_fit_scale() -> None:
@@ -109,6 +108,7 @@ def test_fit_zero() -> None:
     assert_allclose(model.std, [1.0, 1.0])
 
 
+# TODO: Unify scaler/center one day ?
 def test_center_scaler() -> None:
     df = pd.DataFrame(
         {

@@ -35,7 +35,9 @@ def test_fit() -> None:
     # TODO: Why is it different in MCA ???
     # D_c only used in MCA, not even FAMD. Tu remove ????
     # assert_allclose(model.variable_coord, model.V.T, atol=0.01)
-    assert np.array_equal(model._modalities, ["tool_hammer", "tool_toaster", "score_aa"])
+    assert np.array_equal(
+        model._modalities, ["tool_hammer", "tool_toaster", "score_aa"]
+    )
     assert_allclose(
         model.D_c,
         np.array([[2.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 1.41421356]]),

@@ -5,7 +5,6 @@ from typing import Optional, Tuple
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
-from scipy import linalg
 from scipy.sparse import diags
 
 from saiph.models import Model, Parameters

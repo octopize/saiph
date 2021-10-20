@@ -6,7 +6,6 @@ from typing import Optional, Tuple
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
-from scipy import linalg
 
 from saiph.models import Model, Parameters
 from saiph.svd import SVD

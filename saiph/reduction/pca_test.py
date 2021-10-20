@@ -3,7 +3,7 @@ import pandas as pd
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
-from saiph.pca import center, fit, scaler
+from saiph.reduction.pca import center, fit, scaler
 
 
 def test_fit_scale() -> None:

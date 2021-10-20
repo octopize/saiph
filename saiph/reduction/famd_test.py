@@ -4,7 +4,7 @@ from numpy.testing import assert_allclose
 from pandas._testing.asserters import assert_series_equal
 from pandas.testing import assert_frame_equal
 
-from saiph.famd import fit
+from saiph.reduction.famd import fit
 
 
 def test_fit_mix() -> None:

@@ -3,7 +3,7 @@ import pandas as pd
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
-from saiph.mca import fit
+from saiph.reduction.mca import fit
 
 
 def test_fit() -> None:

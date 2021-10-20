@@ -5,9 +5,9 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 
-import saiph.famd as famd
-import saiph.mca as mca
-import saiph.pca as pca
+import saiph.reduction.famd as famd
+import saiph.reduction.mca as mca
+import saiph.reduction.pca as pca
 from saiph.models import DFLike, Model, Parameters
 
 

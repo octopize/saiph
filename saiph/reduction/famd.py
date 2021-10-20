@@ -68,17 +68,19 @@ def fit(
     else:
         explained_var_ratio = explained_var / explained_var.sum()
 
+    U = U[:, :nf]
     s = s[:nf]
     V = V[:nf, :]
 
     columns = column_names(nf)
 
     coord = pd.DataFrame(np.dot(df_array, V.T), columns=columns)
+
     model = Model(
         df=df,
+        U=U,
         V=V,
         s=s,
-        U=U,
         explained_var=explained_var,
         explained_var_ratio=explained_var_ratio,
         variable_coord=pd.DataFrame(V.T),
@@ -87,6 +89,7 @@ def fit(
         prop=prop,
         _modalities=_modalities,
     )
+
     param = Parameters(nf=nf, col_w=col_w, row_w=row_w, columns=columns)
 
     return coord, model, param
@@ -145,7 +148,7 @@ def center(
 
 
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
-    """Project new data into the fitted numerical space."""
+    """Scale and project into the fitted numerical space."""
     df_scaled = scaler(model, param, df)
     return pd.DataFrame(np.dot(df_scaled, model.V.T), columns=param.columns)
 

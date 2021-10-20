@@ -72,13 +72,17 @@ def fit(
     else:
         explained_var_ratio = explained_var / explained_var.sum()
 
+    U = U[:, :nf]
     s = s[:nf]
     V = V[:nf, :]
 
-    columns = column_names(min(nf, s.shape[0]))
+    columns = column_names(nf)
+
+    coord = pd.DataFrame(np.dot(df_scale, np.dot(D_c, V.T)), columns=columns)
 
     model = Model(
         df=df_original,
+        U=U,
         V=V,
         explained_var=explained_var,
         explained_var_ratio=explained_var_ratio,
@@ -86,9 +90,9 @@ def fit(
         _modalities=_modalities,
         D_c=D_c,
     )
+
     param = Parameters(nf=nf, col_w=col_w, row_w=row_w, columns=columns)
 
-    coord = pd.DataFrame(np.dot(df_scale, np.dot(D_c, V.T)), columns=columns)
     return coord, model, param
 
 
@@ -141,7 +145,7 @@ def diag_compute(
 
 
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
-    """Scale and transform new data."""
+    """Scale and project into the fitted numerical space."""
     df_scaled = scaler(model, df)
     return pd.DataFrame(
         np.dot(df_scaled, np.dot(model.D_c, model.V.T)), columns=param.columns

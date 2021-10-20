@@ -68,14 +68,17 @@ def fit(
     else:
         explained_var_ratio = explained_var / explained_var.sum()
 
+    U = U[:, :nf]
     s = s[:nf]
     V = V[:nf, :]
 
-    columns = column_names(min(nf, s.shape[0]))
+    columns = column_names(nf)
 
     coord = pd.DataFrame(np.dot(df, V.T), columns=columns)
+
     model = Model(
         df=df_original,
+        U=U,
         V=V,
         explained_var=explained_var,
         explained_var_ratio=explained_var_ratio,
@@ -83,6 +86,7 @@ def fit(
         mean=mean,
         std=std,
     )
+    
     param = Parameters(nf=nf, col_w=col_w, row_w=row_w, columns=columns)
 
     return coord, model, param
@@ -102,7 +106,7 @@ def center(
     return df, mean, std
 
 
-def scaler(model: Model, df: Optional[pd.DataFrame]) -> pd.DataFrame:
+def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     """Scale data using mean and std."""
     if df is None:
         df = model.df
@@ -110,12 +114,14 @@ def scaler(model: Model, df: Optional[pd.DataFrame]) -> pd.DataFrame:
     df_scaled = np.array(df, copy=True, dtype="float64")
 
     # scale
-    df_scaled -= model.mean
-    df_scaled /= model.std
-    return df_scaled
+    # df_scaled -= model.mean
+    # df_scaled /= model.std
+    df -= model.mean
+    df /= model.std
+    return df
 
 
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
-    """Scale and Project new data."""
+    """Scale and project into the fitted numerical space."""
     df_scaled = scaler(model, df)
     return pd.DataFrame(np.dot(df_scaled, model.V.T), columns=param.columns)

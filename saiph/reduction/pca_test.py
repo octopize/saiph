@@ -2,8 +2,11 @@ import numpy as np
 import pandas as pd
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
+import pytest
+from saiph.reduction.pca import center, fit, scaler, transform
 
-from saiph.reduction.pca import center, fit, scaler
+from sklearn import decomposition
+import prince
 
 
 def test_fit_scale() -> None:
@@ -106,10 +109,6 @@ def test_fit_zero() -> None:
     assert_allclose(model.std, [1.0, 1.0])
 
 
-# TODO: Unify center and scale
-# Return type should be a parameter
-
-
 def test_center_scaler() -> None:
     df = pd.DataFrame(
         {
@@ -133,6 +132,67 @@ def test_center_scaler() -> None:
     df2 = scaler(model, None)
     print(df2)
 
-    assert_frame_equal(
-        df1, pd.DataFrame(df2), check_column_type=False, check_names=False
+    assert_frame_equal(df1, df2)
+
+
+def test_transform() -> None:
+    df = pd.DataFrame(
+        {
+            0: [1.0, 12.0],
+            1: [2.0, 4.0],
+        }
     )
+
+    _, model, param = fit(df, scale=True)
+
+    df_transformed = transform(df, model, param)
+
+    expected_transformed = pd.DataFrame(
+        {
+            "Dim. 1": [-1.414214, 1.414214],
+            "Dim. 2": [0.0, 0.0],
+        }
+    )
+
+    assert_frame_equal(df_transformed, expected_transformed, atol=0.01)
+
+
+def test_compare_sklearn_simple() -> None:
+    df = pd.DataFrame(
+        {
+            0: [1.0, 12.0],
+            1: [2.0, 4.0],
+        }
+    )
+
+    coord, _, _ = fit(df, scale=False)
+    pca = decomposition.PCA(n_components=2)
+    coord_scikit = pca.fit_transform(df)
+
+    assert_allclose(coord.to_numpy(), coord_scikit, atol=0.0001)
+
+
+def test_compare_sklearn_full(iris_quanti_df) -> None:
+    coord, _, _ = fit(iris_quanti_df, scale=False)
+    pca = decomposition.PCA(n_components=4)
+    coord_scikit = pca.fit_transform(iris_quanti_df)
+
+    assert_allclose(coord.to_numpy(), coord_scikit, atol=0.0001)
+
+
+def test_compare_sklearn_nf_reduced(iris_quanti_df) -> None:
+    coord, _, _ = fit(iris_quanti_df, scale=False, nf=3)
+    pca = decomposition.PCA(n_components=3)
+    coord_scikit = pca.fit_transform(iris_quanti_df)
+
+    assert_allclose(coord.to_numpy(), coord_scikit, atol=0.0001)
+
+
+def test_compare_prince_full(iris_quanti_df) -> None:
+    pca = prince.PCA(n_components=4, rescale_with_std=False)
+    pca = pca.fit(iris_quanti_df)
+    pca = pca.transform(iris_quanti_df)
+
+    coord, _, _ = fit(iris_quanti_df, scale=False)
+
+    assert_allclose(coord.to_numpy(), pca, atol=0.0001)

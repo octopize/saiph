@@ -3,8 +3,8 @@ import pandas as pd
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
-from saiph.reduction.mca import fit
-
+from saiph.reduction.mca import fit, center, scaler, transform
+import prince
 
 def test_fit() -> None:
     df = pd.DataFrame(
@@ -106,3 +106,50 @@ def test_fit_zero_same_df() -> None:
             assert np.array_equal(k1, k2)
         else:
             assert k1 == k2
+
+
+# TODO
+# def test_center_scaler() -> None:
+#     df = pd.DataFrame(
+#         {
+#             "tool": ["toaster", "toaster"],
+#             "score": ["aa", "aa"],
+#         }
+#     )
+
+#     _, model, _ = fit(df, scale=True)
+
+#     print("original")
+#     print(model.df)
+#     print("Center")
+#     df1, modalities, r, c = center(model.df.copy())
+#     print(df1)
+#     print("type1")
+#     print(df1.dtypes)
+#     # print(mean)
+#     # print(std)
+#     print("scaler")
+#     df2 = scaler(model, None)
+#     print(df2)
+
+#     assert_frame_equal(
+#         df1, pd.DataFrame(df2), check_column_type=False, check_names=False
+#     )
+
+
+# TODO; Gotta remove that, prince raises warnings. STILL, it shows tranfsorm returns the right thing !!
+# To be continued
+def test_compare_prince_full() -> None:
+    df = pd.DataFrame(
+        {
+            "tool": ["toaster", "toaster"],
+            "score": ["aa", "aa"],
+        }
+    )
+    mca = prince.MCA(n_components=4)
+    mca = mca.fit(df)
+    mca = mca.transform(df)
+
+    coord, _, _ = fit(df, scale=False)
+
+    assert_allclose(coord.to_numpy(), mca, atol=0.0001)

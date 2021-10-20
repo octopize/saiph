@@ -5,13 +5,8 @@ from pandas.testing import assert_frame_equal
 from saiph import fit
 
 
-@pytest.fixture
-def df() -> pd.DataFrame:
-    return pd.read_csv("fixtures/iris.csv")
-
-
-def test_fit(df: pd.DataFrame) -> None:
-    coord, model, param = fit(df, nf="all")
+def test_fit(iris_df: pd.DataFrame) -> None:
+    coord, model, param = fit(iris_df, nf="all")
     print(coord)
     # print(model)
     print(param)

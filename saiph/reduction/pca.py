@@ -12,7 +12,7 @@ from saiph.reduction.utils.svd import SVD
 
 def fit(
     df: pd.DataFrame,
-    nf: int = None,
+    nf: Optional[int] = None,
     col_w: Optional[ArrayLike] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:

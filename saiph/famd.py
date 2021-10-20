@@ -35,7 +35,7 @@ def fit(
     elif nf <= 0:
         raise ValueError("nf", "The number of components must be positive.")
 
-    if col_w is None:
+    if not col_w:
         col_w = np.ones(df.shape[1])
     elif len(col_w) != df.shape[1]:
         raise ValueError(
@@ -62,17 +62,12 @@ def fit(
     U = ((U.T) / np.sqrt(row_w)).T
     V = V / np.sqrt(col_w)
 
-    explained_var = (s ** 2) / (df.shape[0] - 1)
-    # summed_explained_var = explained_var.sum()
-    # if summed_explained_var == 0:
-    #     raise ValueError(
-    #         'explained_var',
-    #         "The explained variance is 0. What kind of matrix did you try to fit ?"
-    #     )
-    # print("FAMD explained var", explained_var, explained_var.sum())
-    explained_var_ratio = (explained_var / explained_var.sum())[:nf]
-    # TODO: Becomes nan if explained_var.sum() == 0. What should it do in that case ?
-    explained_var = explained_var[:nf]
+    explained_var = ((s ** 2) / (df.shape[0] - 1))[:nf]  # type: ignore
+    summed_explained_var = explained_var.sum()
+    if summed_explained_var == 0:
+        explained_var_ratio = np.nan
+    else:
+        explained_var_ratio = explained_var / explained_var.sum()
 
     s = s[:nf]
     V = V[:nf, :]

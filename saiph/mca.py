@@ -35,7 +35,7 @@ def fit(
     elif nf <= 0:
         raise ValueError("nf", "The number of components must be positive.")
 
-    if col_w is None:
+    if not col_w:
         col_w = np.ones(df.shape[1])
     elif len(col_w) != df.shape[1]:
         raise ValueError(

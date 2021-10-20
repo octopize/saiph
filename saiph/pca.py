@@ -35,7 +35,7 @@ def fit(
 
     if not col_w:
         col_w = np.ones(df.shape[1])
-    elif len(col_w) != df.shape[1]:  # type: ignore
+    elif len(col_w) != df.shape[1]:
         raise ValueError(
             "col_w",
             f"The weight parameter should be of size {str(df.shape[1])}.",

@@ -7,7 +7,7 @@ import pandas as pd
 from numpy.typing import ArrayLike
 
 from saiph.models import Model, Parameters
-from saiph.svd import SVD
+from saiph.reduction.utils.svd import SVD
 
 
 def fit(

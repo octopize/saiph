@@ -8,7 +8,7 @@ from numpy.typing import ArrayLike
 from scipy.sparse import diags
 
 from saiph.models import Model, Parameters
-from saiph.svd import SVD
+from saiph.reduction.utils.svd import SVD
 
 
 def fit(

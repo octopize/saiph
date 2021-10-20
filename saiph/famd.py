@@ -185,7 +185,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     weightedTc = _rmultiplication(
         _rmultiplication(df.T, np.sqrt(param.col_w)).T, np.sqrt(param.row_w)
     )
-    U, s, V = linalg.svd(weightedTc.T, full_matrices=False)
+    U, s, V = SVD(weightedTc.T, svd_flip=False)
     ncp0 = min(len(weightedTc.iloc[0]), len(weightedTc), param.nf)
     U = U[:, :ncp0]
     V = V.T[:, :ncp0]

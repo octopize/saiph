@@ -8,7 +8,7 @@ from saiph.models import DFLike
 
 
 # Technically it returns three ndarray, which is a generic type
-def SVD(df: DFLike) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:
+def SVD(df: DFLike, svd_flip=True) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:
     """Compute Singular Value Decomposition.
 
     Args:
@@ -20,5 +20,6 @@ def SVD(df: DFLike) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:
         V: unitary matrix having right singular vectors as rows
     """
     U, s, V = linalg.svd(df, full_matrices=False)
-    U, V = extmath.svd_flip(U, V)
+    if svd_flip:
+        U, V = extmath.svd_flip(U, V)
     return U, s, V

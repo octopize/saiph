@@ -1,4 +1,5 @@
 """FAMD projection."""
+from saiph.reduction.utils.check_params import fit_check_params
 import sys
 from itertools import chain, repeat
 from typing import Optional, Tuple
@@ -8,12 +9,12 @@ import pandas as pd
 from numpy.typing import ArrayLike
 
 from saiph.models import Model, Parameters
-from saiph.reduction.utils.bulk import column_names, explain_variance
+from saiph.reduction.utils.bulk import column_names, explain_variance, row_weights_uniform
 from saiph.reduction.utils.svd import SVD
 
 
 def fit(
-    df: pd.DataFrame,
+    _df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[ArrayLike] = None,
     scale: Optional[bool] = True,
@@ -30,27 +31,21 @@ def fit(
     Returns:
         The transformed variables, model and parameters.
     """
-    if not nf:
-        nf = min(df.shape)
-    elif nf <= 0:
-        raise ValueError("nf", "The number of components must be positive.")
+    nf = nf or min(_df.shape)
+    col_w = col_w or np.ones(_df.shape[1])
+    if not isinstance(_df, pd.DataFrame):
+        _df = pd.DataFrame(_df)
+    fit_check_params(nf, col_w, _df.shape[1])    
+    df = _df.copy()
+    df_original = df.copy()
 
-    if not col_w:
-        col_w = np.ones(df.shape[1])
-    elif len(col_w) != df.shape[1]:
-        raise ValueError(
-            "col_w",
-            f"The weight parameter should be of size {str(df.shape[1])}.",
-        )
-
-    if not isinstance(df, pd.DataFrame):
-        df = pd.DataFrame(df)
 
     # select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
 
-    col_w, row_w = weight_compute(df, col_w, quanti, quali)
+    row_w = row_weights_uniform(len(df))
+    col_w = col_weights_compute(df, col_w, quanti, quali)
 
     df_array, mean, std, prop, _modalities = center(df, quanti, quali)
 
@@ -91,7 +86,7 @@ def fit(
     return coord, model, param
 
 
-def weight_compute(
+def col_weights_compute(
     df: pd.DataFrame, col_w: list, quanti: list, quali: list
 ) -> Tuple[list, list]:
     """Initiate the weight vectors."""
@@ -99,7 +94,6 @@ def weight_compute(
     weight_df = pd.DataFrame([col_w], columns=df.columns)
     weight_quanti = weight_df[quanti]
     weight_quali = weight_df[quali]
-    row_w = [1 / len(df) for i in range(len(df))]
 
     # Get the number of modality for each quali variable
     modality_numbers = []
@@ -115,7 +109,7 @@ def weight_compute(
 
     col_w = list(weight_quanti.iloc[0]) + weight_quali_rep
 
-    return col_w, row_w
+    return col_w
 
 
 def center(

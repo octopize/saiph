@@ -1,9 +1,13 @@
 import numpy as np
+from itertools import repeat
 
 
 def column_names(n):
     return [f"Dim. {i + 1}" for i in range(n)]
 
+
+def row_weights_uniform(n):
+     return [k for k in repeat(1 / n, n)]
 
 def explain_variance(s, df, nf):
     explained_var = ((s ** 2) / (df.shape[0] - 1))[:nf]  # type: ignore

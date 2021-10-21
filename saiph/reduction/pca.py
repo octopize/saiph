@@ -1,4 +1,5 @@
 """PCA projection."""
+from saiph.reduction.utils.check_params import fit_check_params
 import sys
 from typing import Optional, Tuple
 
@@ -7,7 +8,7 @@ import pandas as pd
 from numpy.typing import ArrayLike
 
 from saiph.models import Model, Parameters
-from saiph.reduction.utils.bulk import column_names, explain_variance
+from saiph.reduction.utils.bulk import column_names, explain_variance, row_weights_uniform
 from saiph.reduction.utils.svd import SVD
 
 
@@ -29,28 +30,19 @@ def fit(
     Returns:
         The transformed variables, model and parameters
     """
-    if not nf:
-        nf = min(_df.shape)
-    elif nf <= 0:
-        raise ValueError("nf", "The number of components must be positive.")
-
-    if not col_w:
-        col_w = np.ones(_df.shape[1])
-    elif len(col_w) != _df.shape[1]:
-        raise ValueError(
-            "col_w",
-            f"The weight parameter should be of size {str(_df.shape[1])}.",
-        )
-
+    nf = nf or min(_df.shape)
+    col_w = col_w or np.ones(_df.shape[1])
     if not isinstance(_df, pd.DataFrame):
         _df = pd.DataFrame(_df)
+    fit_check_params(nf, col_w, _df.shape[1])    
     df = _df.copy()
-
     df_original = df.copy()
+
+
     # df = np.array(df, copy=True, dtype="float64")
 
     # set row weights
-    row_w = [1 / len(df) for i in range(len(df))]
+    row_w = row_weights_uniform(len(df))
 
     df, mean, std = center(df, scale)
 

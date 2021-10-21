@@ -1,4 +1,5 @@
 """MCQ projection."""
+from saiph.reduction.utils.check_params import fit_check_params
 from itertools import chain, repeat
 from typing import Optional, Tuple
 
@@ -8,12 +9,12 @@ from numpy.typing import ArrayLike
 from scipy.sparse import diags
 
 from saiph.models import Model, Parameters
-from saiph.reduction.utils.bulk import column_names, explain_variance
+from saiph.reduction.utils.bulk import column_names, explain_variance, row_weights_uniform
 from saiph.reduction.utils.svd import SVD
 
 
 def fit(
-    df: pd.DataFrame,
+    _df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[ArrayLike] = None,
     scale: Optional[bool] = True,
@@ -30,26 +31,17 @@ def fit(
     Returns:
         The transformed variables, model and parameters.
     """
-    if not nf:
-        nf = min(df.shape)
-    elif nf <= 0:
-        raise ValueError("nf", "The number of components must be positive.")
-
-    if not col_w:
-        col_w = np.ones(df.shape[1])
-    elif len(col_w) != df.shape[1]:
-        raise ValueError(
-            "col_w",
-            f"The weight parameter should be of size {str(df.shape[1])}.",
-        )
-
-    if not isinstance(df, pd.DataFrame):
-        df = pd.DataFrame(df)
-
+    nf = nf or min(_df.shape)
+    col_w = col_w or np.ones(_df.shape[1])
+    if not isinstance(_df, pd.DataFrame):
+        _df = pd.DataFrame(_df)
+    fit_check_params(nf, col_w, _df.shape[1])    
+    df = _df.copy()
     df_original = df.copy()
 
+
     # initiate row and columns weights
-    row_w = [1 / len(df) for i in range(len(df))]
+    row_w = row_weights_uniform(len(df))
 
     modality_numbers = []
     for column in df.columns:

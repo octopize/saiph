@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import prince
+# import prince
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
@@ -141,17 +141,17 @@ def test_fit_zero_same_df() -> None:
 
 # TODO; Gotta remove that, prince raises warnings. STILL, it shows fit returns the right coord !!
 # To be continued ...
-def test_compare_prince_full() -> None:
-    df = pd.DataFrame(
-        {
-            "tool": ["toaster", "toaster"],
-            "score": ["aa", "aa"],
-        }
-    )
-    mca = prince.MCA(n_components=4)
-    mca = mca.fit(df)
-    mca = mca.transform(df)
+# def test_compare_prince_full() -> None:
+#     df = pd.DataFrame(
+#         {
+#             "tool": ["toaster", "toaster"],
+#             "score": ["aa", "aa"],
+#         }
+#     )
+#     mca = prince.MCA(n_components=4)
+#     mca = mca.fit(df)
+#     mca = mca.transform(df)
 
-    coord, _, _ = fit(df, scale=False)
+#     coord, _, _ = fit(df, scale=False)
 
-    assert_allclose(coord.to_numpy(), mca, atol=0.0001)
+#     assert_allclose(coord.to_numpy(), mca, atol=0.0001)

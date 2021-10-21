@@ -1,5 +1,4 @@
 """MCQ projection."""
-from saiph.reduction.utils.check_params import fit_check_params
 from itertools import chain, repeat
 from typing import Optional, Tuple
 
@@ -9,12 +8,17 @@ from numpy.typing import ArrayLike
 from scipy.sparse import diags
 
 from saiph.models import Model, Parameters
-from saiph.reduction.utils.bulk import column_names, explain_variance, row_weights_uniform
+from saiph.reduction.utils.bulk import (
+    column_names,
+    explain_variance,
+    row_weights_uniform,
+)
+from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.svd import SVD
 
 
 def fit(
-    _df: pd.DataFrame,
+    df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[ArrayLike] = None,
     scale: Optional[bool] = True,
@@ -31,15 +35,12 @@ def fit(
     Returns:
         The transformed variables, model and parameters.
     """
-    nf = nf or min(_df.shape)
-    col_w = col_w or np.ones(_df.shape[1])
-    if not isinstance(_df, pd.DataFrame):
-        _df = pd.DataFrame(_df)
-    fit_check_params(nf, col_w, _df.shape[1])    
-    df = _df.copy()
-    df_original = df.copy()
-
-
+    nf = nf or min(df.shape)
+    col_w = col_w or np.ones(df.shape[1])
+    if not isinstance(df, pd.DataFrame):
+        df = pd.DataFrame(df)
+    fit_check_params(nf, col_w, df.shape[1])
+    
     # initiate row and columns weights
     row_w = row_weights_uniform(len(df))
 
@@ -51,6 +52,7 @@ def fit(
     )
 
     df_scale, _modalities, r, c = center(df)
+    # TODO: Remove side effects
     df_scale, T, D_c = diag_compute(df_scale, r, c)
 
     # apply the weights and compute the svd
@@ -68,7 +70,7 @@ def fit(
     coord = pd.DataFrame(np.dot(df_scale, np.dot(D_c, V.T)), columns=columns)
 
     model = Model(
-        df=df_original,
+        df=df,
         U=U,
         V=V,
         explained_var=explained_var,

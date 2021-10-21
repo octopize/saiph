@@ -1,7 +1,6 @@
 import pandas as pd
 import pytest
 
-
 _iris_csv = pd.read_csv("fixtures/iris.csv")
 
 

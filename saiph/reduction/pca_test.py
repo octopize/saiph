@@ -108,7 +108,6 @@ def test_fit_zero() -> None:
     assert_allclose(model.std, [1.0, 1.0])
 
 
-# TODO: Unify scaler/center one day ?
 def test_center_scaler() -> None:
     df = pd.DataFrame(
         {
@@ -119,23 +118,13 @@ def test_center_scaler() -> None:
 
     _, model, _ = fit(df, scale=True)
 
-    print("original")
-    print(model.df)
-    print("Center")
-    df1, mean, std = center(model.df.copy(), scale=True)
-    print(df1)
-    print("type1")
-    print(df1.dtypes)
-    # print(mean)
-    # print(std)
-    print("scaler")
+    df1, mean, std = center(model.df, scale=True)
     df2 = scaler(model, None)
-    print(df2)
 
     assert_frame_equal(df1, df2)
 
 
-def test_transform() -> None:
+def test_transform_simple() -> None:
     df = pd.DataFrame(
         {
             0: [1.0, 12.0],
@@ -156,6 +145,27 @@ def test_transform() -> None:
 
     assert_frame_equal(df_transformed, expected_transformed, atol=0.01)
 
+
+def test_transform() -> None:
+    df = pd.DataFrame({
+        0: [-2.0, 7.0, -4.5],
+        1: [6.0, 2.0, 7.0],
+        2: [5.0, 10.0, -14.5]
+    })
+
+    _, model, param = fit(df, scale=True)
+
+    df_transformed = transform(df, model, param)
+
+    expected_transformed = pd.DataFrame(
+        {
+            "Dim. 1": [-0.285647, 2.150812, -1.865165],
+            "Dim. 2": [0.730941, -0.287485, -0.443456],
+            "Dim. 3": [0., 0., 0.]
+        }
+    )
+
+    assert_frame_equal(df_transformed, expected_transformed, check_exact=False, atol=0.00001)
 
 def test_compare_sklearn_simple() -> None:
     df = pd.DataFrame(

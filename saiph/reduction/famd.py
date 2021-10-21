@@ -1,5 +1,4 @@
 """FAMD projection."""
-from saiph.reduction.utils.check_params import fit_check_params
 import sys
 from itertools import chain, repeat
 from typing import Optional, Tuple
@@ -9,12 +8,17 @@ import pandas as pd
 from numpy.typing import ArrayLike
 
 from saiph.models import Model, Parameters
-from saiph.reduction.utils.bulk import column_names, explain_variance, row_weights_uniform
+from saiph.reduction.utils.bulk import (
+    column_names,
+    explain_variance,
+    row_weights_uniform,
+)
+from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.svd import SVD
 
 
 def fit(
-    _df: pd.DataFrame,
+    df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[ArrayLike] = None,
     scale: Optional[bool] = True,
@@ -31,14 +35,11 @@ def fit(
     Returns:
         The transformed variables, model and parameters.
     """
-    nf = nf or min(_df.shape)
-    col_w = col_w or np.ones(_df.shape[1])
-    if not isinstance(_df, pd.DataFrame):
-        _df = pd.DataFrame(_df)
-    fit_check_params(nf, col_w, _df.shape[1])    
-    df = _df.copy()
-    df_original = df.copy()
-
+    nf = nf or min(df.shape)
+    col_w = col_w or np.ones(df.shape[1])
+    if not isinstance(df, pd.DataFrame):
+        df = pd.DataFrame(df)
+    fit_check_params(nf, col_w, df.shape[1])
 
     # select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values

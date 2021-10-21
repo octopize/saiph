@@ -1,5 +1,6 @@
-import numpy as np
 from itertools import repeat
+
+import numpy as np
 
 
 def column_names(n):
@@ -7,7 +8,8 @@ def column_names(n):
 
 
 def row_weights_uniform(n):
-     return [k for k in repeat(1 / n, n)]
+    return [k for k in repeat(1 / n, n)]
+
 
 def explain_variance(s, df, nf):
     explained_var = ((s ** 2) / (df.shape[0] - 1))[:nf]  # type: ignore

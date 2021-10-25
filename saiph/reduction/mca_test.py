@@ -1,10 +1,9 @@
 import numpy as np
 import pandas as pd
-import prince
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
-from saiph.reduction.mca import center, fit, scaler, transform
+from saiph.reduction.mca import fit
 
 
 def test_fit() -> None:
@@ -33,9 +32,6 @@ def test_fit() -> None:
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),
-    # TODO: Why is it different in MCA ???
-    # D_c only used in MCA, not even FAMD. To be removed ????
-    # assert_allclose(model.variable_coord, model.V.T, atol=0.01)
     assert np.array_equal(
         model._modalities, ["tool_hammer", "tool_toaster", "score_aa"]
     )
@@ -64,8 +60,24 @@ def test_fit_zero() -> None:
             "Dim. 2": [0.7, 0.7],
         }
     )
+    expected_v = np.array([[1.0, 0.0], [0., 1.0]])
+    expected_explained_var = np.array([0., 0.])
+
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
-    # TODO: complete that
+    assert_frame_equal(model.df, df)
+    assert_allclose(model.V, expected_v, atol=0.01)
+    assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
+    assert pd.isna(model.explained_var_ratio)
+    assert np.array_equal(
+        model._modalities, ["tool_toaster", "score_aa"]
+    )
+    assert_allclose(
+        model.D_c,
+        np.array([[1.414214, 0.0], [0.0, 1.414214]]),
+        atol=0.01,
+    )
+    assert model.mean is None
+    assert model.std is None
 
 
 def test_fit_zero_same_df() -> None:
@@ -108,82 +120,3 @@ def test_fit_zero_same_df() -> None:
         else:
             assert k1 == k2
 
-
-# TODO
-# def test_center_scaler() -> None:
-#     df = pd.DataFrame(
-#         {
-#             "tool": ["toaster", "toaster"],
-#             "score": ["aa", "aa"],
-#         }
-#     )
-
-#     _, model, _ = fit(df, scale=True)
-
-#     print("original")
-#     print(model.df)
-#     print("Center")
-#     df1, modalities, r, c = center(model.df.copy())
-#     print(df1)
-#     print("type1")
-#     print(df1.dtypes)
-#     # print(mean)
-#     # print(std)
-#     print("scaler")
-#     df2 = scaler(model, None)
-#     print(df2)
-
-#     assert_frame_equal(
-#         df1, df2, check_column_type=False, check_names=False
-#     )
-
-#     assert False
-
-
-# TODO; Gotta remove that, prince raises warnings
-# STILL, it shows fit returns the right coord when vectors are colinear!!
-# There is a sign problem next .... To be continued
-def test_compare_prince_colin() -> None:
-    df = pd.DataFrame(
-        {
-            "tool": ["toaster", "toaster", "toaster"],
-            "score": ["aa", "aa", "aa"],
-            "car": ["tesla", "tesla", "tesla"],
-        }
-    )
-    mca = prince.MCA(n_components=4)
-    mca = mca.fit(df)
-    mca = mca.transform(df)
-
-    coord, _, _ = fit(df, scale=False)
-
-    print(coord.to_numpy())
-    print(mca)
-    assert_allclose(coord.to_numpy(), mca, atol=0.0001)
-
-
-# def test_compare_prince_general() -> None:
-#     df = pd.DataFrame(
-#         {
-#             "tool": ["toaster", "toaster", "hammer"],
-#             "score": ["aa", "ca", "bb"],
-#             "car": ["tesla", "renault", "tesla"],
-#             "moto": ["Bike", "Bike", "Motor"]
-
-#         }
-#     )
-#     coord, model, param = fit(df, scale=False)
-#     transf = transform(df, model, param)
-
-#     mca = prince.MCA(n_components=4)
-#     mca = mca.fit(df)
-#     mca = mca.transform(df)
-
-
-#     print(coord.to_numpy())
-#     print(transf)
-#     #print(model.D_c)
-#     print(mca)
-#     assert_allclose(coord.to_numpy(), mca, atol=0.0001)
-
-# assert False

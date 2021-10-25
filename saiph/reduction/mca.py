@@ -65,8 +65,7 @@ def fit(
     s = s[:nf]
     V = V[:nf, :]
 
-    columns = column_names(nf)
-
+    columns = column_names(nf)[:min(df_scale.shape)]
     coord = pd.DataFrame(np.dot(df_scale, np.dot(D_c, V.T)), columns=columns)
 
     model = Model(
@@ -92,6 +91,7 @@ def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, ArrayLike, ArrayLike, ArrayL
 
     # scale data
     df_scale /= df_scale.sum().sum()
+
     c = np.sum(df_scale, axis=0)
     r = np.sum(df_scale, axis=1)
     return df_scale, _modalities, r, c
@@ -218,6 +218,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     return param
 
 
+# TODO: isn't there way more simple ??
 def _rmultiplication(F: pd.DataFrame, marge: ArrayLike) -> pd.DataFrame:
     """Multiply each column with the same vector."""
     df_dict = F.to_dict("list")
@@ -228,6 +229,7 @@ def _rmultiplication(F: pd.DataFrame, marge: ArrayLike) -> pd.DataFrame:
     return df
 
 
+# TODO: isn't there way more simple ??
 def _rdivision(F: pd.DataFrame, marge: ArrayLike) -> pd.DataFrame:
     """Divide each column with the same vector."""
     df_dict = F.to_dict("list")

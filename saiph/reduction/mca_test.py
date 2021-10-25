@@ -112,34 +112,34 @@ def test_fit_zero_same_df() -> None:
 
 
 # TODO
-def test_center_scaler() -> None:
-    df = pd.DataFrame(
-        {
-            "tool": ["toaster", "toaster"],
-            "score": ["aa", "aa"],
-        }
-    )
+# def test_center_scaler() -> None:
+#     df = pd.DataFrame(
+#         {
+#             "tool": ["toaster", "toaster"],
+#             "score": ["aa", "aa"],
+#         }
+#     )
 
-    _, model, _ = fit(df, scale=True)
+#     _, model, _ = fit(df, scale=True)
 
-    print("original")
-    print(model.df)
-    print("Center")
-    df1, modalities, r, c = center(model.df.copy())
-    print(df1)
-    print("type1")
-    print(df1.dtypes)
-    # print(mean)
-    # print(std)
-    print("scaler")
-    df2 = scaler(model, None)
-    print(df2)
+#     print("original")
+#     print(model.df)
+#     print("Center")
+#     df1, modalities, r, c = center(model.df.copy())
+#     print(df1)
+#     print("type1")
+#     print(df1.dtypes)
+#     # print(mean)
+#     # print(std)
+#     print("scaler")
+#     df2 = scaler(model, None)
+#     print(df2)
 
-    assert_frame_equal(
-        df1, df2, check_column_type=False, check_names=False
-    )
+#     assert_frame_equal(
+#         df1, df2, check_column_type=False, check_names=False
+#     )
 
-    assert False
+#     assert False
 
 
 # TODO; Gotta remove that, prince raises warnings
@@ -158,7 +158,7 @@ def test_compare_prince_colin() -> None:
     mca = mca.fit(df)
     mca = mca.transform(df)
 
-    coord, _, _ = fit(df, scale=False)
+    coord, model, _ = fit(df, scale=False)
 
     print(coord.to_numpy())
     print(mca)
@@ -170,7 +170,9 @@ def test_compare_prince_colin() -> None:
 #         {
 #             "tool": ["toaster", "toaster", "hammer"],
 #             "score": ["aa", "ca", "bb"],
-#             "car": ["tesla", "renault", "tesla"]
+#             "car": ["tesla", "renault", "tesla"],
+#             "moto": ["Bike", "Bike", "Motor"]
+
 #         }
 #     )
 #     coord, model, param = fit(df, scale=False)
@@ -183,6 +185,8 @@ def test_compare_prince_colin() -> None:
 
 #     print(coord.to_numpy())
 #     print(transf)
+#     #print(model.D_c)
 #     print(mca)
 #     assert_allclose(coord.to_numpy(), mca, atol=0.0001)
-#     assert False
+
+    # assert False

@@ -52,7 +52,6 @@ def fit(
     )
 
     df_scale, _modalities, r, c = center(df)
-    # TODO: Remove side effects
     df_scale, T, D_c = diag_compute(df_scale, r, c)
 
     # apply the weights and compute the svd
@@ -129,8 +128,7 @@ def diag_compute(
     D_c = np.diag(1 / (eps + np.sqrt(c)))
 
     T = D_r @ (df_scale - np.outer(r, c)) @ D_c
-    df_scale /= np.array(r)[:, None]
-    return df_scale, T, D_c
+    return df_scale / np.array(r)[:, None], T, D_c
 
 
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:

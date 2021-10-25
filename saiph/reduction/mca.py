@@ -8,12 +8,12 @@ from numpy.typing import ArrayLike
 from scipy.sparse import diags
 
 from saiph.models import Model, Parameters
+from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
     column_names,
     explain_variance,
     row_weights_uniform,
 )
-from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.svd import SVD
 
 
@@ -216,7 +216,6 @@ def stats(model: Model, param: Parameters) -> Parameters:
     return param
 
 
-# TODO: isn't there way more simple ??
 def _rmultiplication(F: pd.DataFrame, marge: ArrayLike) -> pd.DataFrame:
     """Multiply each column with the same vector."""
     df_dict = F.to_dict("list")
@@ -227,7 +226,6 @@ def _rmultiplication(F: pd.DataFrame, marge: ArrayLike) -> pd.DataFrame:
     return df
 
 
-# TODO: isn't there way more simple ??
 def _rdivision(F: pd.DataFrame, marge: ArrayLike) -> pd.DataFrame:
     """Divide each column with the same vector."""
     df_dict = F.to_dict("list")

@@ -60,17 +60,15 @@ def test_fit_zero() -> None:
             "Dim. 2": [0.7, 0.7],
         }
     )
-    expected_v = np.array([[1.0, 0.0], [0., 1.0]])
-    expected_explained_var = np.array([0., 0.])
+    expected_v = np.array([[1.0, 0.0], [0.0, 1.0]])
+    expected_explained_var = np.array([0.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
     assert_frame_equal(model.df, df)
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     assert pd.isna(model.explained_var_ratio)
-    assert np.array_equal(
-        model._modalities, ["tool_toaster", "score_aa"]
-    )
+    assert np.array_equal(model._modalities, ["tool_toaster", "score_aa"])
     assert_allclose(
         model.D_c,
         np.array([[1.414214, 0.0], [0.0, 1.414214]]),
@@ -119,4 +117,3 @@ def test_fit_zero_same_df() -> None:
             assert np.array_equal(k1, k2)
         else:
             assert k1 == k2
-

@@ -8,12 +8,12 @@ import pandas as pd
 from numpy.typing import ArrayLike
 
 from saiph.models import Model, Parameters
+from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
     column_names,
     explain_variance,
     row_weights_uniform,
 )
-from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.svd import SVD
 
 

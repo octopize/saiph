@@ -8,7 +8,7 @@ import pandas as pd
 from numpy.typing import ArrayLike
 
 from saiph.models import Model, Parameters
-from saiph.reduction.utils.bulk import (
+from saiph.reduction.utils.common import (
     column_names,
     explain_variance,
     row_weights_uniform,

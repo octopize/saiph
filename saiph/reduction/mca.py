@@ -8,7 +8,7 @@ from numpy.typing import ArrayLike
 from scipy.sparse import diags
 
 from saiph.models import Model, Parameters
-from saiph.reduction.utils.bulk import (
+from saiph.reduction.utils.common import (
     column_names,
     explain_variance,
     row_weights_uniform,

@@ -78,7 +78,6 @@ def fit(
     return coord, model, param
 
 
-
 def center(
     df: pd.DataFrame, scale: Optional[bool] = True
 ) -> Tuple[pd.DataFrame, float, float]:

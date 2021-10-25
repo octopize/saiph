@@ -48,10 +48,10 @@ def fit(
     row_w = row_weights_uniform(len(df))
     col_w = col_weights_compute(df, col_w, quanti, quali)
 
-    df_array, mean, std, prop, _modalities = center(df, quanti, quali)
+    df_scale, mean, std, prop, _modalities = center(df, quanti, quali)
 
     # apply the weights
-    Z = ((df_array * col_w).T * row_w).T
+    Z = ((df_scale * col_w).T * row_w).T
 
     # compute the svd
     U, s, V = SVD(Z)
@@ -66,7 +66,7 @@ def fit(
 
     columns = column_names(nf)
 
-    coord = pd.DataFrame(np.dot(df_array, V.T), columns=columns)
+    coord = pd.DataFrame(np.dot(df_scale, V.T), columns=columns)
 
     model = Model(
         df=df,
@@ -82,7 +82,9 @@ def fit(
         _modalities=_modalities,
     )
 
-    param = Parameters(nf=nf, col_w=col_w, row_w=row_w, columns=columns, quanti=quanti, quali=quali)
+    param = Parameters(
+        nf=nf, col_w=col_w, row_w=row_w, columns=columns, quanti=quanti, quali=quali
+    )
 
     return coord, model, param
 
@@ -133,7 +135,6 @@ def center(
     _modalities = df_quali.columns.values
 
     df_scale = pd.concat([df_quanti, df_quali], axis=1)
-    df_array = df_scale.values
 
     return df_scale, mean, std, prop, _modalities
 

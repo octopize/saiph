@@ -40,7 +40,7 @@ def fit(
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
     fit_check_params(nf, col_w, df.shape[1])
-    
+
     # initiate row and columns weights
     row_w = row_weights_uniform(len(df))
 
@@ -65,7 +65,7 @@ def fit(
     s = s[:nf]
     V = V[:nf, :]
 
-    columns = column_names(nf)[:min(df_scale.shape)]
+    columns = column_names(nf)[: min(df_scale.shape)]
     coord = pd.DataFrame(np.dot(df_scale, np.dot(D_c, V.T)), columns=columns)
 
     model = Model(

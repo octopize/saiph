@@ -1,12 +1,10 @@
 import numpy as np
 import pandas as pd
-
 import prince
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
-from saiph.reduction.mca import center, scaler
-from saiph.reduction.mca import fit, transform
+from saiph.reduction.mca import center, fit, scaler, transform
 
 
 def test_fit() -> None:
@@ -150,8 +148,7 @@ def test_compare_prince_colin() -> None:
         {
             "tool": ["toaster", "toaster", "toaster"],
             "score": ["aa", "aa", "aa"],
-            "car": ["tesla", "tesla", "tesla"]
-
+            "car": ["tesla", "tesla", "tesla"],
         }
     )
     mca = prince.MCA(n_components=4)
@@ -189,4 +186,4 @@ def test_compare_prince_colin() -> None:
 #     print(mca)
 #     assert_allclose(coord.to_numpy(), mca, atol=0.0001)
 
-    # assert False
+# assert False

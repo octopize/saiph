@@ -4,11 +4,10 @@ from numpy.testing import assert_allclose
 from pandas._testing.asserters import assert_series_equal
 from pandas.testing import assert_frame_equal
 
-from saiph.reduction.famd import fit
-
-from saiph.reduction.famd import center, scaler
-
-from saiph.reduction.pca import center as center_pca, fit as fit_pca, scaler as scaler_pca
+from saiph.reduction.famd import center, fit, scaler
+from saiph.reduction.pca import center as center_pca
+from saiph.reduction.pca import fit as fit_pca
+from saiph.reduction.pca import scaler as scaler_pca
 
 
 def test_fit_mix() -> None:
@@ -94,7 +93,7 @@ def test_scaler_pca_famd() -> None:
             "tool": ["toaster", "hammer"],
             "score": ["aa", "ab"],
             "size": [1.0, 4.0],
-            "age": [55, 62]
+            "age": [55, 62],
         }
     )
 
@@ -113,7 +112,7 @@ def test_center_pca_famd() -> None:
             "tool": ["toaster", "hammer"],
             "score": ["aa", "ab"],
             "size": [1.0, 4.0],
-            "age": [55, 62]
+            "age": [55, 62],
         }
     )
 
@@ -126,4 +125,3 @@ def test_center_pca_famd() -> None:
 
     assert_series_equal(mean1, mean2)
     assert_series_equal(std1, std2)
-

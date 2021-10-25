@@ -147,11 +147,7 @@ def test_transform_simple() -> None:
 
 
 def test_transform() -> None:
-    df = pd.DataFrame({
-        0: [-2.0, 7.0, -4.5],
-        1: [6.0, 2.0, 7.0],
-        2: [5.0, 10.0, -14.5]
-    })
+    df = pd.DataFrame({0: [-2.0, 7.0, -4.5], 1: [6.0, 2.0, 7.0], 2: [5.0, 10.0, -14.5]})
 
     _, model, param = fit(df, scale=True)
 
@@ -161,11 +157,14 @@ def test_transform() -> None:
         {
             "Dim. 1": [-0.285647, 2.150812, -1.865165],
             "Dim. 2": [0.730941, -0.287485, -0.443456],
-            "Dim. 3": [0., 0., 0.]
+            "Dim. 3": [0.0, 0.0, 0.0],
         }
     )
 
-    assert_frame_equal(df_transformed, expected_transformed, check_exact=False, atol=0.00001)
+    assert_frame_equal(
+        df_transformed, expected_transformed, check_exact=False, atol=0.00001
+    )
+
 
 def test_compare_sklearn_simple() -> None:
     df = pd.DataFrame(

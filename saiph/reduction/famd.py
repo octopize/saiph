@@ -82,7 +82,7 @@ def fit(
         _modalities=_modalities,
     )
 
-    param = Parameters(nf=nf, col_w=col_w, row_w=row_w, columns=columns)
+    param = Parameters(nf=nf, col_w=col_w, row_w=row_w, columns=columns, quanti=quanti, quali=quali)
 
     return coord, model, param
 
@@ -135,7 +135,7 @@ def center(
     df_scale = pd.concat([df_quanti, df_quali], axis=1)
     df_array = df_scale.values
 
-    return df_array, mean, std, prop, _modalities
+    return df_scale, mean, std, prop, _modalities
 
 
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:

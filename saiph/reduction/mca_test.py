@@ -158,7 +158,7 @@ def test_compare_prince_colin() -> None:
     mca = mca.fit(df)
     mca = mca.transform(df)
 
-    coord, model, _ = fit(df, scale=False)
+    coord, _, _ = fit(df, scale=False)
 
     print(coord.to_numpy())
     print(mca)

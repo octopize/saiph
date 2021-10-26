@@ -185,6 +185,7 @@ def inverse_transform(
     # if MCA no descaling
     else:
         X_quali = np.dot(coord, np.dot(model.D_c, model.V.T).T)
+        # X_quali is the full disjunctive table ("tableau disjonctif complet" in FR)
 
     # compute the categorical variables
     if len(param.quali) != 0:
@@ -193,21 +194,32 @@ def inverse_transform(
         X_quali.columns = list(
             pd.get_dummies(
                 model.df[param.quali],
-                prefix=["" for i in range(len(param.quali))],
-                prefix_sep="",
+                prefix=None,
+                prefix_sep="_",
             ).columns
         )
 
         modalities = []
-        for column in model.df[param.quali].columns:
+        for column in param.quali:
             modalities += [len(model.df[column].unique())]
         val = 0
+        # conserve the modalities in their original type
+        modalities_type = []
+        for col in model.df.columns:
+            mod_temp = list(model.df[col].unique())
+            mod_temp.sort()  # sort the modalities as pd.get_dummies have done
+            modalities_type += mod_temp
+
+        # create a dict that link dummies variable to the original modalitie
+        dict_mod = zip(X_quali.columns, modalities_type)
+        dict_mod = dict(dict_mod)
+
+        # for each variable we affect the value to the highest modalitie in X_quali
         for i in range(len(modalities)):
-            inverse_quali[list(model.df[param.quali].columns)[i]] = X_quali.iloc[
-                :, val : val + modalities[i]
-            ].idxmax(1)
+            mod_max = X_quali.iloc[:, val : val + modalities[i]].idxmax(axis=1)
+            mod_max = [x if x not in dict_mod else dict_mod[x] for x in mod_max]
+            inverse_quali[list(model.df[param.quali].columns)[i]] = mod_max
             val += modalities[i]
-        inverse_quali = inverse_quali.astype("str")
 
     # concatenate the continuous and categorical
     if len(param.quali) != 0 and len(param.quanti) != 0:

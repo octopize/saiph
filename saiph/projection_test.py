@@ -38,3 +38,21 @@ def test_transform_then_inverse_MCA() -> None:
     un_transformed = inverse_transform(transformed, model, param)
 
     assert_frame_equal(un_transformed, df)
+
+
+def test_transform_then_inverse_MCA_type() -> None:
+    df = pd.DataFrame(
+        {
+            "tool": ["toaster", "toaster", "hammer"],
+            "score": [1, 1, 0],
+            "car": ["tesla", "renault", "tesla"],
+            "moto": ["Bike", "Bike", "Motor"],
+        }
+    )
+    
+    df = df.astype('object')
+    _, model, param = fit(df)
+    transformed = transform(df, model, param)
+    un_transformed = inverse_transform(transformed, model, param)
+
+    assert_frame_equal(un_transformed, df)

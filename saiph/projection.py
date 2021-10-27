@@ -205,7 +205,7 @@ def inverse_transform(
         val = 0
         # conserve the modalities in their original type
         modalities_type = []
-        for col in model.df.columns:
+        for col in param.quali:
             mod_temp = list(model.df[col].unique())
             mod_temp.sort()  # sort the modalities as pd.get_dummies have done
             modalities_type += mod_temp

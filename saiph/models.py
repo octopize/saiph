@@ -16,11 +16,11 @@ class Model:
     variable_coord: DFLike
 
     # Orthogonal matrix with right singular vectors as rows
-    V: ArrayLike
+    V: NDArray[Any]
     # Orthogonal matrix with left singular vectors as columns
-    U: Optional[ArrayLike] = None
+    U: Optional[NDArray[Any]] = None
     # Singular values
-    s: Optional[ArrayLike] = None
+    s: Optional[NDArray[Any]] = None
 
     mean: Optional[float] = None
     std: Optional[float] = None
@@ -36,8 +36,8 @@ class Parameters:
     col_w: NDArray[Any]
     row_w: ArrayLike
     columns: ArrayLike
-    quanti: Optional[ArrayLike] = None
-    quali: Optional[ArrayLike] = None
+    quanti: Optional[NDArray[Any]] = None
+    quali: Optional[NDArray[Any]] = None
     datetime_variables: Optional[NDArray[Any]] = None
     cor: Optional[DFLike] = None
     contrib: Optional[DFLike] = None

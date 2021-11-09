@@ -141,7 +141,6 @@ def center(
     return df_scale, mean, std, prop, _modalities
 
 
-@typing.no_type_check
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
     """Scale and project into the fitted numerical space."""
     df_scaled = scaler(model, param, df)

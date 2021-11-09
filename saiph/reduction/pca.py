@@ -1,6 +1,5 @@
 """PCA projection."""
 import sys
-import typing
 
 # from numpy.typing import ArrayLike
 from typing import Any, Optional, Tuple
@@ -108,7 +107,6 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     return df
 
 
-@typing.no_type_check
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
     """Scale and project into the fitted numerical space."""
     df_scaled = scaler(model, df)

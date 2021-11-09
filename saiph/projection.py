@@ -107,9 +107,10 @@ def stats(model: Model, param: Parameters) -> Parameters:
     return param
 
 
-@typing.no_type_check
-def transform(df: DFLike, model: Model, param: Parameters) -> DFLike:
+def transform(df: pd.DataFrame, model: Model, param: Parameters) -> DFLike:
     """Project new data into the fitted numerical space."""
+    if param.quali is None or param.quanti is None or param.datetime_variables is None:
+        raise Exception("Need to fit before using transform")
     for i in param.datetime_variables:
         df.iloc[:, i] = (
             df.iloc[:, i] - np.datetime64("1970-01-01T00:00:00Z")

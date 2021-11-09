@@ -140,7 +140,6 @@ def diag_compute(
     return df_scale / np.array(r)[:, None], T, D_c
 
 
-@typing.no_type_check
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
     """Scale and project into the fitted numerical space."""
     df_scaled = scaler(model, df)

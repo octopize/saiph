@@ -7,6 +7,8 @@ from sklearn import decomposition
 
 from saiph.reduction.pca import center, fit, scaler, transform
 
+# mypy: ignore-errors
+
 
 def test_fit_scale() -> None:
     scale = True

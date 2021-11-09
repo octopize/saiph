@@ -7,6 +7,8 @@ import pandas as pd
 
 from saiph.models import Model, Parameters
 
+# mypy: ignore-errors
+
 
 def plot_circle(
     model: Model,
@@ -36,7 +38,7 @@ def plot_circle(
     fig.gca().add_artist(circle1)
 
     # Order dataframe
-    cor = param.cor.copy()  # type: ignore
+    cor = param.cor.copy()
     cor["sum"] = cor.apply(
         lambda x: abs(x[dimensions[0] - 1]) + abs(x[dimensions[1] - 1]), axis=1
     )
@@ -78,13 +80,13 @@ def plot_circle(
     plt.xlabel(
         "Dim "
         + str(dimensions[0])
-        + " (%s%%)" % str(explained_var_ratio[dimensions[0] - 1] * 100)[:4],  # type: ignore
+        + " (%s%%)" % str(explained_var_ratio[dimensions[0] - 1] * 100)[:4],
         fontsize=figure_axis_size * 2,
     )
     plt.ylabel(
         "Dim "
         + str(dimensions[1])
-        + " (%s%%)" % str(explained_var_ratio[dimensions[1] - 1] * 100)[:4],  # type: ignore
+        + " (%s%%)" % str(explained_var_ratio[dimensions[1] - 1] * 100)[:4],
         fontsize=figure_axis_size * 2,
     )
 
@@ -109,9 +111,9 @@ def plot_var_contribution(
     # Dimensions start from 1
 
     # get the useful contributions
-    var_contrib = param.contrib[param.contrib.columns[dim - 1]]  # type: ignore
-    if len(var_contrib) > max_var:  # type: ignore
-        var_contrib = var_contrib[:max_var]  # type: ignore
+    var_contrib = param.contrib[param.contrib.columns[dim - 1]]
+    if len(var_contrib) > max_var:
+        var_contrib = var_contrib[:max_var]
 
     # check threshold
     var_contrib = [var for var in var_contrib if var > min_contrib]

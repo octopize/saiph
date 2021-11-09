@@ -5,6 +5,8 @@ from pandas.testing import assert_frame_equal
 
 from saiph.reduction.mca import fit
 
+# mypy: ignore-errors
+
 
 def test_fit() -> None:
     df = pd.DataFrame(

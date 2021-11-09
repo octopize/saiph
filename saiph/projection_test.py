@@ -3,6 +3,8 @@ from pandas.testing import assert_frame_equal
 
 from saiph import fit, inverse_transform, transform
 
+# mypy: ignore-errors
+
 
 def test_transform_then_inverse_FAMD(iris_df: pd.DataFrame) -> None:
     _, model, param = fit(iris_df, nf="all")

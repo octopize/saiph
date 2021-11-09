@@ -1,6 +1,6 @@
-from typing import Tuple
+from typing import Any, Tuple
 
-from numpy.typing import ArrayLike
+from numpy.typing import NDArray
 from scipy import linalg
 from sklearn.utils import extmath
 
@@ -8,7 +8,9 @@ from saiph.models import DFLike
 
 
 # Technically it returns three ndarray, which is a generic type
-def SVD(df: DFLike, svd_flip: bool = True) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:
+def SVD(
+    df: DFLike, svd_flip: bool = True
+) -> Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]:
     """Compute Singular Value Decomposition.
 
     Args:

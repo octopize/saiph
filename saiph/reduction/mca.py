@@ -1,11 +1,11 @@
 """MCQ projection."""
 import typing
 from itertools import chain, repeat
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 from scipy.sparse import diags
 
 from saiph.models import Model, Parameters
@@ -21,7 +21,7 @@ from saiph.reduction.utils.svd import SVD
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    _col_weights: Optional[ArrayLike] = None,
+    col_weights: Optional[NDArray[Any]] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using MCA.
@@ -37,10 +37,10 @@ def fit(
         The transformed variables, model and parameters.
     """
     nf = nf or min(df.shape)
-    col_weights = _col_weights or np.ones(df.shape[1])
+    _col_weights = col_weights or np.ones(df.shape[1])
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
-    fit_check_params(nf, col_weights, df.shape[1])
+    fit_check_params(nf, _col_weights, df.shape[1])
 
     # initiate row and columns weights
     row_w = row_weights_uniform(len(df))
@@ -48,9 +48,9 @@ def fit(
     modality_numbers = []
     for column in df.columns:
         modality_numbers += [len(df[column].unique())]
-    col_w = list(
+    col_w: NDArray[Any] = list(
         chain.from_iterable(
-            repeat(i, j) for i, j in zip(col_weights, modality_numbers)  # type: ignore
+            repeat(i, j) for i, j in zip(_col_weights, modality_numbers)  # type: ignore
         )
     )
 

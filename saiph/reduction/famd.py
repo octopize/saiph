@@ -6,7 +6,7 @@ from typing import Any, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 
 from saiph.models import Model, Parameters
 from saiph.reduction.utils.check_params import fit_check_params
@@ -21,7 +21,7 @@ from saiph.reduction.utils.svd import SVD
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    _col_weights: Optional[ArrayLike] = None,
+    col_weights: Optional[NDArray[Any]] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using FAMD.
@@ -37,17 +37,17 @@ def fit(
         The transformed variables, model and parameters.
     """
     nf = nf or min(df.shape)
-    col_weights: ArrayLike = _col_weights or np.ones(df.shape[1])
+    _col_weights: NDArray[Any] = col_weights or np.ones(df.shape[1])
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
-    fit_check_params(nf, col_weights, df.shape[1])
+    fit_check_params(nf, _col_weights, df.shape[1])
 
     # select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
 
     row_w = row_weights_uniform(len(df))
-    col_w = col_weights_compute(df, col_weights, quanti, quali)
+    col_w = col_weights_compute(df, _col_weights, quanti, quali)
 
     df_scale, mean, std, prop, _modalities = center(df, quanti, quali)
 
@@ -55,9 +55,9 @@ def fit(
     Z = ((df_scale * col_w).T * row_w).T
 
     # compute the svd
-    U, s, V = SVD(Z)
-    U = ((U.T) / np.sqrt(row_w)).T
-    V = V / np.sqrt(col_w)
+    _U, s, _V = SVD(Z)
+    U = ((_U.T) / np.sqrt(row_w)).T
+    V = _V / np.sqrt(col_w)
 
     explained_var, explained_var_ratio = explain_variance(s, df, nf)
 
@@ -92,7 +92,7 @@ def fit(
 
 def col_weights_compute(
     df: pd.DataFrame, col_w: ArrayLike, quanti: List[int], quali: List[int]
-) -> List[float]:
+) -> NDArray[Any]:
     """Initiate the weight vectors."""
     # Set the columns and row weights
     weight_df = pd.DataFrame([col_w], columns=df.columns)
@@ -111,9 +111,9 @@ def col_weights_compute(
         )
     )
 
-    col_w = list(weight_quanti.iloc[0]) + weight_quali_rep
+    _col_w: NDArray[Any] = np.array(list(weight_quanti.iloc[0]) + weight_quali_rep)
 
-    return col_w
+    return _col_w
 
 
 def center(

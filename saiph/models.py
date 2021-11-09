@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import pandas as pd
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 
 DFLike = Union[pd.DataFrame, ArrayLike]
 
@@ -33,7 +33,7 @@ class Model:
 @dataclass
 class Parameters:
     nf: int
-    col_w: ArrayLike
+    col_w: NDArray[Any]
     row_w: ArrayLike
     columns: ArrayLike
     quanti: Optional[ArrayLike] = None

@@ -1,7 +1,11 @@
-from typing import Any, List
+# from numpy.typing import ArrayLike
+
+from typing import Any
+
+from numpy.typing import NDArray
 
 
-def fit_check_params(nf: int, col_w: List[Any], shape_colw: int) -> None:
+def fit_check_params(nf: int, col_w: NDArray[Any], shape_colw: int) -> None:
     if nf <= 0:
         raise ValueError("nf", "The number of components must be positive.")
 

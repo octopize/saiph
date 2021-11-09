@@ -1,11 +1,13 @@
 """PCA projection."""
 import sys
 import typing
-from typing import Optional, Tuple
+
+# from numpy.typing import ArrayLike
+from typing import Any, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from numpy.typing import ArrayLike
+from numpy.typing import NDArray
 
 from saiph.models import Model, Parameters
 from saiph.reduction.utils.check_params import fit_check_params
@@ -20,7 +22,7 @@ from saiph.reduction.utils.svd import SVD
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    _col_weights: Optional[ArrayLike] = None,
+    col_weights: Optional[NDArray[Any]] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using PCA.
@@ -36,10 +38,10 @@ def fit(
         The transformed variables, model and parameters
     """
     nf = nf or min(df.shape)
-    col_weights = _col_weights or np.ones(df.shape[1])
+    _col_weights = col_weights or np.ones(df.shape[1])
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
-    fit_check_params(nf, col_weights, df.shape[1])
+    fit_check_params(nf, _col_weights, df.shape[1])
 
     # set row weights
     row_w = row_weights_uniform(len(df))
@@ -47,11 +49,11 @@ def fit(
     df_centered, mean, std = center(df, scale)
 
     # apply weights and compute svd
-    Z = ((df_centered * col_weights).T * row_w).T
+    Z = ((df_centered * _col_weights).T * row_w).T
     U, s, V = SVD(Z)
 
     U = ((U.T) / np.sqrt(row_w)).T
-    V = V / np.sqrt(col_weights)
+    V = V / np.sqrt(_col_weights)
 
     explained_var, explained_var_ratio = explain_variance(s, df_centered, nf)
 
@@ -74,7 +76,7 @@ def fit(
         std=std,
     )
 
-    param = Parameters(nf=nf, col_w=col_weights, row_w=row_w, columns=columns)
+    param = Parameters(nf=nf, col_w=_col_weights, row_w=row_w, columns=columns)
 
     return coord, model, param
 

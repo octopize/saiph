@@ -214,7 +214,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
         coord_var = np.vstack((coord_var, V[i] * s))
     contrib_var = (((((coord_var ** 2) / eig).T) * param.col_w).T) * 100
     # compute cos2
-    dfrow_w = ((df2.T) * param.row_w).T
+    dfrow_w = ((df2.T) * param.row_w).T  # type: ignore
     dist2 = []
     for i in range(len(dfrow_w[0])):
         dist2 += [np.sum(dfrow_w[:, i])]
@@ -230,7 +230,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     eta2 = []
     fi = 0
     coord = pd.DataFrame(
-        model.U[:, :ncp0] * model.s[:ncp0], columns=param.columns[:ncp0]
+        model.U[:, :ncp0] * model.s[:ncp0], columns=param.columns[:ncp0]  # type: ignore
     )
     mods = []
     # for each qualitative column in the original data set

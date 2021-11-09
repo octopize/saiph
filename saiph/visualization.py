@@ -1,5 +1,7 @@
 """Visualization functions."""
-import matplotlib.pyplot as plt
+from typing import List, Optional
+
+import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
 
@@ -7,8 +9,12 @@ from saiph.models import Model, Parameters
 
 
 def plot_circle(
-    model: Model, param: Parameters, dimensions=None, min_cor=0.1, max_var=7
-):
+    model: Model,
+    param: Parameters,
+    dimensions: Optional[List[int]] = None,
+    min_cor: float = 0.1,
+    max_var: int = 7,
+) -> None:
     """Plot correlation graph.
 
     Arguments:
@@ -30,7 +36,7 @@ def plot_circle(
     fig.gca().add_artist(circle1)
 
     # Order dataframe
-    cor = param.cor.copy()
+    cor = param.cor.copy()  # type: ignore
     cor["sum"] = cor.apply(
         lambda x: abs(x[dimensions[0] - 1]) + abs(x[dimensions[1] - 1]), axis=1
     )
@@ -72,20 +78,24 @@ def plot_circle(
     plt.xlabel(
         "Dim "
         + str(dimensions[0])
-        + " (%s%%)" % str(explained_var_ratio[dimensions[0] - 1] * 100)[:4],
+        + " (%s%%)" % str(explained_var_ratio[dimensions[0] - 1] * 100)[:4],  # type: ignore
         fontsize=figure_axis_size * 2,
     )
     plt.ylabel(
         "Dim "
         + str(dimensions[1])
-        + " (%s%%)" % str(explained_var_ratio[dimensions[1] - 1] * 100)[:4],
+        + " (%s%%)" % str(explained_var_ratio[dimensions[1] - 1] * 100)[:4],  # type: ignore
         fontsize=figure_axis_size * 2,
     )
 
 
 def plot_var_contribution(
-    model: Model, param: Parameters, dim=1, max_var=10, min_contrib=0.1
-):
+    model: Model,
+    param: Parameters,
+    dim: int = 1,
+    max_var: int = 10,
+    min_contrib: float = 0.1,
+) -> None:
     """Plot the variable contribution for a given dimension.
 
     Args:
@@ -99,9 +109,9 @@ def plot_var_contribution(
     # Dimensions start from 1
 
     # get the useful contributions
-    var_contrib = param.contrib[param.contrib.columns[dim - 1]]
-    if len(var_contrib) > max_var:
-        var_contrib = var_contrib[:max_var]
+    var_contrib = param.contrib[param.contrib.columns[dim - 1]]  # type: ignore
+    if len(var_contrib) > max_var:  # type: ignore
+        var_contrib = var_contrib[:max_var]  # type: ignore
 
     # check threshold
     var_contrib = [var for var in var_contrib if var > min_contrib]

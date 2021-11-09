@@ -69,7 +69,7 @@ def test_fit_not_scale() -> None:
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01)
-    assert_allclose(model.variable_coord, model.V.T, atol=0.01)
+    assert_allclose(model.variable_coord, model.V.T, atol=0.01)  # type: ignore
     assert_allclose(model.mean, [2.0, 3.666667])
     # Default value when not scaling
     assert_allclose(model.std, 0.0)

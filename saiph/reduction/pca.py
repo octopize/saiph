@@ -62,8 +62,8 @@ def fit(
     V = V[:nf, :]
 
     columns = column_names(nf)
-
-    coord = pd.DataFrame(np.dot(df_centered, V.T), columns=columns)  # type: ignore
+    coord = df_centered @ V.T
+    coord.columns = columns
 
     model = Model(
         df=df,
@@ -112,4 +112,6 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
     """Scale and project into the fitted numerical space."""
     df_scaled = scaler(model, df)
-    return pd.DataFrame(np.dot(df_scaled, model.V.T), columns=param.columns)
+    coord = df_scaled @ model.V.T
+    coord.columns = param.columns
+    return coord

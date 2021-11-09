@@ -59,17 +59,18 @@ def test_transform_then_inverse_MCA_type() -> None:
 
     assert_frame_equal(un_transformed, df)
 
+
 def test_transform_then_inverse_FAMD_weighted() -> None:
     df = pd.DataFrame(
         {
-            'variable_1': [4, 5, 6, 7, 11, 2, 52],
-            'variable_2': [10, 20, 30, 40, 10, 74, 10],
-            'variable_3': ['red', 'blue', 'blue', 'green', 'red', 'blue', 'red'],
-            'variable_4': [100, 50, -30, -50, -19, -29, -20]
-    }
+            "variable_1": [4, 5, 6, 7, 11, 2, 52],
+            "variable_2": [10, 20, 30, 40, 10, 74, 10],
+            "variable_3": ["red", "blue", "blue", "green", "red", "blue", "red"],
+            "variable_4": [100, 50, -30, -50, -19, -29, -20],
+        }
     )
 
-    _, model, param = fit(df, col_w= [2, 1, 3, 2])
+    _, model, param = fit(df, col_w=[2, 1, 3, 2])
     transformed = transform(df, model, param)
     un_transformed = inverse_transform(transformed, model, param)
 
@@ -79,14 +80,13 @@ def test_transform_then_inverse_FAMD_weighted() -> None:
 def test_transform_then_inverse_PCA_weighted() -> None:
     df = pd.DataFrame(
         {
-            'variable_1': [4, 5, 6, 7, 11, 2, 52],
-            'variable_2': [10, 20, 30, 40, 10, 74, 10],
-            'variable_3': [100, 50, -30, -50, -19, -29, -20],
-            
-    }
+            "variable_1": [4, 5, 6, 7, 11, 2, 52],
+            "variable_2": [10, 20, 30, 40, 10, 74, 10],
+            "variable_3": [100, 50, -30, -50, -19, -29, -20],
+        }
     )
 
-    _, model, param = fit(df, col_w= [2, 1, 3])
+    _, model, param = fit(df, col_w=[2, 1, 3])
     transformed = transform(df, model, param)
     un_transformed = inverse_transform(transformed, model, param)
 
@@ -96,15 +96,25 @@ def test_transform_then_inverse_PCA_weighted() -> None:
 def test_transform_then_inverse_MCA_weighted() -> None:
     df = pd.DataFrame(
         {
-            'variable_1': ['1', '3', '3', '3', '1', '2', '2', '1', '1', '2'],
-            'variable_2': ['1', '1', '1', '2', '2', '1', '1', '1', '2', '2'],
-            'variable_3': ['1', '2', '1', '2', '1', '2', '1',  '1', '2', '2'],
-            'variable_4': ['red', 'blue', 'blue', 'green', 'red', 'blue', 'red', 'red','red','red']
-            
-    }
+            "variable_1": ["1", "3", "3", "3", "1", "2", "2", "1", "1", "2"],
+            "variable_2": ["1", "1", "1", "2", "2", "1", "1", "1", "2", "2"],
+            "variable_3": ["1", "2", "1", "2", "1", "2", "1", "1", "2", "2"],
+            "variable_4": [
+                "red",
+                "blue",
+                "blue",
+                "green",
+                "red",
+                "blue",
+                "red",
+                "red",
+                "red",
+                "red",
+            ],
+        }
     )
 
-    _, model, param = fit(df, col_w= [2, 1, 3, 2])
+    _, model, param = fit(df, col_w=[2, 1, 3, 2])
     transformed = transform(df, model, param)
     un_transformed = inverse_transform(transformed, model, param)
 

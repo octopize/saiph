@@ -86,7 +86,7 @@ def fit(
     return coord, model, param
 
 
-def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, ArrayLike, ArrayLike, ArrayLike]:
+def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, NDArray[Any], ArrayLike, ArrayLike]:
     """Center data and compute sums over columns and rows."""
     df_scale = pd.get_dummies(df.astype("category"))
     _modalities = df_scale.columns.values
@@ -146,7 +146,6 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
 
 @typing.no_type_check
 def stats(model: Model, param: Parameters) -> Parameters:
-    # mypy: ignore-errors
     """Compute the contributions of each variable in each axis."""
     V = np.dot(model.D_c, model.V.T)
     total = pd.get_dummies(model.df.astype("category")).sum().sum()

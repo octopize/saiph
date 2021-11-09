@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional, Union
 
 import pandas as pd
@@ -26,7 +26,7 @@ class Model:
     std: Optional[float] = None
     prop: Optional[float] = None
 
-    _modalities: Optional[ArrayLike] = None
+    _modalities: Optional[NDArray[Any]] = None
     D_c: Optional[ArrayLike] = None
 
 
@@ -38,7 +38,7 @@ class Parameters:
     columns: ArrayLike
     quanti: Optional[ArrayLike] = None
     quali: Optional[ArrayLike] = None
-    datetime_variables: Optional[ArrayLike] = field(default_factory=list)  # type: ignore
+    datetime_variables: Optional[NDArray[Any]] = None
     cor: Optional[DFLike] = None
     contrib: Optional[DFLike] = None
     cos2: Optional[DFLike] = None

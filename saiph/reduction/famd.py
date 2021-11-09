@@ -91,7 +91,7 @@ def fit(
 
 
 def col_weights_compute(
-    df: pd.DataFrame, col_w: ArrayLike, quanti: List[int], quali: List[int]
+    df: pd.DataFrame, col_w: NDArray[Any], quanti: List[int], quali: List[int]
 ) -> NDArray[Any]:
     """Initiate the weight vectors."""
     # Set the columns and row weights
@@ -118,7 +118,7 @@ def col_weights_compute(
 
 def center(
     df: pd.DataFrame, quanti: List[int], quali: List[int]
-) -> Tuple[pd.DataFrame, float, float, float, List[Any]]:
+) -> Tuple[pd.DataFrame, float, float, float, NDArray[Any]]:
     """Scale data and compute mean, pro and std."""
     # Scale the continuous data
     df_quanti = df[quanti]
@@ -162,9 +162,10 @@ def scaler(
 
     # scale
     df_quali = pd.get_dummies(df[param.quali].astype("category"))
-    for mod in model._modalities:  # type: ignore
-        if mod not in df_quali:
-            df_quali[mod] = 0
+    if model._modalities is not None:
+        for mod in model._modalities:
+            if mod not in df_quali:
+                df_quali[mod] = 0
     df_quali = df_quali[model._modalities]
     df_quali = (df_quali - model.prop) / np.sqrt(model.prop)
 
@@ -174,7 +175,6 @@ def scaler(
 
 @typing.no_type_check
 def stats(model: Model, param: Parameters) -> Parameters:
-    # mypy: ignore-errors
     """Compute contributions and cos2 for each variable."""
     df = pd.DataFrame(scaler(model, param))
     df2 = np.array(pd.DataFrame(df).applymap(lambda x: x ** 2))

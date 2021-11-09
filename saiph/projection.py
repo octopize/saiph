@@ -159,7 +159,8 @@ def inverse_transform(
     # if PCA or FAMD compute the continuous variables
     if len(param.quanti) != 0:
 
-        X = np.dot(coord, model.variable_coord.T)
+        X = np.dot(coord, model.V * np.sqrt(param.col_w))
+        X = X / np.sqrt(param.col_w) * param.col_w
         X_quanti = X[:, : len(param.quanti)]
 
         # descale
@@ -191,7 +192,7 @@ def inverse_transform(
     # if MCA no descaling
     else:
         X_quali = np.dot(coord, np.dot(model.D_c, model.V.T).T)
-        # X_quali is the full disjunctive table ("tableau disjonctif complet" in FR)
+        # X_quali is the complete disjunctive table ("tableau disjonctif complet" in FR)
 
     # compute the categorical variables
     if len(param.quali) != 0:

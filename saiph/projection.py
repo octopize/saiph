@@ -47,10 +47,8 @@ def fit(
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
 
-    if nf == "all":
+    if not nf or nf == "all":
         nf = len(pd.get_dummies(df).columns.values)
-    if not nf:
-        nf = min(5, len(pd.get_dummies(df).columns.values))
 
     # Specify the correct function
     if quali.size == 0:

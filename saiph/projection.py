@@ -150,12 +150,13 @@ def _variable_correlation(model: Model, param: Parameters) -> DFLike:
     return cor
 
 
-@typing.no_type_check
 def inverse_transform(
     coord: DFLike, model: Model, param: Parameters, shuffle: bool = False
 ) -> DFLike:  # ---------------------------------------finish this
     """Compute the inverse transform of data coordinates."""
     # if PCA or FAMD compute the continuous variables
+    if param.quali is None or param.quanti is None or param.datetime_variables is None:
+        raise Exception("Need to fit before using inverse_transform")
     if len(param.quanti) != 0:
         X = np.array(coord @ model.V * np.sqrt(param.col_w))
         X = X / np.sqrt(param.col_w) * param.col_w
@@ -177,7 +178,7 @@ def inverse_transform(
                 )
 
             inverse_quanti[column] = inverse_quanti[[column, "decimals"]].apply(
-                lambda x: np.round(x[column], int(x["decimals"])), axis=1
+                lambda x: np.round(x[column], int(x["decimals"])), axis=1  # type: ignore
             )
             inverse_quanti.drop(["decimals"], axis=1, inplace=True)
 
@@ -191,7 +192,7 @@ def inverse_transform(
     else:
         # Previously was a ndarray, but no need
         # NB: If this causes a bug, X_quali = np.array(X_quali) goes back to previous vesrion
-        X_quali = coord @ (model.D_c @ model.V.T).T
+        X_quali = coord @ (model.D_c @ model.V.T).T  # type: ignore
         # X_quali is the complete disjunctive table ("tableau disjonctif complet" in FR)
 
     # compute the categorical variables
@@ -218,8 +219,7 @@ def inverse_transform(
             modalities_type += mod_temp
 
         # create a dict that link dummies variable to the original modalitie
-        dict_mod = zip(X_quali.columns, modalities_type)
-        dict_mod = dict(dict_mod)
+        dict_mod = dict(zip(X_quali.columns, modalities_type))
 
         # for each variable we affect the value to the highest modalitie in X_quali
         for i in range(len(modalities)):

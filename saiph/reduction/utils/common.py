@@ -3,6 +3,7 @@ from typing import Any, List, Tuple
 
 import numpy as np
 import pandas as pd
+import scipy
 from numpy.typing import NDArray
 
 from saiph.models import DFLike
@@ -14,6 +15,13 @@ def column_names(n: int) -> List[str]:
 
 def row_weights_uniform(n: int) -> List[float]:
     return [k for k in repeat(1 / n, n)]
+
+
+def diag(arr: NDArray[Any], use_scipy: bool = False) -> NDArray[Any]:
+    if use_scipy:
+        return scipy.sparse.diags(arr)  # type: ignore
+    else:
+        return np.diag(arr)  # type: ignore
 
 
 def explain_variance(

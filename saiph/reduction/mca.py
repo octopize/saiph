@@ -6,12 +6,14 @@ from typing import Any, Optional, Tuple
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
-from scipy.sparse import diags
 
 from saiph.models import Model, Parameters
 from saiph.reduction.utils.check_params import fit_check_params
+
+# from scipy.sparse import diags
 from saiph.reduction.utils.common import (
     column_names,
+    diag,
     explain_variance,
     row_weights_uniform,
 )
@@ -129,10 +131,10 @@ def diag_compute(
     """Compute diagonal matrices and scale data."""
     eps = np.finfo(float).eps
     if df_scale.shape[0] >= 10000:
-        D_r = diags(1 / (eps + np.sqrt(r)))
+        D_r = diag(1 / (eps + np.sqrt(r)), use_scipy=True)
     else:
-        D_r = np.diag(1 / (eps + np.sqrt(r)))  # type: ignore
-    D_c = np.diag(1 / (eps + np.sqrt(c)))  # type: ignore
+        D_r = diag(1 / (eps + np.sqrt(r)), use_scipy=False)
+    D_c = diag(1 / (eps + np.sqrt(c)), use_scipy=False)
 
     T = D_r @ (df_scale - np.outer(r, c)) @ D_c
     return df_scale / np.array(r)[:, None], T, D_c

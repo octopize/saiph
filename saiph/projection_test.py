@@ -49,8 +49,8 @@ def test_transform_then_inverse_MCA_type() -> None:
             "moto": ["Bike", "Bike", "Motor"],
         }
     )
-    
-    df = df.astype('object')
+
+    df = df.astype("object")
     _, model, param = fit(df)
     transformed = transform(df, model, param)
     un_transformed = inverse_transform(transformed, model, param)

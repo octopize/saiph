@@ -18,7 +18,7 @@ saiph.models
 saiph.famd
 ----------
 
-.. automodule:: saiph.famd
+.. automodule:: saiph.reduction.famd
    :members:
    :undoc-members:
    :show-inheritance:
@@ -26,7 +26,7 @@ saiph.famd
 saiph.mca
 ---------
 
-.. automodule:: saiph.mca
+.. automodule:: saiph.reduction.mca
    :members:
    :undoc-members:
    :show-inheritance:
@@ -34,7 +34,7 @@ saiph.mca
 saiph.pca
 ---------
 
-.. automodule:: saiph.pca
+.. automodule:: saiph.reduction.pca
    :members:
    :undoc-members:
    :show-inheritance:
@@ -50,7 +50,7 @@ saiph.projection
 saiph.svd
 ---------
 
-.. automodule:: saiph.svd
+.. automodule:: saiph.reduction.utils.svd
    :members:
    :undoc-members:
    :show-inheritance:

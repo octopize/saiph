@@ -3,7 +3,7 @@ import pandas as pd
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
-from saiph.reduction.mca import fit
+from saiph.reduction.mca import fit, transform
 
 # mypy: ignore-errors
 
@@ -119,3 +119,28 @@ def test_fit_zero_same_df() -> None:
             assert np.array_equal(k1, k2)
         else:
             assert k1 == k2
+
+
+def test_transform_simple() -> None:
+    df = pd.DataFrame(
+        {
+            "tool": ["toaster", "toaster"],
+            "score": ["aa", "aa"],
+        }
+    )
+    _, model, param = fit(df, scale=True)
+
+    df_transformed = transform(df, model, param)
+
+    print(df_transformed)
+
+    expected_transform = pd.DataFrame(
+        {
+            "Dim. 1": [0.707107, 0.707107],
+            "Dim. 2": [0.707107, 0.707107],
+        }
+    )
+
+    assert_frame_equal(
+        df_transformed, expected_transform, check_exact=False, atol=0.00001
+    )

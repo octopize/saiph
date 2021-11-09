@@ -64,7 +64,6 @@ def test_fit_mix() -> None:
         pd.Series([0.5, 0.5, 0.5, 0.5]).reset_index(drop=True),
         atol=0.01,
     )
-    print(model._modalities)
     assert np.array_equal(
         model._modalities, ["tool_hammer", "tool_toaster", "score_aa", "score_ab"]
     )

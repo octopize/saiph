@@ -6,7 +6,7 @@ from typing import Any, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 
 from saiph.models import Model, Parameters
 from saiph.reduction.utils.check_params import fit_check_params
@@ -276,7 +276,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     return param
 
 
-def _rmultiplication(F: pd.DataFrame, marge: ArrayLike) -> pd.DataFrame:
+def _rmultiplication(F: pd.DataFrame, marge: NDArray[Any]) -> pd.DataFrame:
     """Multiply each column with the same vector."""
     df_dict = F.to_dict("list")
     for col in df_dict.keys():

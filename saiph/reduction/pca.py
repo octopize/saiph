@@ -1,7 +1,5 @@
 """PCA projection."""
 import sys
-
-# from numpy.typing import ArrayLike
 from typing import Any, Optional, Tuple
 
 import numpy as np

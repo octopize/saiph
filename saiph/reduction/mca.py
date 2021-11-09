@@ -5,7 +5,7 @@ from typing import Any, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 
 from saiph.models import Model, Parameters
 from saiph.reduction.utils.check_params import fit_check_params
@@ -91,7 +91,9 @@ def fit(
     return coord, model, param
 
 
-def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, NDArray[Any], ArrayLike, ArrayLike]:
+def center(
+    df: pd.DataFrame,
+) -> Tuple[pd.DataFrame, NDArray[Any], NDArray[Any], NDArray[Any]]:
     """Center data and compute sums over columns and rows."""
     df_scale = pd.get_dummies(df.astype("category"))
     _modalities = df_scale.columns.values
@@ -126,7 +128,7 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
 
 
 def diag_compute(
-    df_scale: pd.DataFrame, r: ArrayLike, c: ArrayLike
+    df_scale: pd.DataFrame, r: NDArray[Any], c: NDArray[Any]
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Compute diagonal matrices and scale data."""
     eps = np.finfo(float).eps
@@ -226,7 +228,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     return param
 
 
-def _rmultiplication(F: pd.DataFrame, marge: ArrayLike) -> pd.DataFrame:
+def _rmultiplication(F: pd.DataFrame, marge: NDArray[Any]) -> pd.DataFrame:
     """Multiply each column with the same vector."""
     df_dict = F.to_dict("list")
     for col in df_dict.keys():
@@ -236,7 +238,7 @@ def _rmultiplication(F: pd.DataFrame, marge: ArrayLike) -> pd.DataFrame:
     return df
 
 
-def _rdivision(F: pd.DataFrame, marge: ArrayLike) -> pd.DataFrame:
+def _rdivision(F: pd.DataFrame, marge: NDArray[Any]) -> pd.DataFrame:
     """Divide each column with the same vector."""
     df_dict = F.to_dict("list")
     for col in df_dict.keys():

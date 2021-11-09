@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 import saiph.reduction.famd as famd
 import saiph.reduction.mca as mca
 import saiph.reduction.pca as pca
-from saiph.models import DFLike, Model, Parameters
+from saiph.models import Model, Parameters
 
 
 def fit(
@@ -17,7 +17,7 @@ def fit(
     nf: Optional[Union[int, str]] = None,
     col_w: Optional[NDArray[Any]] = None,
     scale: bool = True,
-) -> Tuple[DFLike, Model, Parameters]:
+) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using PCA, MCA or FAMD.
 
     Args:
@@ -148,8 +148,8 @@ def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
 
 
 def inverse_transform(
-    coord: DFLike, model: Model, param: Parameters, shuffle: bool = False
-) -> DFLike:  # ---------------------------------------finish this
+    coord: pd.DataFrame, model: Model, param: Parameters, shuffle: bool = False
+) -> pd.DataFrame:  # ---------------------------------------finish this
     """Compute the inverse transform of data coordinates."""
     # if PCA or FAMD compute the continuous variables
     if param.quali is None or param.quanti is None or param.datetime_variables is None:

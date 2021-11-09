@@ -48,14 +48,16 @@ def fit(
     modality_numbers = []
     for column in df.columns:
         modality_numbers += [len(df[column].unique())]
-    col_w: NDArray[Any] = list(
-        chain.from_iterable(
-            repeat(i, j) for i, j in zip(_col_weights, modality_numbers)  # type: ignore
+    col_w: NDArray[Any] = np.array(
+        list(
+            chain.from_iterable(
+                repeat(i, j) for i, j in zip(_col_weights, modality_numbers)
+            )
         )
     )
 
     df_scale, _modalities, r, c = center(df)
-    df_scale, T, D_c = diag_compute(df_scale, r, c)  # type: ignore
+    df_scale, T, D_c = diag_compute(df_scale, r, c)
 
     # apply the weights and compute the svd
     Z = ((T * col_w).T * row_w).T
@@ -108,9 +110,10 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         df = pd.DataFrame(df)
 
     df_scaled = pd.get_dummies(df.astype("category"))
-    for mod in model._modalities:  # type: ignore
-        if mod not in df_scaled:
-            df_scaled[mod] = 0
+    if model._modalities is not None:
+        for mod in model._modalities:
+            if mod not in df_scaled:
+                df_scaled[mod] = 0
     df_scaled = df_scaled[model._modalities]
 
     # scale
@@ -119,7 +122,6 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     return df_scaled
 
 
-@typing.no_type_check
 def diag_compute(
     df_scale: pd.DataFrame, r: ArrayLike, c: ArrayLike
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -128,8 +130,8 @@ def diag_compute(
     if df_scale.shape[0] >= 10000:
         D_r = diags(1 / (eps + np.sqrt(r)))
     else:
-        D_r = np.diag(1 / (eps + np.sqrt(r)))
-    D_c = np.diag(1 / (eps + np.sqrt(c)))
+        D_r = np.diag(1 / (eps + np.sqrt(r)))  # type: ignore
+    D_c = np.diag(1 / (eps + np.sqrt(c)))  # type: ignore
 
     T = D_r @ (df_scale - np.outer(r, c)) @ D_c
     return df_scale / np.array(r)[:, None], T, D_c

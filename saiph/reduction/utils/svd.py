@@ -8,7 +8,7 @@ from saiph.models import DFLike
 
 
 # Technically it returns three ndarray, which is a generic type
-def SVD(df: DFLike, svd_flip=True) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:
+def SVD(df: DFLike, svd_flip: bool = True) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:
     """Compute Singular Value Decomposition.
 
     Args:

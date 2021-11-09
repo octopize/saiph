@@ -1,4 +1,5 @@
 """MCQ projection."""
+import typing
 from itertools import chain, repeat
 from typing import Optional, Tuple
 
@@ -20,7 +21,7 @@ from saiph.reduction.utils.svd import SVD
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_w: Optional[ArrayLike] = None,
+    _col_weights: Optional[ArrayLike] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using MCA.
@@ -28,7 +29,7 @@ def fit(
     Args:
         df: data to project
         nf: number of components to keep (default: {min(df.shape[0], 5)})
-        col_w: importance of each variable in the projection
+        col_weights: importance of each variable in the projection
             (more weight = more importance in the axes)
         scale: not used
 
@@ -36,10 +37,10 @@ def fit(
         The transformed variables, model and parameters.
     """
     nf = nf or min(df.shape)
-    col_w = col_w or np.ones(df.shape[1])
+    col_weights = _col_weights or np.ones(df.shape[1])
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
-    fit_check_params(nf, col_w, df.shape[1])
+    fit_check_params(nf, col_weights, df.shape[1])
 
     # initiate row and columns weights
     row_w = row_weights_uniform(len(df))
@@ -48,11 +49,13 @@ def fit(
     for column in df.columns:
         modality_numbers += [len(df[column].unique())]
     col_w = list(
-        chain.from_iterable(repeat(i, j) for i, j in zip(col_w, modality_numbers))
+        chain.from_iterable(
+            repeat(i, j) for i, j in zip(col_weights, modality_numbers)  # type: ignore
+        )
     )
 
     df_scale, _modalities, r, c = center(df)
-    df_scale, T, D_c = diag_compute(df_scale, r, c)
+    df_scale, T, D_c = diag_compute(df_scale, r, c)  # type: ignore
 
     # apply the weights and compute the svd
     Z = ((T * col_w).T * row_w).T
@@ -65,7 +68,7 @@ def fit(
     V = V[:nf, :]
 
     columns = column_names(nf)[: min(df_scale.shape)]
-    coord = pd.DataFrame(np.dot(df_scale, np.dot(D_c, V.T)), columns=columns)
+    coord = pd.DataFrame(np.dot(df_scale, np.dot(D_c, V.T)), columns=columns)  # type: ignore
 
     model = Model(
         df=df,
@@ -73,7 +76,7 @@ def fit(
         V=V,
         explained_var=explained_var,
         explained_var_ratio=explained_var_ratio,
-        variable_coord=pd.DataFrame(np.dot(D_c, V.T)),
+        variable_coord=pd.DataFrame(np.dot(D_c, V.T)),  # type: ignore
         _modalities=_modalities,
         D_c=D_c,
     )
@@ -105,7 +108,7 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         df = pd.DataFrame(df)
 
     df_scaled = pd.get_dummies(df.astype("category"))
-    for mod in model._modalities:
+    for mod in model._modalities:  # type: ignore
         if mod not in df_scaled:
             df_scaled[mod] = 0
     df_scaled = df_scaled[model._modalities]
@@ -116,6 +119,7 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     return df_scaled
 
 
+@typing.no_type_check
 def diag_compute(
     df_scale: pd.DataFrame, r: ArrayLike, c: ArrayLike
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -131,6 +135,7 @@ def diag_compute(
     return df_scale / np.array(r)[:, None], T, D_c
 
 
+@typing.no_type_check
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
     """Scale and project into the fitted numerical space."""
     df_scaled = scaler(model, df)
@@ -139,6 +144,7 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     )
 
 
+@typing.no_type_check
 def stats(model: Model, param: Parameters) -> Parameters:
     # mypy: ignore-errors
     """Compute the contributions of each variable in each axis."""

@@ -1,5 +1,5 @@
 from itertools import repeat
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -15,7 +15,7 @@ def row_weights_uniform(n: int) -> List[float]:
     return [k for k in repeat(1 / n, n)]
 
 
-def explain_variance(s: DFLike, df: pd.DataFrame, nf: int):
+def explain_variance(s: DFLike, df: pd.DataFrame, nf: int) -> Tuple[DFLike, float]:
     explained_var = ((s ** 2) / (df.shape[0] - 1))[:nf]  # type: ignore
     summed_explained_var = explained_var.sum()
     if summed_explained_var == 0:

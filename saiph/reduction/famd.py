@@ -1,7 +1,8 @@
 """FAMD projection."""
 import sys
+import typing
 from itertools import chain, repeat
-from typing import Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -20,7 +21,7 @@ from saiph.reduction.utils.svd import SVD
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_w: Optional[ArrayLike] = None,
+    _col_weights: Optional[ArrayLike] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using FAMD.
@@ -28,7 +29,7 @@ def fit(
     Args:
         df: data to project
         nf: number of components to keep (default: {min(df.shape[0], 5)})
-        col_w: importance of each variable in the projection
+        col_weights: importance of each variable in the projection
             (more weight = more importance in the axes)
         scale: not used
 
@@ -36,17 +37,17 @@ def fit(
         The transformed variables, model and parameters.
     """
     nf = nf or min(df.shape)
-    col_w = col_w or np.ones(df.shape[1])
+    col_weights: ArrayLike = _col_weights or np.ones(df.shape[1])
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
-    fit_check_params(nf, col_w, df.shape[1])
+    fit_check_params(nf, col_weights, df.shape[1])
 
     # select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
 
     row_w = row_weights_uniform(len(df))
-    col_w = col_weights_compute(df, col_w, quanti, quali)
+    col_w = col_weights_compute(df, col_weights, quanti, quali)
 
     df_scale, mean, std, prop, _modalities = center(df, quanti, quali)
 
@@ -66,7 +67,7 @@ def fit(
 
     columns = column_names(nf)
 
-    coord = pd.DataFrame(np.dot(df_scale, V.T), columns=columns)
+    coord = pd.DataFrame(np.dot(df_scale, V.T), columns=columns)  # type: ignore
 
     model = Model(
         df=df,
@@ -90,8 +91,8 @@ def fit(
 
 
 def col_weights_compute(
-    df: pd.DataFrame, col_w: list, quanti: list, quali: list
-) -> Tuple[list, list]:
+    df: pd.DataFrame, col_w: ArrayLike, quanti: List[int], quali: List[int]
+) -> List[float]:
     """Initiate the weight vectors."""
     # Set the columns and row weights
     weight_df = pd.DataFrame([col_w], columns=df.columns)
@@ -116,8 +117,8 @@ def col_weights_compute(
 
 
 def center(
-    df: pd.DataFrame, quanti: list, quali: list
-) -> Tuple[pd.DataFrame, float, float, float, list]:
+    df: pd.DataFrame, quanti: List[int], quali: List[int]
+) -> Tuple[pd.DataFrame, float, float, float, List[Any]]:
     """Scale data and compute mean, pro and std."""
     # Scale the continuous data
     df_quanti = df[quanti]
@@ -139,6 +140,7 @@ def center(
     return df_scale, mean, std, prop, _modalities
 
 
+@typing.no_type_check
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
     """Scale and project into the fitted numerical space."""
     df_scaled = scaler(model, param, df)
@@ -160,7 +162,7 @@ def scaler(
 
     # scale
     df_quali = pd.get_dummies(df[param.quali].astype("category"))
-    for mod in model._modalities:
+    for mod in model._modalities:  # type: ignore
         if mod not in df_quali:
             df_quali[mod] = 0
     df_quali = df_quali[model._modalities]
@@ -170,6 +172,7 @@ def scaler(
     return df_scale
 
 
+@typing.no_type_check
 def stats(model: Model, param: Parameters) -> Parameters:
     # mypy: ignore-errors
     """Compute contributions and cos2 for each variable."""
@@ -215,7 +218,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
         coord_var = np.vstack((coord_var, V[i] * s))
     contrib_var = (((((coord_var ** 2) / eig).T) * param.col_w).T) * 100
     # compute cos2
-    dfrow_w = ((df2.T) * param.row_w).T  # type: ignore
+    dfrow_w = ((df2.T) * param.row_w).T
     dist2 = []
     for i in range(len(dfrow_w[0])):
         dist2 += [np.sum(dfrow_w[:, i])]
@@ -231,7 +234,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     eta2 = []
     fi = 0
     coord = pd.DataFrame(
-        model.U[:, :ncp0] * model.s[:ncp0], columns=param.columns[:ncp0]  # type: ignore
+        model.U[:, :ncp0] * model.s[:ncp0], columns=param.columns[:ncp0]
     )
     mods = []
     # for each qualitative column in the original data set

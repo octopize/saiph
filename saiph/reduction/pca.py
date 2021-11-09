@@ -1,5 +1,6 @@
 """PCA projection."""
 import sys
+import typing
 from typing import Optional, Tuple
 
 import numpy as np
@@ -19,7 +20,7 @@ from saiph.reduction.utils.svd import SVD
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_w: Optional[ArrayLike] = None,
+    _col_weights: Optional[ArrayLike] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using PCA.
@@ -35,10 +36,10 @@ def fit(
         The transformed variables, model and parameters
     """
     nf = nf or min(df.shape)
-    col_w = col_w or np.ones(df.shape[1])
+    col_weights = _col_weights or np.ones(df.shape[1])
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
-    fit_check_params(nf, col_w, df.shape[1])
+    fit_check_params(nf, col_weights, df.shape[1])
 
     # set row weights
     row_w = row_weights_uniform(len(df))
@@ -46,11 +47,11 @@ def fit(
     df_centered, mean, std = center(df, scale)
 
     # apply weights and compute svd
-    Z = ((df_centered * col_w).T * row_w).T
+    Z = ((df_centered * col_weights).T * row_w).T
     U, s, V = SVD(Z)
 
     U = ((U.T) / np.sqrt(row_w)).T
-    V = V / np.sqrt(col_w)
+    V = V / np.sqrt(col_weights)
 
     explained_var, explained_var_ratio = explain_variance(s, df_centered, nf)
 
@@ -60,7 +61,7 @@ def fit(
 
     columns = column_names(nf)
 
-    coord = pd.DataFrame(np.dot(df_centered, V.T), columns=columns)
+    coord = pd.DataFrame(np.dot(df_centered, V.T), columns=columns)  # type: ignore
 
     model = Model(
         df=df,
@@ -73,7 +74,7 @@ def fit(
         std=std,
     )
 
-    param = Parameters(nf=nf, col_w=col_w, row_w=row_w, columns=columns)
+    param = Parameters(nf=nf, col_w=col_weights, row_w=row_w, columns=columns)
 
     return coord, model, param
 
@@ -88,7 +89,7 @@ def center(
     std = 0
     if scale:
         std = np.std(df, axis=0)
-        std[std <= sys.float_info.min] = 1
+        std[std <= sys.float_info.min] = 1  # type: ignore
         df /= std
     return df, mean, std
 
@@ -105,6 +106,7 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     return df
 
 
+@typing.no_type_check
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
     """Scale and project into the fitted numerical space."""
     df_scaled = scaler(model, df)

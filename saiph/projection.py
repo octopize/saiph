@@ -70,7 +70,7 @@ def fit(
     param.cor = _variable_correlation(model, param)
 
     if param.quanti.size == 0:
-        model.variable_coord = pd.DataFrame(np.dot(model.D_c, model.V.T))
+        model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
     else:
         model.variable_coord = pd.DataFrame(model.V.T)
 
@@ -158,8 +158,7 @@ def inverse_transform(
     """Compute the inverse transform of data coordinates."""
     # if PCA or FAMD compute the continuous variables
     if len(param.quanti) != 0:
-
-        X = np.dot(coord, model.V * np.sqrt(param.col_w))
+        X = np.array(coord @ model.V * np.sqrt(param.col_w))
         X = X / np.sqrt(param.col_w) * param.col_w
         X_quanti = X[:, : len(param.quanti)]
 
@@ -191,7 +190,9 @@ def inverse_transform(
 
     # if MCA no descaling
     else:
-        X_quali = np.dot(coord, np.dot(model.D_c, model.V.T).T)
+        # Previously was a ndarray, but no need
+        # NB: If this causes a bug, X_quali = np.array(X_quali) goes back to previous vesrion
+        X_quali = coord @ (model.D_c @ model.V.T).T
         # X_quali is the complete disjunctive table ("tableau disjonctif complet" in FR)
 
     # compute the categorical variables

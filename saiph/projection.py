@@ -1,4 +1,5 @@
 """Project any dataframe, iverse transform and compute stats."""
+import typing
 from typing import Optional, Tuple, Union
 
 import numpy as np
@@ -11,6 +12,7 @@ import saiph.reduction.pca as pca
 from saiph.models import DFLike, Model, Parameters
 
 
+@typing.no_type_check
 def fit(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
@@ -75,6 +77,7 @@ def fit(
     return coord, model, param
 
 
+@typing.no_type_check
 def stats(model: Model, param: Parameters) -> Parameters:
     """Compute the correlation, contributions and cos2 for each variable."""
     model.variable_coord.columns = param.cor.columns
@@ -106,6 +109,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     return param
 
 
+@typing.no_type_check
 def transform(df: DFLike, model: Model, param: Parameters) -> DFLike:
     """Project new data into the fitted numerical space."""
     for i in param.datetime_variables:
@@ -121,6 +125,7 @@ def transform(df: DFLike, model: Model, param: Parameters) -> DFLike:
     return coord
 
 
+@typing.no_type_check
 def _variable_correlation(model: Model, param: Parameters) -> DFLike:
     """Compute the correlation between the axis' and the variables."""
     # select columns and project data
@@ -146,6 +151,7 @@ def _variable_correlation(model: Model, param: Parameters) -> DFLike:
     return cor
 
 
+@typing.no_type_check
 def inverse_transform(
     coord: DFLike, model: Model, param: Parameters, shuffle: bool = False
 ) -> DFLike:  # ---------------------------------------finish this

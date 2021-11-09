@@ -171,6 +171,7 @@ def scaler(
 
 
 def stats(model: Model, param: Parameters) -> Parameters:
+    # mypy: ignore-errors
     """Compute contributions and cos2 for each variable."""
     df = pd.DataFrame(scaler(model, param))
     df2 = np.array(pd.DataFrame(df).applymap(lambda x: x ** 2))

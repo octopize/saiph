@@ -140,6 +140,7 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
 
 
 def stats(model: Model, param: Parameters) -> Parameters:
+    # mypy: ignore-errors
     """Compute the contributions of each variable in each axis."""
     V = np.dot(model.D_c, model.V.T)
     total = pd.get_dummies(model.df.astype("category")).sum().sum()

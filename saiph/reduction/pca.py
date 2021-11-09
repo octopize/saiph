@@ -21,7 +21,7 @@ from saiph.reduction.utils.svd import SVD
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_weights: Optional[NDArray[Any]] = None,
+    col_w: Optional[NDArray[Any]] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using PCA.
@@ -37,7 +37,7 @@ def fit(
         The transformed variables, model and parameters
     """
     nf = nf or min(df.shape)
-    _col_weights = col_weights or np.ones(df.shape[1])
+    _col_weights = col_w or np.ones(df.shape[1])
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
     fit_check_params(nf, _col_weights, df.shape[1])

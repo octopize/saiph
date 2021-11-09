@@ -21,7 +21,7 @@ from saiph.reduction.utils.svd import SVD
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_weights: Optional[NDArray[Any]] = None,
+    col_w: Optional[NDArray[Any]] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using FAMD.
@@ -37,7 +37,7 @@ def fit(
         The transformed variables, model and parameters.
     """
     nf = nf or min(df.shape)
-    _col_weights: NDArray[Any] = col_weights or np.ones(df.shape[1])
+    _col_weights: NDArray[Any] = col_w or np.ones(df.shape[1])
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
     fit_check_params(nf, _col_weights, df.shape[1])
@@ -47,17 +47,17 @@ def fit(
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
 
     row_w = row_weights_uniform(len(df))
-    col_w = col_weights_compute(df, _col_weights, quanti, quali)
+    col_weights = col_weights_compute(df, _col_weights, quanti, quali)
 
     df_scale, mean, std, prop, _modalities = center(df, quanti, quali)
 
     # apply the weights
-    Z = ((df_scale * col_w).T * row_w).T
+    Z = ((df_scale * col_weights).T * row_w).T
 
     # compute the svd
     _U, s, _V = SVD(Z)
     U = ((_U.T) / np.sqrt(row_w)).T
-    V = _V / np.sqrt(col_w)
+    V = _V / np.sqrt(col_weights)
 
     explained_var, explained_var_ratio = explain_variance(s, df, nf)
 
@@ -85,7 +85,12 @@ def fit(
     )
 
     param = Parameters(
-        nf=nf, col_w=col_w, row_w=row_w, columns=columns, quanti=quanti, quali=quali
+        nf=nf,
+        col_w=col_weights,
+        row_w=row_w,
+        columns=columns,
+        quanti=quanti,
+        quali=quali,
     )
 
     return coord, model, param

@@ -23,7 +23,7 @@ from saiph.reduction.utils.svd import SVD
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_weights: Optional[NDArray[Any]] = None,
+    col_w: Optional[NDArray[Any]] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Project data into a lower dimensional space using MCA.
@@ -39,7 +39,7 @@ def fit(
         The transformed variables, model and parameters.
     """
     nf = nf or min(df.shape)
-    _col_weights = col_weights or np.ones(df.shape[1])
+    _col_weights = col_w or np.ones(df.shape[1])
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
     fit_check_params(nf, _col_weights, df.shape[1])
@@ -50,7 +50,7 @@ def fit(
     modality_numbers = []
     for column in df.columns:
         modality_numbers += [len(df[column].unique())]
-    col_w: NDArray[Any] = np.array(
+    col_weights: NDArray[Any] = np.array(
         list(
             chain.from_iterable(
                 repeat(i, j) for i, j in zip(_col_weights, modality_numbers)
@@ -62,7 +62,7 @@ def fit(
     df_scale, T, D_c = diag_compute(df_scale, r, c)
 
     # apply the weights and compute the svd
-    Z = ((T * col_w).T * row_w).T
+    Z = ((T * col_weights).T * row_w).T
     U, s, V = SVD(Z)
 
     explained_var, explained_var_ratio = explain_variance(s, df, nf)
@@ -86,7 +86,7 @@ def fit(
         D_c=D_c,
     )
 
-    param = Parameters(nf=nf, col_w=col_w, row_w=row_w, columns=columns)
+    param = Parameters(nf=nf, col_w=col_weights, row_w=row_w, columns=columns)
 
     return coord, model, param
 

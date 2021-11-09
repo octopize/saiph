@@ -1,10 +1,10 @@
 """Project any dataframe, iverse transform and compute stats."""
 import typing
-from typing import Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from numpy.typing import ArrayLike
+from numpy.typing import NDArray
 
 import saiph.reduction.famd as famd
 import saiph.reduction.mca as mca
@@ -12,11 +12,10 @@ import saiph.reduction.pca as pca
 from saiph.models import DFLike, Model, Parameters
 
 
-@typing.no_type_check
 def fit(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
-    col_w: Optional[ArrayLike] = None,
+    col_w: Optional[NDArray[Any]] = None,
     scale: bool = True,
 ) -> Tuple[DFLike, Model, Parameters]:
     """Project data into a lower dimensional space using PCA, MCA or FAMD.
@@ -26,10 +25,6 @@ def fit(
         nf: number of components to keep (default: {min(df.shape[0], 5)})
         col_w: importance of each variable in the projection
             more weight = more importance in the axes)
-        df: data to project
-        nf: number of components to keep (default: {min(df.shape[0], 5)})
-        col_w: importance of each variable in the projection
-            (more weight = more importance in the axes)
         scale: whether to scale data or not (only for PCA)
 
     Returns:
@@ -47,27 +42,30 @@ def fit(
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
 
-    if not nf or nf == "all":
-        nf = len(pd.get_dummies(df).columns.values)
+    _nf: int
+    if not nf or isinstance(nf, str):
+        _nf = len(pd.get_dummies(df).columns.values)
+    else:
+        _nf = nf
 
     # Specify the correct function
     if quali.size == 0:
         print("A PCA is performed for dimension reduction")
-        fit = pca.fit
+        _fit = pca.fit
     elif quanti.size == 0:
         print("An MCA is performed for dimension reduction")
-        fit = mca.fit
+        _fit = mca.fit
     else:
         print("FAMD is performed for dimension reduction")
-        fit = famd.fit
+        _fit = famd.fit
 
-    coord, model, param = fit(df, nf, col_w, scale)
+    coord, model, param = _fit(df, _nf, col_w, scale)
     param.quanti = quanti
     param.quali = quali
-    param.datetime_variables = datetime_variables
-    param.cor = _variable_correlation(model, param)
+    param.datetime_variables = np.array(datetime_variables)
+    param.cor = _variable_correlation(model, param)  # type: ignore
 
-    if param.quanti.size == 0:
+    if quanti.size == 0:
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
     else:
         model.variable_coord = pd.DataFrame(model.V.T)

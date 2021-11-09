@@ -63,7 +63,7 @@ def fit(
     param.quanti = quanti
     param.quali = quali
     param.datetime_variables = np.array(datetime_variables)
-    param.cor = _variable_correlation(model, param)  # type: ignore
+    param.cor = _variable_correlation(model, param)
 
     if quanti.size == 0:
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
@@ -105,7 +105,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     return param
 
 
-def transform(df: pd.DataFrame, model: Model, param: Parameters) -> DFLike:
+def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
     """Project new data into the fitted numerical space."""
     if param.quali is None or param.quanti is None or param.datetime_variables is None:
         raise Exception("Need to fit before using transform")
@@ -122,14 +122,13 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> DFLike:
     return coord
 
 
-@typing.no_type_check
-def _variable_correlation(model: Model, param: Parameters) -> DFLike:
+def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
     """Compute the correlation between the axis' and the variables."""
     # select columns and project data
     df_quanti = model.df[param.quanti]
     coord = transform(model.df, model, param)  # transform to be fixed
 
-    if len(param.quali) > 0:
+    if param.quali is not None and len(param.quali) > 0:
         df_quali = pd.get_dummies(model.df[param.quali].astype("category"))
         bind = pd.concat([df_quanti, df_quali], axis=1)
     else:

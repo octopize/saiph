@@ -1,4 +1,4 @@
-"""MCQ projection."""
+"""MCA projection."""
 import typing
 from itertools import chain, repeat
 from typing import Any, Optional, Tuple

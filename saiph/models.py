@@ -27,6 +27,7 @@ class Model:
     _modalities: Optional[NDArray[Any]] = None
     D_c: Optional[NDArray[Any]] = None
 
+    type: Optional[str] = None
 
 @dataclass
 class Parameters:

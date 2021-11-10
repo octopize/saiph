@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_equal
 from pandas._testing.asserters import assert_series_equal
 from pandas.testing import assert_frame_equal
 
@@ -126,3 +126,15 @@ def test_center_pca_famd() -> None:
 
     assert_series_equal(mean1, mean2)
     assert_series_equal(std1, std2)
+
+def test_model_type() -> None:
+    original_df = pd.DataFrame(
+        {
+            "tool": ["toaster", "hammer"],
+            "score": ["aa", "ab"],
+            "size": [1.0, 4.0],
+            "age": [55, 62],
+        }
+    )
+    _, model, _ = fit(original_df)
+    assert_equal(model.type, 'famd')

@@ -84,6 +84,7 @@ def fit(
         variable_coord=D_c @ V.T,
         _modalities=_modalities,
         D_c=D_c,
+        type='mca',
     )
 
     param = Parameters(nf=nf, col_w=col_weights, row_w=row_w, columns=columns)

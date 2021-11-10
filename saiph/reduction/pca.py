@@ -71,6 +71,7 @@ def fit(
         variable_coord=pd.DataFrame(V.T),
         mean=mean,
         std=std,
+        type='pca'
     )
 
     param = Parameters(nf=nf, col_w=_col_weights, row_w=row_w, columns=columns)

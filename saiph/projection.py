@@ -50,13 +50,10 @@ def fit(
 
     # Specify the correct function
     if quali.size == 0:
-        print("A PCA is performed for dimension reduction")
         _fit = pca.fit
     elif quanti.size == 0:
-        print("An MCA is performed for dimension reduction")
         _fit = mca.fit
     else:
-        print("FAMD is performed for dimension reduction")
         _fit = famd.fit
 
     coord, model, param = _fit(df, _nf, col_w, scale)

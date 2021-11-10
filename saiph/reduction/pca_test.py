@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import prince
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_equal
 from pandas.testing import assert_frame_equal
 from sklearn import decomposition
 
@@ -207,3 +207,13 @@ def test_compare_prince_full(iris_quanti_df) -> None:
     coord, _, _ = fit(iris_quanti_df, scale=False)
 
     assert_allclose(coord.to_numpy(), pca, atol=0.0001)
+
+def test_model_type() -> None:
+    original_df = pd.DataFrame(
+        {
+            0: [1.0, 12.0],
+            1: [2.0, 4.0],
+        }
+    )
+    _, model, _ = fit(original_df)
+    assert_equal(model.type, 'pca')

@@ -3,11 +3,6 @@ from typing import Any, List, Optional, Union
 
 import pandas as pd
 from numpy.typing import NDArray
-<<<<<<< HEAD
-
-# DFLike = Union[pd.DataFrame, ArrayLike]
-=======
->>>>>>> 5838e41 (type: remove all occurences of ArrayLike and DFLike for types)
 
 
 @dataclass

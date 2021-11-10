@@ -144,13 +144,3 @@ def test_transform_simple() -> None:
     assert_frame_equal(
         df_transformed, expected_transform, check_exact=False, atol=0.00001
     )
-
-def test_model_type() -> None:
-    original_df = pd.DataFrame(
-        {
-            "tool": ["toaster", "toaster"],
-            "score": ["aa", "aa"],
-        }
-    )
-    _, model, _ = fit(original_df)
-    assert model.type == 'mca'

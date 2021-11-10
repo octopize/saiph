@@ -126,15 +126,3 @@ def test_center_pca_famd() -> None:
 
     assert_series_equal(mean1, mean2)
     assert_series_equal(std1, std2)
-
-def test_model_type() -> None:
-    original_df = pd.DataFrame(
-        {
-            "tool": ["toaster", "hammer"],
-            "score": ["aa", "ab"],
-            "size": [1.0, 4.0],
-            "age": [55, 62],
-        }
-    )
-    _, model, _ = fit(original_df)
-    assert model.type == 'famd'

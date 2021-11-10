@@ -1,5 +1,6 @@
 import pandas as pd
 from pandas.testing import assert_frame_equal
+import pytest
 
 from saiph import fit, inverse_transform, transform
 
@@ -119,3 +120,31 @@ def test_transform_then_inverse_MCA_weighted() -> None:
     un_transformed = inverse_transform(transformed, model, param)
 
     assert_frame_equal(un_transformed, df)
+
+df_pca = pd.DataFrame(
+    {
+        0: [1.0, 12.0],
+        1: [2.0, 4.0],
+    }
+)
+
+df_famd = pd.DataFrame(
+    {
+        "variable_1": [4, 5, 6, 7, 11, 2, 52],
+        "variable_2": [10, 20, 30, 40, 10, 74, 10],
+        "variable_3": ["red", "blue", "blue", "green", "red", "blue", "red"],
+        "variable_4": [100, 50, -30, -50, -19, -29, -20],
+    }
+)
+
+df_mca = pd.DataFrame(
+    {
+        "tool": ["toaster", "toaster"],
+        "score": ["aa", "aa"],
+    }
+)
+
+@pytest.mark.parametrize("df_input,expected_type", [(df_pca, 'pca'), (df_mca, 'mca'), (df_famd, 'famd')])
+def test_eval(df_input, expected_type):
+    _, model, _ = fit(df_input)
+    assert model.type == expected_type

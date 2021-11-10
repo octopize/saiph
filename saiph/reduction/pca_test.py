@@ -207,13 +207,3 @@ def test_compare_prince_full(iris_quanti_df) -> None:
     coord, _, _ = fit(iris_quanti_df, scale=False)
 
     assert_allclose(coord.to_numpy(), pca, atol=0.0001)
-
-def test_model_type() -> None:
-    original_df = pd.DataFrame(
-        {
-            0: [1.0, 12.0],
-            1: [2.0, 4.0],
-        }
-    )
-    _, model, _ = fit(original_df)
-    assert model.type ==  'pca'

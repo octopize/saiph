@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from numpy.testing import assert_allclose, assert_equal
+from numpy.testing import assert_allclose
 from pandas._testing.asserters import assert_series_equal
 from pandas.testing import assert_frame_equal
 
@@ -137,4 +137,4 @@ def test_model_type() -> None:
         }
     )
     _, model, _ = fit(original_df)
-    assert_equal(model.type, 'famd')
+    assert model.type == 'famd'

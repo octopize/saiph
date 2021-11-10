@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import prince
-from numpy.testing import assert_allclose, assert_equal
+from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 from sklearn import decomposition
 
@@ -216,4 +216,4 @@ def test_model_type() -> None:
         }
     )
     _, model, _ = fit(original_df)
-    assert_equal(model.type, 'pca')
+    assert model.type ==  'pca'

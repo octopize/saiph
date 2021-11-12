@@ -82,7 +82,7 @@ def fit(
         std=std,
         prop=prop,
         _modalities=_modalities,
-        type='famd',
+        type="famd",
     )
 
     param = Parameters(

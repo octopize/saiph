@@ -29,6 +29,7 @@ class Model:
 
     type: Optional[str] = None
 
+
 @dataclass
 class Parameters:
     nf: int

@@ -1,4 +1,4 @@
-"""Project any dataframe, iverse transform and compute stats."""
+"""Project any dataframe, inverse transform and compute stats."""
 import typing
 from typing import Any, Optional, Tuple, Union
 

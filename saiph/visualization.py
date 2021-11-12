@@ -108,6 +108,8 @@ def plot_var_contribution(
     Returns:
         graph of the contribution percentages per variables
     """
+    if param.cos2 is None:
+        raise Exception("Need to use stats(model, param) before using plot_var_contribution")
     # Dimensions start from 1
 
     # get the useful contributions

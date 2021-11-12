@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import pytest
 from pandas.testing import assert_frame_equal
 
@@ -194,3 +195,17 @@ def test_var_cor(df_input, expected_cor):
     _, model, param = fit(df_input)
     stats(model, param)
     assert list(param.cor['Dim. 1']) == expected_cor
+
+# Check percentage of explained variance
+
+expected_pca_explained_var_ratio = [0.9404831846910865, 0.040151017139633684, 0.01936579816927985 ]
+expected_mca_explained_var_ratio = [0.42099362789799255, 0.23253662367291794, 0.1666666666666665, 0.1314458557658021, 0.035220810900864555]
+expected_famd_explained_var_ratio = [0.44820992177856206, 0.2801754650846534, 0.1707856006031922 , 0.05566366403780453, 0.04516534849578783]
+
+@pytest.mark.parametrize(
+    "df_input,expected_var_ratio", [(df_pca, expected_pca_explained_var_ratio), (df_mca, expected_mca_explained_var_ratio), (df_famd, expected_famd_explained_var_ratio)]
+)
+def test_var_ratio(df_input, expected_var_ratio):
+    _, model, param = fit(df_input)
+    stats(model, param)
+    assert list(model.explained_var_ratio)[0:5] == expected_var_ratio

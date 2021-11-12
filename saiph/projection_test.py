@@ -122,6 +122,19 @@ def test_transform_then_inverse_MCA_weighted() -> None:
     assert_frame_equal(un_transformed, df)
 
 
+def test_coords_vs_transform_with_multiple_nf(iris_df: pd.DataFrame) -> None:
+    with pytest.raises(ValueError):
+        fit(iris_df, nf=10000)
+    
+    with pytest.raises(ValueError):
+        fit(iris_df, nf=-1)
+    
+    for n in range(7):
+        coord, model, param = fit(iris_df, nf=n)
+        transformed = transform(iris_df, model, param)
+        assert_frame_equal(coord, transformed)
+
+
 df_pca = pd.DataFrame(
     {
         0: [1.0, 12.0],

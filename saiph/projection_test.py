@@ -168,6 +168,8 @@ def test_eval(df_input, expected_type):
     _, model, _ = fit(df_input)
     assert model.type == expected_type
 
+# check contribution of variables to dim
+
 expected_pca_contrib = [32.81178064277649, 33.12227570926467, 34.065943647958846]
 expected_mca_contrib = [13.314231201732547, 19.971346802598834, 7.924987451762375, 2.8647115861394203, 24.435070805047193, 11.119305005676665, 8.778349565191498, 0.47269257617482885, 11.119305005676662]
 expected_famd_contrib = [15.696161557629662, 36.08406414786589, 11.420291290785196, 9.852860955848701, 6.104123324745425, 20.842498723125182]
@@ -179,3 +181,16 @@ def test_var_contrib(df_input, expected_contrib):
     _, model, param = fit(df_input)
     stats(model, param)
     assert list(param.contrib['Dim. 1']) == expected_contrib
+
+# check cor of variables to dim (if cor is ok so is cos2)
+
+expected_pca_cor = [0.9621683005738202, -0.9667100394109722, 0.9803843201246043]
+expected_mca_cor = [-0.9169410964961192, 0.9169410964961192, -0.5776131247092218, -0.3215176498417082, 0.9390120540605189, 0.5586386162833192, -0.5628216589197227, -0.15453176858793358, 0.5586386162833191]
+expected_famd_cor = [-0.5930925452224494, 0.8992562362632682, -0.5058995881660323, 0.6216213705726737, 0.399494477072544, -0.9041066243572436]
+@pytest.mark.parametrize(
+    "df_input,expected_cor", [(df_pca, expected_pca_cor), (df_mca, expected_mca_cor), (df_famd, expected_famd_cor)]
+)
+def test_var_cor(df_input, expected_cor):
+    _, model, param = fit(df_input)
+    stats(model, param)
+    assert list(param.cor['Dim. 1']) == expected_cor

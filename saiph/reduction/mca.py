@@ -95,7 +95,7 @@ def fit(
 def center(
     df: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, NDArray[Any], NDArray[Any], NDArray[Any]]:
-    """Center data and compute sums over columns and rows."""
+    """Center data. Compute sums over columns and rows."""
     df_scale = pd.get_dummies(df.astype("category"))
     _modalities = df_scale.columns.values
 
@@ -108,7 +108,7 @@ def center(
 
 
 def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
-    """Scale new data."""
+    """Scale data."""
     if df is None:
         df = model.df
 

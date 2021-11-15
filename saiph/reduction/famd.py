@@ -100,7 +100,7 @@ def fit(
 def col_weights_compute(
     df: pd.DataFrame, col_w: NDArray[Any], quanti: List[int], quali: List[int]
 ) -> NDArray[Any]:
-    """Initiate the weight vectors."""
+    """Calculate weights for columns given what weights the user gave."""
     # Set the columns and row weights
     weight_df = pd.DataFrame([col_w], columns=df.columns)
     weight_quanti = weight_df[quanti]
@@ -126,7 +126,7 @@ def col_weights_compute(
 def center(
     df: pd.DataFrame, quanti: List[int], quali: List[int]
 ) -> Tuple[pd.DataFrame, float, float, float, NDArray[Any]]:
-    """Scale data and compute mean, pro and std."""
+    """Center and scale data. Compute mean, std and pro"""
     # Scale the continuous data
     df_quanti = df[quanti]
     mean = np.mean(df_quanti, axis=0)
@@ -158,7 +158,7 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
 def scaler(
     model: Model, param: Parameters, df: Optional[pd.DataFrame] = None
 ) -> pd.DataFrame:
-    """Scale data using prop, std and mean."""
+    """Scale data using mean and std from model."""
     if df is None:
         df = model.df
 

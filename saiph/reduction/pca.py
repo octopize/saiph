@@ -82,7 +82,7 @@ def fit(
 def center(
     df: pd.DataFrame, scale: Optional[bool] = True
 ) -> Tuple[pd.DataFrame, float, float]:
-    """Center data. standardize data if scale == true. Compute mean and std."""
+    """Center data and standardize it if scale == true. Compute mean and std."""
     df = df.copy()
     mean = np.mean(df, axis=0)
     df -= mean
@@ -107,7 +107,10 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
 
 
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
-    """Scale and project into the fitted numerical space."""
+    """Scale and project into the fitted numerical space.
+    df: DataFrame to transform
+    model: model computed by fit
+    param: param computed by fit"""
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.V.T
     coord.columns = param.columns

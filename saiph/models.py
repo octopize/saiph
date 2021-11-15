@@ -16,7 +16,6 @@ class Model:
     """Explained variance divided by the sum of the variances."""
     variable_coord: pd.DataFrame
 
-
     V: NDArray[Any]
     """Orthogonal matrix with right singular vectors as rows."""
     U: Optional[NDArray[Any]] = None

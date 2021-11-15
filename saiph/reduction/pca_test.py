@@ -120,7 +120,7 @@ def test_center_scaler() -> None:
 
     _, model, _ = fit(df, scale=True)
 
-    df1, mean, std = center(model.df, scale=True)
+    df1, _, _ = center(model.df, scale=True)
     df2 = scaler(model, None)
 
     assert_frame_equal(df1, df2)

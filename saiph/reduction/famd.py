@@ -24,17 +24,28 @@ def fit(
     col_w: Optional[NDArray[Any]] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
-    """Project data into a lower dimensional space using FAMD.
+    """
+    Fit a FAMD model on data.
 
-    Args:
-        df: data to project
-        nf: number of components to keep (default: {min(df.shape[0], 5)})
-        col_weights: importance of each variable in the projection
-            (more weight = more importance in the axes)
-        scale: not used
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Data to project.
+    nf: int, default: min(df.shape)
+        Number of components to keep.
+    col_w: np.ndarrayn default: np.ones(df.shape[1])
+        Weight assigned to each variable in the projection (more weight = more importance in the axes).
+    scale: bool
+        Unused. Kept for compatibility with model enabling scale=True|False.
 
-    Returns:
-        The transformed variables, model and parameters.
+    Returns
+    -------
+    coord: pd.DataFrame
+        The transformed data.
+    model: Model 
+        The model for transforming new data.
+    param: Parameters
+        The parameters for transforming new data.
     """
     nf = nf or min(df.shape)
     _col_weights: NDArray[Any] = col_w or np.ones(df.shape[1])
@@ -47,7 +58,7 @@ def fit(
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
 
     row_w = row_weights_uniform(len(df))
-    col_weights = col_weights_compute(df, _col_weights, quanti, quali)
+    col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
 
     df_scale, mean, std, prop, _modalities = center(df, quanti, quali)
 
@@ -97,7 +108,7 @@ def fit(
     return coord, model, param
 
 
-def col_weights_compute(
+def _col_weights_compute(
     df: pd.DataFrame, col_w: NDArray[Any], quanti: List[int], quali: List[int]
 ) -> NDArray[Any]:
     """Calculate weights for columns given what weights the user gave."""
@@ -125,8 +136,33 @@ def col_weights_compute(
 
 def center(
     df: pd.DataFrame, quanti: List[int], quali: List[int]
-) -> Tuple[pd.DataFrame, float, float, float, NDArray[Any]]:
-    """Center and scale data. Compute mean, std and pro"""
+) -> Tuple[pd.DataFrame, float, float, NDArray[Any], NDArray[Any]]:
+    """
+    Center data, scale it and compute modalities.
+    Used as internal function during fit. Scaler is better suited when a Model is already fitted.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        DataFrame to center.
+    quanti: np.ndarray
+        Indexes of continous variables.
+    quali: np.ndarray
+        Indexes of categorical variables.
+
+    Returns
+    -------
+    df_scale: pd.DataFrame
+        The scaled DataFrame.
+    mean: float
+        Mean of the input dataframe.
+    std: float
+        Standard deviation of the input dataframe. Returns nan as std if no std was asked.
+    prop: np.ndarray
+        Proportion of each categorical.
+    _modalities: np.ndarray
+        Modalities for the MCA.
+    """
     # Scale the continuous data
     df_quanti = df[quanti]
     mean = np.mean(df_quanti, axis=0)
@@ -147,18 +183,26 @@ def center(
     return df_scale, mean, std, prop, _modalities
 
 
-def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
-    """Scale and project into the fitted numerical space."""
-    df_scaled = scaler(model, param, df)
-    coord = df_scaled @ model.V.T
-    coord.columns = param.columns
-    return coord
-
-
 def scaler(
     model: Model, param: Parameters, df: Optional[pd.DataFrame] = None
 ) -> pd.DataFrame:
-    """Scale data using mean and std from model."""
+    """
+    Scale data using fitted model.
+    
+    Parameters
+    ----------
+    model: Model
+        Model computed by fit.
+    param: Parameters
+        Param computed by fit.
+    df: pd.DataFrame
+        DataFrame to scale. If nothing is specified, takes the DataFrame on which the model was fitted.
+
+    Returns
+    -------
+    df_scaled: pd.DataFrame
+        The scaled DataFrame.
+    """
     if df is None:
         df = model.df
 
@@ -177,8 +221,32 @@ def scaler(
     df_quali = df_quali[model._modalities]
     df_quali = (df_quali - model.prop) / np.sqrt(model.prop)
 
-    df_scale = pd.concat([df_quanti, df_quali], axis=1)
-    return df_scale
+    df_scaled = pd.concat([df_quanti, df_quali], axis=1)
+    return df_scaled
+
+
+def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
+    """
+    Scale and project into the fitted numerical space.
+    
+    Parameters
+    ----------
+    df: pd.DataFrame
+        DataFrame to transform.
+    model: Model
+        Model computed by fit.
+    param: Parameters
+        Param computed by fit.
+
+    Returns
+    -------
+    coord: pd.DataFrame
+        Coordinates of the dataframe in the fitted space.
+    """
+    df_scaled = scaler(model, param, df)
+    coord = df_scaled @ model.V.T
+    coord.columns = param.columns
+    return coord
 
 
 @typing.no_type_check

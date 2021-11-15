@@ -18,17 +18,28 @@ def fit(
     col_w: Optional[NDArray[Any]] = None,
     scale: bool = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
-    """Project data into a lower dimensional space using PCA, MCA or FAMD.
+    """
+    Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
-    Args:
-        df: data to project
-        nf: number of components to keep (default: {min(df.shape[0], 5)})
-        col_w: importance of each variable in the projection
-            more weight = more importance in the axes)
-        scale: whether to scale data or not (only for PCA)
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Data to project.
+    nf: int|str, default: 'all'
+        Number of components to keep.
+    col_w: np.ndarrayn default: np.ones(df.shape[1])
+        Weight assigned to each variable in the projection (more weight = more importance in the axes).
+    scale: bool
+        Unused. Kept for compatibility with model enabling scale=True|False.
 
-    Returns:
-        The transformed variables, model and parameters
+    Returns
+    -------
+    coord: pd.DataFrame
+        The transformed data.
+    model: Model 
+        The model for transforming new data.
+    param: Parameters
+        The parameters for transforming new data.
     """
     datetime_variables = []
     for i in range(0, df.shape[1]):
@@ -103,7 +114,23 @@ def stats(model: Model, param: Parameters) -> Parameters:
 
 
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
-    """Project new data into the fitted numerical space."""
+    """
+    Scale and project into the fitted numerical space.
+    
+    Parameters
+    ----------
+    df: pd.DataFrame
+        DataFrame to transform.
+    model: Model
+        Model computed by fit.
+    param: Parameters
+        Param computed by fit.
+
+    Returns
+    -------
+    coord: pd.DataFrame
+        Coordinates of the dataframe in the fitted space.
+    """
     if param.quali is None or param.quanti is None or param.datetime_variables is None:
         raise Exception("Need to fit before using transform")
     for i in param.datetime_variables:
@@ -147,7 +174,25 @@ def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
 def inverse_transform(
     coord: pd.DataFrame, model: Model, param: Parameters, shuffle: bool = False
 ) -> pd.DataFrame:  # ---------------------------------------finish this
-    """Compute the inverse transform of data coordinates."""
+    """
+    Compute the inverse transform of data coordinates. Note that if nf was stricly smaller than max(df.shape) in fit, inverse_transform o transform != id
+    
+    Parameters
+    ----------
+    coord: pd.DataFrame
+        DataFrame to transform.
+    model: Model
+        Model computed by fit.
+    param: Parameters
+        Param computed by fit.
+    shuffle: bool
+        Whether data should be shuffled or not.
+
+    Returns
+    -------
+    inverse: pd.DataFrame
+        Inversed DataFrame.
+    """
     # if PCA or FAMD compute the continuous variables
     if param.quali is None or param.quanti is None or param.datetime_variables is None:
         raise Exception("Need to fit before using inverse_transform")
@@ -247,9 +292,9 @@ def inverse_transform(
     return inverse
 
 
-def decimal_count(number: int) -> int:
-    """Compute number of decimals for each data point."""
-    f = str(number)
+def decimal_count(n: float) -> str:
+    """Return the decimal part of the number"""
+    f = str(n)
     if "." in f:
         digits = f[::-1].find(".")
     else:

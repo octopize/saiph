@@ -26,17 +26,28 @@ def fit(
     col_w: Optional[NDArray[Any]] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
-    """Project data into a lower dimensional space using MCA.
+    """
+    Fit a MCA model on data.
 
-    Args:
-        df: data to project
-        nf: number of components to keep (default: {min(df.shape[0], 5)})
-        col_weights: importance of each variable in the projection
-            (more weight = more importance in the axes)
-        scale: not used
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Data to project.
+    nf: int, default: min(df.shape)
+        Number of components to keep.
+    col_w: np.ndarrayn default: np.ones(df.shape[1])
+        Weight assigned to each variable in the projection (more weight = more importance in the axes).
+    scale: bool
+        Unused. Kept for compatibility with model enabling scale=True|False.
 
-    Returns:
-        The transformed variables, model and parameters.
+    Returns
+    -------
+    coord: pd.DataFrame
+        The transformed data.
+    model: Model 
+        The model for transforming new data.
+    param: Parameters
+        The parameters for transforming new data.
     """
     nf = nf or min(df.shape)
     _col_weights = col_w or np.ones(df.shape[1])
@@ -59,7 +70,7 @@ def fit(
     )
 
     df_scale, _modalities, r, c = center(df)
-    df_scale, T, D_c = diag_compute(df_scale, r, c)
+    df_scale, T, D_c = _diag_compute(df_scale, r, c)
 
     # apply the weights and compute the svd
     Z = ((T * col_weights).T * row_w).T
@@ -95,7 +106,26 @@ def fit(
 def center(
     df: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, NDArray[Any], NDArray[Any], NDArray[Any]]:
-    """Center data. Compute sums over columns and rows."""
+    """
+    Center data and compute modalities.
+    Used as internal function during fit. Scaler is better suited when a Model is already fitted.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        DataFrame to center.
+
+    Returns
+    -------
+    df_centered: pd.DataFrame
+        The centered DataFrame.
+    _modalities: np.ndarray
+        Modalities for the MCA
+    r: np.ndarray
+        Sums line by line
+    c: np.ndarray
+        Sums column by column
+    """
     df_scale = pd.get_dummies(df.astype("category"))
     _modalities = df_scale.columns.values
 
@@ -108,7 +138,21 @@ def center(
 
 
 def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
-    """Scale data."""
+    """
+    Scale data using fitted model.
+    
+    Parameters
+    ----------
+    model: Model
+        Model computed by fit.
+    df: pd.DataFrame
+        DataFrame to scale. If nothing is specified, takes the DataFrame on which the model was fitted.
+
+    Returns
+    -------
+    df_scaled: pd.DataFrame
+        The scaled DataFrame.
+    """
     if df is None:
         df = model.df
 
@@ -128,7 +172,7 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     return df_scaled
 
 
-def diag_compute(
+def _diag_compute(
     df_scale: pd.DataFrame, r: NDArray[Any], c: NDArray[Any]
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Compute diagonal matrices and scale data."""
@@ -144,7 +188,23 @@ def diag_compute(
 
 
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
-    """Scale and project into the fitted numerical space."""
+    """
+    Scale and project into the fitted numerical space.
+    
+    Parameters
+    ----------
+    df: pd.DataFrame
+        DataFrame to transform.
+    model: Model
+        Model computed by fit.
+    param: Parameters
+        Param computed by fit.
+
+    Returns
+    -------
+    coord: pd.DataFrame
+        Coordinates of the dataframe in the fitted space.
+    """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.D_c @ model.V.T
     coord.columns = param.columns

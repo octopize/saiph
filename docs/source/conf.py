@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 project = "Saiph"
 copyright = "2021, Octopize"
-author = "Zineb Bennis, Morgan Guillaudeux"
+author = "Zineb Bennis, Morgan Guillaudeux, Gaêl Russeil, Julien Petot"
 
 # The full version, including alpha/beta/rc tags
 release = "1.0.0"

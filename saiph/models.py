@@ -27,7 +27,7 @@ class Model:
     """Mean of the original data. Calculated while centering."""
     std: Optional[float] = None
     """Standard deviation of the original data. Calculated while scaling."""
-    prop: Optional[float] = None
+    prop: Optional[NDArray[Any]] = None
 
     _modalities: Optional[NDArray[Any]] = None
     D_c: Optional[NDArray[Any]] = None

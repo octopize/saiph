@@ -18,8 +18,7 @@ def fit(
     col_w: Optional[NDArray[Any]] = None,
     scale: bool = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
-    """
-    Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
+    """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
     Parameters
     ----------
@@ -28,7 +27,8 @@ def fit(
     nf: int|str, default: 'all'
         Number of components to keep.
     col_w: np.ndarrayn default: np.ones(df.shape[1])
-        Weight assigned to each variable in the projection (more weight = more importance in the axes).
+        Weight assigned to each variable in the projection
+        (more weight = more importance in the axes).
     scale: bool
         Unused. Kept for compatibility with model enabling scale=True|False.
 
@@ -36,7 +36,7 @@ def fit(
     -------
     coord: pd.DataFrame
         The transformed data.
-    model: Model 
+    model: Model
         The model for transforming new data.
     param: Parameters
         The parameters for transforming new data.
@@ -114,9 +114,8 @@ def stats(model: Model, param: Parameters) -> Parameters:
 
 
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
-    """
-    Scale and project into the fitted numerical space.
-    
+    """Scale and project into the fitted numerical space.
+
     Parameters
     ----------
     df: pd.DataFrame
@@ -174,9 +173,11 @@ def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
 def inverse_transform(
     coord: pd.DataFrame, model: Model, param: Parameters, shuffle: bool = False
 ) -> pd.DataFrame:  # ---------------------------------------finish this
-    """
-    Compute the inverse transform of data coordinates. Note that if nf was stricly smaller than max(df.shape) in fit, inverse_transform o transform != id
-    
+    """Compute the inverse transform of data coordinates.
+
+    Note that if nf was stricly smaller than max(df.shape) in fit,
+    inverse_transform o transform != id
+
     Parameters
     ----------
     coord: pd.DataFrame
@@ -292,8 +293,8 @@ def inverse_transform(
     return inverse
 
 
-def decimal_count(n: float) -> str:
-    """Return the decimal part of the number"""
+def decimal_count(n: float) -> int:
+    """Return the decimal part of the number."""
     f = str(n)
     if "." in f:
         digits = f[::-1].find(".")

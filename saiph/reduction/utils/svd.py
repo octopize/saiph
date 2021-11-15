@@ -9,8 +9,7 @@ from sklearn.utils import extmath
 def SVD(
     df: pd.DataFrame, svd_flip: bool = True
 ) -> Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]:
-    """
-    Compute Singular Value Decomposition.
+    """Compute Singular Value Decomposition.
 
     Parameters
     ----------

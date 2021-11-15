@@ -22,8 +22,7 @@ def fit(
     col_w: Optional[NDArray[Any]] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
-    """
-    Fit a PCA model on data.
+    """Fit a PCA model on data.
 
     Parameters
     ----------
@@ -32,7 +31,8 @@ def fit(
     nf: int, default: min(df.shape)
         Number of components to keep.
     col_w: np.ndarrayn default: np.ones(df.shape[1])
-        Weight assigned to each variable in the projection (more weight = more importance in the axes).
+        Weight assigned to each variable in the projection
+        (more weight = more importance in the axes).
     scale: bool
         Wether to scale data or not.
 
@@ -40,7 +40,7 @@ def fit(
     -------
     coord: pd.DataFrame
         The transformed data.
-    model: Model 
+    model: Model
         The model for transforming new data.
     param: Parameters
         The parameters for transforming new data.
@@ -93,8 +93,8 @@ def fit(
 def center(
     df: pd.DataFrame, scale: Optional[bool] = True
 ) -> Tuple[pd.DataFrame, float, float]:
-    """
-    Center data and standardize it if scale == true.
+    """Center data and standardize it if scale == true.
+
     Used as internal function during fit. Scaler is better suited when a Model is already fitted.
 
     Parameters
@@ -127,15 +127,15 @@ def center(
 
 
 def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
-    """
-    Scale data using mean and std from model.
-    
+    """Scale data using mean and std from model.
+
     Parameters
     ----------
     model: Model
         Model computed by fit.
     df: pd.DataFrame
-        DataFrame to scale. If nothing is specified, takes the DataFrame on which the model was fitted.
+        DataFrame to scale.
+        If nothing is specified, takes the DataFrame on which the model was fitted.
 
     Returns
     -------
@@ -153,9 +153,8 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
 
 
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
-    """
-    Scale and project into the fitted numerical space.
-    
+    """Scale and project into the fitted numerical space.
+
     Parameters
     ----------
     df: pd.DataFrame

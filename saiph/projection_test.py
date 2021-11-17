@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
 from saiph import fit, inverse_transform, stats, transform
@@ -245,7 +246,7 @@ expected_famd_contrib = [
 def test_var_contrib(df_input, expected_contrib):
     _, model, param = fit(df_input)
     stats(model, param)
-    assert list(param.contrib["Dim. 1"]) == expected_contrib
+    assert_allclose(param.contrib["Dim. 1"], expected_contrib, atol=1e-07)
 
 
 # check cor of variables to dim (if cor is ok so is cos2)
@@ -283,7 +284,7 @@ expected_famd_cor = [
 def test_var_cor(df_input, expected_cor):
     _, model, param = fit(df_input)
     stats(model, param)
-    assert list(param.cor["Dim. 1"]) == expected_cor
+    assert_allclose(param.cor["Dim. 1"], expected_cor, atol=1e-07)
 
 
 # Check percentage of explained variance
@@ -320,4 +321,4 @@ expected_famd_explained_var_ratio = [
 def test_var_ratio(df_input, expected_var_ratio):
     _, model, param = fit(df_input)
     stats(model, param)
-    assert list(model.explained_var_ratio)[0:5] == expected_var_ratio
+    assert_allclose(model.explained_var_ratio[0:5], expected_var_ratio, atol=1e-07)

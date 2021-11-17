@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 import pandas as pd
 from numpy.typing import NDArray
@@ -12,7 +12,7 @@ class Model:
 
     explained_var: NDArray[Any]
     """Explained variance."""
-    explained_var_ratio: Union[NDArray[Any], float]
+    explained_var_ratio: NDArray[Any]
     """Explained variance divided by the sum of the variances."""
     variable_coord: pd.DataFrame
 
@@ -27,8 +27,8 @@ class Model:
     """Mean of the original data. Calculated while centering."""
     std: Optional[float] = None
     """Standard deviation of the original data. Calculated while scaling."""
-    prop: Optional[NDArray[Any]] = None
-
+    prop: Any = None  # FAMD only
+    """Modality proportions of categorical variables"""
     _modalities: Optional[NDArray[Any]] = None
     D_c: Optional[NDArray[Any]] = None
 

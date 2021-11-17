@@ -1,5 +1,4 @@
 """MCA projection."""
-import typing
 from itertools import chain, repeat
 from typing import Any, Optional, Tuple
 
@@ -210,10 +209,9 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     return coord
 
 
-@typing.no_type_check
 def stats(model: Model, param: Parameters) -> Parameters:
     """Compute the contributions of each variable in each axis."""
-    V = np.dot(model.D_c, model.V.T)
+    V = np.dot(model.D_c, model.V.T)  # type: ignore
     total = pd.get_dummies(model.df.astype("category")).sum().sum()
     df = pd.get_dummies(model.df.astype("category"))
     F = df / total
@@ -270,7 +268,8 @@ def stats(model: Model, param: Parameters) -> Parameters:
     U = np.array(U).T
 
     # computing the contribution
-    eig = s ** 2
+    eig: Any = s ** 2
+
     for i in range(len(V[0])):
         V[:, i] = V[:, i] * np.sqrt(eig[i])
     coord_col = V

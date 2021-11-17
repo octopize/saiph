@@ -1,5 +1,4 @@
 """Project any dataframe, inverse transform and compute stats."""
-import typing
 from typing import Any, Optional, Tuple, Union
 
 import numpy as np
@@ -81,9 +80,13 @@ def fit(
     return coord, model, param
 
 
-@typing.no_type_check
 def stats(model: Model, param: Parameters) -> Parameters:
     """Compute the correlation, contributions and cos2 for each variable."""
+    # Check attributes type
+    if param.cor is None or param.quanti is None or param.quali is None:
+        raise ValueError(
+            "empty param, run fit function to create Model class and Parameters class objects"
+        )
     model.variable_coord.columns = param.cor.columns
     model.variable_coord.index = list(param.cor.index)
 
@@ -94,6 +97,10 @@ def stats(model: Model, param: Parameters) -> Parameters:
         )
     elif param.quanti.size == 0:
         param = mca.stats(model, param)
+        if param.cor is None:
+            raise ValueError(
+                "empty param, run fit function to create Model class and Parameters class objects"
+            )
         param.cos2 = param.cor.applymap(lambda x: x ** 2)
         param.contrib = pd.DataFrame(
             param.contrib,
@@ -102,6 +109,10 @@ def stats(model: Model, param: Parameters) -> Parameters:
         )
     else:
         param = famd.stats(model, param)
+        if param.cor is None or param.quanti is None or param.quali is None:
+            raise ValueError(
+                "empty param, run fit function to create Model class and Parameters class objects"
+            )
         param.cos2 = pd.DataFrame(
             param.cos2, index=list(param.quanti) + list(param.quali)
         )
@@ -131,7 +142,7 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
         Coordinates of the dataframe in the fitted space.
     """
     if param.quali is None or param.quanti is None or param.datetime_variables is None:
-        raise Exception("Need to fit before using transform")
+        raise ValueError("Need to fit before using transform")
     for i in param.datetime_variables:
         df.iloc[:, i] = (
             df.iloc[:, i] - np.datetime64("1970-01-01T00:00:00Z")
@@ -195,9 +206,8 @@ def inverse_transform(
         Inversed DataFrame.
     """
     # if PCA or FAMD compute the continuous variables
-    if param.quali is None or param.quanti is None or param.datetime_variables is None:
-        raise Exception("Need to fit before using inverse_transform")
-    if len(param.quanti) != 0:
+    if param.quanti is not None and len(param.quanti) != 0:
+
         X = np.array(coord @ model.V * np.sqrt(param.col_w))
         X = X / np.sqrt(param.col_w) * param.col_w
         X_quanti = X[:, : len(param.quanti)]
@@ -223,7 +233,7 @@ def inverse_transform(
             inverse_quanti.drop(["decimals"], axis=1, inplace=True)
 
         # if FAMD descale the categorical variables
-        if len(param.quali) != 0:
+        if param.quali is not None and len(param.quali) != 0:
             X_quali = X[:, len(param.quanti) :]
             prop = np.array(model.prop)
             X_quali = (X_quali) * (np.sqrt(prop)) + prop
@@ -236,7 +246,7 @@ def inverse_transform(
         # X_quali is the complete disjunctive table ("tableau disjonctif complet" in FR)
 
     # compute the categorical variables
-    if len(param.quali) != 0:
+    if param.quali is not None and len(param.quali) != 0:
         inverse_quali = pd.DataFrame()
         X_quali = pd.DataFrame(X_quali)
         X_quali.columns = list(
@@ -269,9 +279,14 @@ def inverse_transform(
             val += modalities[i]
 
     # concatenate the continuous and categorical
-    if len(param.quali) != 0 and len(param.quanti) != 0:
+    if (
+        param.quali is not None
+        and param.quanti is not None
+        and len(param.quali) != 0
+        and len(param.quanti) != 0
+    ):
         inverse = pd.concat([inverse_quali, inverse_quanti], axis=1)
-    elif len(param.quanti) != 0:
+    elif param.quanti is not None and len(param.quanti) != 0:
         inverse = inverse_quanti
     else:
         inverse = inverse_quali
@@ -285,10 +300,11 @@ def inverse_transform(
     inverse = inverse[model.df.columns]
 
     # Turn back datetime variables to original dtype
-    for i in param.datetime_variables:
-        inverse.iloc[:, i] = (
-            inverse.iloc[:, i] * np.timedelta64(1, "s")
-        ) + np.datetime64("1970-01-01T00:00:00Z")
+    if param.datetime_variables is not None:
+        for i in param.datetime_variables:
+            inverse.iloc[:, i] = (
+                inverse.iloc[:, i] * np.timedelta64(1, "s")
+            ) + np.datetime64("1970-01-01T00:00:00Z")
 
     return inverse
 

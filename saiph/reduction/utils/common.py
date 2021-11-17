@@ -1,5 +1,5 @@
 from itertools import repeat
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -24,11 +24,11 @@ def diag(arr: NDArray[Any], use_scipy: bool = False) -> NDArray[Any]:
 
 def explain_variance(
     s: NDArray[Any], df: pd.DataFrame, nf: int
-) -> Tuple[NDArray[Any], Union[NDArray[Any], float]]:
+) -> Tuple[NDArray[Any], NDArray[Any]]:
     explained_var: NDArray[Any] = ((s ** 2) / (df.shape[0] - 1))[:nf]
     summed_explained_var = explained_var.sum()
     if summed_explained_var == 0:
-        explained_var_ratio = np.nan
+        explained_var_ratio = np.array([np.nan])
     else:
         explained_var_ratio = explained_var / explained_var.sum()
     return explained_var, explained_var_ratio

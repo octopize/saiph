@@ -1,6 +1,5 @@
 """FAMD projection."""
 import sys
-import typing
 from itertools import chain, repeat
 from typing import Any, List, Optional, Tuple
 
@@ -248,11 +247,15 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     return coord
 
 
-@typing.no_type_check
 def stats(model: Model, param: Parameters) -> Parameters:
     """Compute contributions and cos2 for each variable."""
+    if param.quanti is None or model.U is None or model.s is None:
+        raise ValueError(
+            "empty param, run fit function to create Model class and Parameters class objects"
+        )
+
     df = pd.DataFrame(scaler(model, param))
-    df2 = np.array(pd.DataFrame(df).applymap(lambda x: x ** 2))
+    df2: NDArray[Any] = np.array(pd.DataFrame(df).applymap(lambda x: x ** 2))
 
     # svd of x with row_w and col_w
     weightedTc = _rmultiplication(
@@ -284,7 +287,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     for i in range(len(mult1)):
         U[i] = mult1.iloc[i] / np.sqrt(param.row_w[i])
     U = np.array(U).T
-    eig = s ** 2
+    eig: Any = s ** 2
     # end of the svd
 
     # compute the contribution
@@ -293,7 +296,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
         coord_var = np.vstack((coord_var, V[i] * s))
     contrib_var = (((((coord_var ** 2) / eig).T) * param.col_w).T) * 100
     # compute cos2
-    dfrow_w = ((df2.T) * param.row_w).T
+    dfrow_w = np.array(pd.DataFrame((df2.T) * param.row_w).T)
     dist2 = []
     for i in range(len(dfrow_w[0])):
         dist2 += [np.sum(dfrow_w[:, i])]
@@ -320,15 +323,15 @@ def stats(model: Model, param: Parameters) -> Parameters:
         dim = []
         for j, coordcol in enumerate(coord.columns):
             # for each modality of the qualitative column
-            s = 0
+            p = 0
             for i in range(len(dummy.columns)):
-                s += (
+                p += (
                     np.array(dummy.T)[i] * coord[coordcol] * param.row_w
                 ).sum() ** 2 / model.prop[fi + i]
-            dim += [s]
+            dim += [p]
         eta1 = (
-            np.array(dim) / (np.array((coord ** 2)).T * param.row_w).sum(axis=1)
-        ).tolist()
+            np.array(dim) / np.array((coord ** 2).T * param.row_w).sum(axis=1).tolist()
+        )
         eta2 += [eta1]
         fi += len(dummy.columns)
 
@@ -336,9 +339,9 @@ def stats(model: Model, param: Parameters) -> Parameters:
 
     cos2 = cos2 ** 2
     eta2 = np.array(eta2) ** 2
-    eta2 = (eta2.T / mods).T
+    eta2 = (pd.DataFrame(eta2).T / mods).T
 
-    cos2 = np.concatenate([cos2, eta2], axis=0)
+    cos2 = np.concatenate([cos2, eta2], axis=0)  # type: ignore
     param.contrib = contrib_var
     param.cos2 = cos2
     return param

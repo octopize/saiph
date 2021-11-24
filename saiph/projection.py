@@ -145,7 +145,7 @@ def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
 
 
 def inverse_transform(
-    coord: pd.DataFrame, model: Model, param: Parameters, shuffle: bool = False
+    coord: pd.DataFrame, model: Model, param: Parameters, shuffle: bool = False, seed: int = None
 ) -> pd.DataFrame:  # ---------------------------------------finish this
     """Compute the inverse transform of data coordinates."""
     # if PCA or FAMD compute the continuous variables
@@ -167,10 +167,11 @@ def inverse_transform(
             inverse_quanti["decimals"] = model.df[column].apply(decimal_count)
             # shuffling the decimals for the avatarization
             if shuffle:
+                np.random.seed(seed)
                 inverse_quanti["decimals"] = np.random.permutation(
                     inverse_quanti["decimals"].values
                 )
-
+            
             inverse_quanti[column] = inverse_quanti[[column, "decimals"]].apply(
                 lambda x: np.round(x[column], int(x["decimals"])), axis=1  # type: ignore
             )
@@ -217,9 +218,15 @@ def inverse_transform(
 
         # for each variable we affect the value to the highest modalitie in X_quali
         for i in range(len(modalities)):
-            mod_max = X_quali.iloc[:, val : val + modalities[i]].idxmax(axis=1)
-            mod_max = [x if x not in dict_mod else dict_mod[x] for x in mod_max]
-            inverse_quali[list(model.df[param.quali].columns)[i]] = mod_max
+            # get cumululative probabilities
+            c = X_quali.iloc[:, val : val + modalities[i]].cumsum(axis=1)
+            # random draw 
+            np.random.seed(seed)
+            u = np.random.rand(len(c), 1)
+            # choose the modality according the probabilities of each modalities
+            mod_random = (u < c).idxmax(axis=1)            
+            mod_random = [x if x not in dict_mod else dict_mod[x] for x in mod_random]
+            inverse_quali[list(model.df[param.quali].columns)[i]] = mod_random
             val += modalities[i]
 
     # concatenate the continuous and categorical

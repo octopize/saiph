@@ -146,11 +146,16 @@ def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
 
 def inverse_transform(
     coord: pd.DataFrame, model: Model, param: Parameters, shuffle: bool = False, seed: int = None
-) -> pd.DataFrame:  # ---------------------------------------finish this
+) -> pd.DataFrame: 
     """Compute the inverse transform of data coordinates."""
     # if PCA or FAMD compute the continuous variables
     if param.quali is None or param.quanti is None or param.datetime_variables is None:
         raise Exception("Need to fit before using inverse_transform")
+
+    if len(coord) < param.nf : 
+        raise Exception("For the moment, inverse_transform is not working if the number of dimensions is greater than the number of individuals")
+        # TODO : pb -> X_quali is not a complete disjunctive table when the numner of individuals is too small.
+
     if len(param.quanti) != 0:
         X = np.array(coord @ model.V * np.sqrt(param.col_w))
         X = X / np.sqrt(param.col_w) * param.col_w

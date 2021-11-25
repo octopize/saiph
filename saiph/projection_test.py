@@ -17,6 +17,22 @@ def test_transform_then_inverse_FAMD(iris_df: pd.DataFrame) -> None:
 
     assert_frame_equal(un_transformed, iris_df)
 
+def test_transform_then_inverse_small_FAMD() -> None:
+    df = pd.DataFrame(
+        {
+            "variable_1": [4, 5, 6, 7],
+            "variable_2": [10, 20, 30, 40, ],
+            "variable_3": ["red", "blue", "blue", "green"],
+            "variable_4": [100, 50, -30, -50],
+        }
+    )
+
+    _, model, param = fit(df, nf = 4)
+    transformed = transform(df, model, param)
+    un_transformed = inverse_transform(transformed, model, param)
+
+    assert_frame_equal(un_transformed, df)
+
 
 def test_transform_then_inverse_PCA(iris_quanti_df: pd.DataFrame) -> None:
     _, model, param = fit(iris_quanti_df, nf="all")
@@ -72,6 +88,23 @@ def test_transform_then_inverse_FAMD_weighted() -> None:
     )
 
     _, model, param = fit(df, col_w=[2, 1, 3, 2])
+    transformed = transform(df, model, param)
+    un_transformed = inverse_transform(transformed, model, param)
+
+    assert_frame_equal(un_transformed, df)
+
+
+def test_transform_then_inverse_small_FAMD_weighted() -> None:
+    df = pd.DataFrame(
+        {
+            "variable_1": [4, 5, 6, 7],
+            "variable_2": [10, 20, 30, 40, ],
+            "variable_3": ["red", "blue", "blue", "green"],
+            "variable_4": [100, 50, -30, -50],
+        }
+    )
+
+    _, model, param = fit(df, nf = 4, col_w=[2, 1, 3, 2])
     transformed = transform(df, model, param)
     un_transformed = inverse_transform(transformed, model, param)
 

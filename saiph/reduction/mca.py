@@ -58,7 +58,7 @@ def fit(
         )
     )
 
-    df_scale, _modalities, r, c = center(df)
+    df_scale, _modalities, r, c, dummies_col_prop = center(df)
     df_scale, T, D_c = diag_compute(df_scale, r, c)
 
     # apply the weights and compute the svd
@@ -87,7 +87,13 @@ def fit(
         type='mca',
     )
 
-    param = Parameters(nf=nf, col_w=col_weights, row_w=row_w, columns=columns)
+    param = Parameters(
+        nf=nf, 
+        col_w=col_weights, 
+        row_w=row_w, 
+        columns=columns,
+        dummies_col_prop=dummies_col_prop
+    )
 
     return coord, model, param
 
@@ -97,6 +103,7 @@ def center(
 ) -> Tuple[pd.DataFrame, NDArray[Any], NDArray[Any], NDArray[Any]]:
     """Center data and compute sums over columns and rows."""
     df_scale = pd.get_dummies(df.astype("category"))
+    dummies_col_prop = len(df_scale) / df_scale.sum(axis = 0)
     _modalities = df_scale.columns.values
 
     # scale data
@@ -104,7 +111,7 @@ def center(
 
     c = np.sum(df_scale, axis=0)
     r = np.sum(df_scale, axis=1)
-    return df_scale, _modalities, r, c
+    return df_scale, _modalities, r, c, dummies_col_prop
 
 
 def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:

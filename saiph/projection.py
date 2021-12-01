@@ -184,7 +184,7 @@ def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
 
 def inverse_transform(
 
-    coord: pd.DataFrame, model: Model, param: Parameters, shuffle: bool = False
+    coord: pd.DataFrame, model: Model, param: Parameters, shuffle: bool = False, seed: int=None
 ) -> pd.DataFrame: 
     """Compute the inverse transform of data coordinates.
 
@@ -207,6 +207,8 @@ def inverse_transform(
     inverse: pd.DataFrame
         Inversed DataFrame.
     """
+    np.random.seed(seed)
+
     
     if len(coord) < param.nf : 
         raise Exception("For the moment, inverse_transform is not working if the number of dimensions is greater than the number of individuals")
@@ -231,7 +233,6 @@ def inverse_transform(
             inverse_quanti["decimals"] = model.df[column].apply(decimal_count)
             # shuffling the decimals for the avatarization
             if shuffle:
-                np.random.seed(seed)
                 inverse_quanti["decimals"] = np.random.permutation(
                     inverse_quanti["decimals"].values
                 )
@@ -286,7 +287,6 @@ def inverse_transform(
             # get cumululative probabilities
             c = X_quali.iloc[:, val : val + modalities[i]].cumsum(axis=1)
             # random draw 
-            np.random.seed(seed)
             u = np.random.rand(len(c), 1)
             # choose the modality according the probabilities of each modalities
             mod_random = (u < c).idxmax(axis=1)            

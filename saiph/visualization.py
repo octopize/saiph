@@ -1,13 +1,12 @@
 """Visualization functions."""
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
 
 from saiph.models import Model, Parameters
-
-# mypy: ignore-errors
 
 
 def plot_circle(
@@ -25,6 +24,12 @@ def plot_circle(
     Returns:
         plot of the correlation circle
     """
+    # make sure stats have been computed prior to visualization
+    if param.cor is None:
+        raise ValueError(
+            "empty param, run fit function to create Model class and Parameters class objects"
+        )
+
     # Dimensions start from 1
 
     # Plotting circle
@@ -108,6 +113,10 @@ def plot_var_contribution(
     Returns:
         graph of the contribution percentages per variables
     """
+    if param.cos2 is None or param.contrib is None:
+        raise ValueError(
+            "empty param, run fit function to create Model class and Parameters class objects"
+        )
     # Dimensions start from 1
 
     # get the useful contributions
@@ -134,7 +143,7 @@ def plot_var_contribution(
     plt.show()
 
 
-def plot_explained_var(model: Model, param: Parameters, max_dims=10):
+def plot_explained_var(model: Model, param: Parameters, max_dims: int = 10) -> None:
     """Plot explained variance per dimension.
 
     Args:
@@ -143,7 +152,9 @@ def plot_explained_var(model: Model, param: Parameters, max_dims=10):
     Return:
         plot of the explained variance
     """
-    explained_percentage = model.explained_var_ratio * 100
+    # explained_percentage
+
+    explained_percentage: NDArray[Any] = model.explained_var_ratio * 100
     if len(explained_percentage) > max_dims:
         explained_percentage = explained_percentage[:max_dims]
 

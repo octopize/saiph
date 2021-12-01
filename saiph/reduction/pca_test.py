@@ -120,7 +120,7 @@ def test_center_scaler() -> None:
 
     _, model, _ = fit(df, scale=True)
 
-    df1, mean, std = center(model.df, scale=True)
+    df1, _, _ = center(model.df, scale=True)
     df2 = scaler(model, None)
 
     assert_frame_equal(df1, df2)
@@ -166,6 +166,14 @@ def test_transform() -> None:
     assert_frame_equal(
         df_transformed, expected_transformed, check_exact=False, atol=0.00001
     )
+
+
+def test_transform_vs_coord() -> None:
+    df = pd.DataFrame({0: [-2.0, 7.0, -4.5], 1: [6.0, 2.0, 7.0], 2: [5.0, 10.0, -14.5]})
+    coord, model, param = fit(df, scale=True)
+    df_transformed = transform(df, model, param)
+
+    assert_frame_equal(coord, df_transformed)
 
 
 def test_compare_sklearn_simple() -> None:

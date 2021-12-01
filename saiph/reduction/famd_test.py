@@ -4,7 +4,7 @@ from numpy.testing import assert_allclose
 from pandas._testing.asserters import assert_series_equal
 from pandas.testing import assert_frame_equal
 
-from saiph.reduction.famd import center, fit, scaler
+from saiph.reduction.famd import center, fit, scaler, transform
 from saiph.reduction.pca import center as center_pca
 from saiph.reduction.pca import fit as fit_pca
 from saiph.reduction.pca import scaler as scaler_pca
@@ -67,6 +67,45 @@ def test_fit_mix() -> None:
     assert np.array_equal(
         model._modalities, ["tool_hammer", "tool_toaster", "score_aa", "score_ab"]
     )
+
+
+def test_transform() -> None:
+    df = pd.DataFrame(
+        {
+            "tool": ["toaster", "hammer"],
+            "score": ["aa", "ab"],
+            "size": [1.0, 4.0],
+            "age": [55, 62],
+        }
+    )
+
+    _, model, param = fit(df)
+
+    df_transformed = transform(df, model, param)
+    df_expected = pd.DataFrame(
+        {
+            "Dim. 1": [2.0, -2],
+            "Dim. 2": [0.0, 0],
+        }
+    )
+
+    assert_frame_equal(df_transformed, df_expected)
+
+
+def test_transform_vs_coord() -> None:
+    df = pd.DataFrame(
+        {
+            "tool": ["toaster", "hammer"],
+            "score": ["aa", "ab"],
+            "size": [1.0, 4.0],
+            "age": [55, 62],
+        }
+    )
+
+    coord, model, param = fit(df)
+    df_transformed = transform(df, model, param)
+
+    assert_frame_equal(df_transformed, coord)
 
 
 def test_fit_zero() -> None:

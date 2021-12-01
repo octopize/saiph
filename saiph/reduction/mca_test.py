@@ -144,3 +144,16 @@ def test_transform_simple() -> None:
     assert_frame_equal(
         df_transformed, expected_transform, check_exact=False, atol=0.00001
     )
+
+
+def test_transform_vs_coord() -> None:
+    df = pd.DataFrame(
+        {
+            "tool": ["toaster", "toaster"],
+            "score": ["aa", "aa"],
+        }
+    )
+    coord, model, param = fit(df)
+    df_transformed = transform(df, model, param)
+
+    assert_frame_equal(coord, df_transformed)

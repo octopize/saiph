@@ -58,7 +58,6 @@ def fit(
     else:
         _nf = nf
 
-
     # Specify the correct function
     if quali.size == 0:
         _fit = pca.fit
@@ -183,9 +182,12 @@ def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
 
 
 def inverse_transform(
-
-    coord: pd.DataFrame, model: Model, param: Parameters, shuffle: bool = False, seed: int=None
-) -> pd.DataFrame: 
+    coord: pd.DataFrame,
+    model: Model,
+    param: Parameters,
+    shuffle: bool = False,
+    seed: int = None,
+) -> pd.DataFrame:
     """Compute the inverse transform of data coordinates.
 
     Note that if nf was stricly smaller than max(df.shape) in fit,
@@ -209,12 +211,13 @@ def inverse_transform(
     """
     np.random.seed(seed)
 
-    
-    if len(coord) < param.nf : 
-        raise Exception("For the moment, inverse_transform is not working if the number of dimensions is greater than the number of individuals")
-        # TODO : pb -> X_quali is not a complete disjunctive table when the numner of individuals is too small.
+    if len(coord) < param.nf:
+        raise Exception(
+            "For the moment, inverse_transform is not working for large dataset"
+        )
+        # TODO : pb -> X_quali is not a complete disjunctive table
+        # when the number of dimensions is greater than the number of individuals.
 
-        
     # if PCA or FAMD compute the continuous variables
     if param.quanti is not None and len(param.quanti) != 0:
 
@@ -236,7 +239,7 @@ def inverse_transform(
                 inverse_quanti["decimals"] = np.random.permutation(
                     inverse_quanti["decimals"].values
                 )
-            
+
             inverse_quanti[column] = inverse_quanti[[column, "decimals"]].apply(
                 lambda x: np.round(x[column], int(x["decimals"])), axis=1  # type: ignore
             )
@@ -253,7 +256,7 @@ def inverse_transform(
         # Previously was a ndarray, but no need
         # NB: If this causes a bug, X_quali = np.array(X_quali) goes back to previous vesrion
         X_quali = coord @ (model.D_c @ model.V.T).T  # type: ignore
-        X_quali = np.divide(X_quali , param.dummies_col_prop)
+        X_quali = np.divide(X_quali, param.dummies_col_prop)
         # X_quali is the complete disjunctive table ("tableau disjonctif complet" in FR)
 
     # compute the categorical variables
@@ -286,10 +289,10 @@ def inverse_transform(
         for i in range(len(modalities)):
             # get cumululative probabilities
             c = X_quali.iloc[:, val : val + modalities[i]].cumsum(axis=1)
-            # random draw 
+            # random draw
             u = np.random.rand(len(c), 1)
             # choose the modality according the probabilities of each modalities
-            mod_random = (u < c).idxmax(axis=1)            
+            mod_random = (u < c).idxmax(axis=1)
             mod_random = [x if x not in dict_mod else dict_mod[x] for x in mod_random]
             inverse_quali[list(model.df[param.quali].columns)[i]] = mod_random
             val += modalities[i]

@@ -71,7 +71,6 @@ def fit(
     df_scale, _modalities, r, c, dummies_col_prop = center(df)
     df_scale, T, D_c = diag_compute(df_scale, r, c)
 
-
     # apply the weights and compute the svd
     Z = ((T * col_weights).T * row_w).T
     U, s, V = SVD(Z)
@@ -99,11 +98,11 @@ def fit(
     )
 
     param = Parameters(
-        nf=nf, 
-        col_w=col_weights, 
-        row_w=row_w, 
+        nf=nf,
+        col_w=col_weights,
+        row_w=row_w,
         columns=columns,
-        dummies_col_prop=dummies_col_prop
+        dummies_col_prop=dummies_col_prop,
     )
 
     return coord, model, param
@@ -133,7 +132,7 @@ def center(
         Sums column by column
     """
     df_scale = pd.get_dummies(df.astype("category"))
-    dummies_col_prop = len(df_scale) / df_scale.sum(axis = 0)
+    dummies_col_prop = len(df_scale) / df_scale.sum(axis=0)
     _modalities = df_scale.columns.values
 
     # scale data
@@ -179,7 +178,7 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     return df_scaled
 
 
-def _diag_compute(
+def diag_compute(
     df_scale: pd.DataFrame, r: NDArray[Any], c: NDArray[Any]
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Compute diagonal matrices and scale data."""

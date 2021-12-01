@@ -1,6 +1,5 @@
 """FAMD projection."""
 import sys
-import typing
 from itertools import chain, repeat
 from typing import Any, List, Optional, Tuple
 
@@ -24,17 +23,28 @@ def fit(
     col_w: Optional[NDArray[Any]] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
-    """Project data into a lower dimensional space using FAMD.
+    """Fit a FAMD model on data.
 
-    Args:
-        df: data to project
-        nf: number of components to keep (default: {min(df.shape[0], 5)})
-        col_weights: importance of each variable in the projection
-            (more weight = more importance in the axes)
-        scale: not used
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Data to project.
+    nf: int, default: min(df.shape)
+        Number of components to keep.
+    col_w: np.ndarrayn default: np.ones(df.shape[1])
+        Weight assigned to each variable in the projection
+        (more weight = more importance in the axes).
+    scale: bool
+        Unused. Kept for compatibility with model enabling scale=True|False.
 
-    Returns:
-        The transformed variables, model and parameters.
+    Returns
+    -------
+    coord: pd.DataFrame
+        The transformed data.
+    model: Model
+        The model for transforming new data.
+    param: Parameters
+        The parameters for transforming new data.
     """
     nf = nf or min(df.shape)
     _col_weights: NDArray[Any] = col_w or np.ones(df.shape[1])
@@ -47,7 +57,7 @@ def fit(
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
 
     row_w = row_weights_uniform(len(df))
-    col_weights = col_weights_compute(df, _col_weights, quanti, quali)
+    col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
 
     df_scale, mean, std, prop, _modalities = center(df, quanti, quali)
 
@@ -64,10 +74,10 @@ def fit(
     U = U[:, :nf]
     s = s[:nf]
     V = V[:nf, :]
-
+    print(_V)
     columns = column_names(nf)
-
     coord = df_scale @ V.T
+    print( columns)
     coord.columns = columns
 
     model = Model(
@@ -82,7 +92,7 @@ def fit(
         std=std,
         prop=prop,
         _modalities=_modalities,
-        type='famd',
+        type="famd",
     )
 
     param = Parameters(
@@ -97,10 +107,10 @@ def fit(
     return coord, model, param
 
 
-def col_weights_compute(
+def _col_weights_compute(
     df: pd.DataFrame, col_w: NDArray[Any], quanti: List[int], quali: List[int]
 ) -> NDArray[Any]:
-    """Initiate the weight vectors."""
+    """Calculate weights for columns given what weights the user gave."""
     # Set the columns and row weights
     weight_df = pd.DataFrame([col_w], columns=df.columns)
     weight_quanti = weight_df[quanti]
@@ -125,8 +135,33 @@ def col_weights_compute(
 
 def center(
     df: pd.DataFrame, quanti: List[int], quali: List[int]
-) -> Tuple[pd.DataFrame, float, float, float, NDArray[Any]]:
-    """Scale data and compute mean, pro and std."""
+) -> Tuple[pd.DataFrame, float, float, NDArray[Any], NDArray[Any]]:
+    """Center data, scale it and compute modalities.
+
+    Used as internal function during fit. Scaler is better suited when a Model is already fitted.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        DataFrame to center.
+    quanti: np.ndarray
+        Indexes of continous variables.
+    quali: np.ndarray
+        Indexes of categorical variables.
+
+    Returns
+    -------
+    df_scale: pd.DataFrame
+        The scaled DataFrame.
+    mean: float
+        Mean of the input dataframe.
+    std: float
+        Standard deviation of the input dataframe. Returns nan as std if no std was asked.
+    prop: np.ndarray
+        Proportion of each categorical.
+    _modalities: np.ndarray
+        Modalities for the MCA.
+    """
     # Scale the continuous data
     df_quanti = df[quanti]
     mean = np.mean(df_quanti, axis=0)
@@ -147,18 +182,26 @@ def center(
     return df_scale, mean, std, prop, _modalities
 
 
-def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
-    """Scale and project into the fitted numerical space."""
-    df_scaled = scaler(model, param, df)
-    coord = df_scaled @ model.V.T
-    coord.columns = param.columns
-    return coord
-
-
 def scaler(
     model: Model, param: Parameters, df: Optional[pd.DataFrame] = None
 ) -> pd.DataFrame:
-    """Scale data using prop, std and mean."""
+    """Scale data using fitted model.
+
+    Parameters
+    ----------
+    model: Model
+        Model computed by fit.
+    param: Parameters
+        Param computed by fit.
+    df: pd.DataFrame
+        DataFrame to scale.
+        If nothing is specified, takes the DataFrame on which the model was fitted.
+
+    Returns
+    -------
+    df_scaled: pd.DataFrame
+        The scaled DataFrame.
+    """
     if df is None:
         df = model.df
 
@@ -177,15 +220,42 @@ def scaler(
     df_quali = df_quali[model._modalities]
     df_quali = (df_quali - model.prop) / np.sqrt(model.prop)
 
-    df_scale = pd.concat([df_quanti, df_quali], axis=1)
-    return df_scale
+    df_scaled = pd.concat([df_quanti, df_quali], axis=1)
+    return df_scaled
 
 
-@typing.no_type_check
+def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
+    """Scale and project into the fitted numerical space.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        DataFrame to transform.
+    model: Model
+        Model computed by fit.
+    param: Parameters
+        Param computed by fit.
+
+    Returns
+    -------
+    coord: pd.DataFrame
+        Coordinates of the dataframe in the fitted space.
+    """
+    df_scaled = scaler(model, param, df)
+    coord = df_scaled @ model.V.T
+    coord.columns = param.columns
+    return coord
+
+
 def stats(model: Model, param: Parameters) -> Parameters:
     """Compute contributions and cos2 for each variable."""
+    if param.quanti is None or model.U is None or model.s is None:
+        raise ValueError(
+            "empty param, run fit function to create Model class and Parameters class objects"
+        )
+
     df = pd.DataFrame(scaler(model, param))
-    df2 = np.array(pd.DataFrame(df).applymap(lambda x: x ** 2))
+    df2: NDArray[Any] = np.array(pd.DataFrame(df).applymap(lambda x: x ** 2))
 
     # svd of x with row_w and col_w
     weightedTc = _rmultiplication(
@@ -217,7 +287,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     for i in range(len(mult1)):
         U[i] = mult1.iloc[i] / np.sqrt(param.row_w[i])
     U = np.array(U).T
-    eig = s ** 2
+    eig: Any = s ** 2
     # end of the svd
 
     # compute the contribution
@@ -226,7 +296,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
         coord_var = np.vstack((coord_var, V[i] * s))
     contrib_var = (((((coord_var ** 2) / eig).T) * param.col_w).T) * 100
     # compute cos2
-    dfrow_w = ((df2.T) * param.row_w).T
+    dfrow_w = np.array(pd.DataFrame((df2.T) * param.row_w).T)
     dist2 = []
     for i in range(len(dfrow_w[0])):
         dist2 += [np.sum(dfrow_w[:, i])]
@@ -253,15 +323,15 @@ def stats(model: Model, param: Parameters) -> Parameters:
         dim = []
         for j, coordcol in enumerate(coord.columns):
             # for each modality of the qualitative column
-            s = 0
+            p = 0
             for i in range(len(dummy.columns)):
-                s += (
+                p += (
                     np.array(dummy.T)[i] * coord[coordcol] * param.row_w
                 ).sum() ** 2 / model.prop[fi + i]
-            dim += [s]
+            dim += [p]
         eta1 = (
-            np.array(dim) / (np.array((coord ** 2)).T * param.row_w).sum(axis=1)
-        ).tolist()
+            np.array(dim) / np.array((coord ** 2).T * param.row_w).sum(axis=1).tolist()
+        )
         eta2 += [eta1]
         fi += len(dummy.columns)
 
@@ -269,9 +339,9 @@ def stats(model: Model, param: Parameters) -> Parameters:
 
     cos2 = cos2 ** 2
     eta2 = np.array(eta2) ** 2
-    eta2 = (eta2.T / mods).T
+    eta2 = (pd.DataFrame(eta2).T / mods).T
 
-    cos2 = np.concatenate([cos2, eta2], axis=0)
+    cos2 = np.concatenate([cos2, eta2], axis=0)  # type: ignore
     param.contrib = contrib_var
     param.cos2 = cos2
     return param

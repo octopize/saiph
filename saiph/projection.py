@@ -44,10 +44,12 @@ def fit(
 
     _nf: int
     if not nf or isinstance(nf, str):
-        _nf = len(pd.get_dummies(df).columns.values)
+        _nf = min(pd.get_dummies(df).shape)
     else:
         _nf = nf
 
+    print("_nf:", _nf)
+    print("dummies:", pd.get_dummies(df).columns.values)
     # Specify the correct function
     if quali.size == 0:
         _fit = pca.fit

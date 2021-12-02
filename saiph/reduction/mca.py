@@ -68,8 +68,12 @@ def fit(
         )
     )
 
-    df_scale, _modalities, r, c, dummies_col_prop = center(df)
+    df_scale, _modalities, r, c = center(df)
     df_scale, T, D_c = diag_compute(df_scale, r, c)
+
+    df_dummies = pd.get_dummies(df.astype("category"))
+    dummies_col_prop = len(df_dummies) / df_dummies.sum(axis=0)
+
 
     # apply the weights and compute the svd
     Z = ((T * col_weights).T * row_w).T
@@ -132,7 +136,6 @@ def center(
         Sums column by column
     """
     df_scale = pd.get_dummies(df.astype("category"))
-    dummies_col_prop = len(df_scale) / df_scale.sum(axis=0)
     _modalities = df_scale.columns.values
 
     # scale data
@@ -140,7 +143,7 @@ def center(
 
     c = np.sum(df_scale, axis=0)
     r = np.sum(df_scale, axis=1)
-    return df_scale, _modalities, r, c, dummies_col_prop
+    return df_scale, _modalities, r, c
 
 
 def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:

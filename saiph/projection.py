@@ -186,7 +186,7 @@ def inverse_transform(
     model: Model,
     param: Parameters,
     shuffle: bool = False,
-    seed: int = None,
+    seed: Optional[int] = None,
 ) -> pd.DataFrame:
     """Compute the inverse transform of data coordinates.
 
@@ -212,11 +212,9 @@ def inverse_transform(
     np.random.seed(seed)
 
     if len(coord) < param.nf:
-        raise Exception(
-            "For the moment, inverse_transform is not working for large dataset"
+        raise ValueError(
+            "Inverse_transform is not working if the number of dimensions is greater than the number of individuals"
         )
-        # TODO : pb -> X_quali is not a complete disjunctive table
-        # when the number of dimensions is greater than the number of individuals.
 
     # if PCA or FAMD compute the continuous variables
     if param.quanti is not None and len(param.quanti) != 0:
@@ -293,7 +291,7 @@ def inverse_transform(
             u = np.random.rand(len(c), 1)
             # choose the modality according the probabilities of each modalities
             mod_random = (u < c).idxmax(axis=1)
-            mod_random = [x if x not in dict_mod else dict_mod[x] for x in mod_random]
+            mod_random = [dict_mod.get(x, x) for x in mod_random]
             inverse_quali[list(model.df[param.quali].columns)[i]] = mod_random
             val += modalities[i]
 

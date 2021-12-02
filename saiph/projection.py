@@ -213,7 +213,8 @@ def inverse_transform(
 
     if len(coord) < param.nf:
         raise ValueError(
-            "Inverse_transform is not working if the number of dimensions is greater than the number of individuals"
+            "Inverse_transform is not working"
+            "if the number of dimensions is greater than the number of individuals"
         )
 
     # if PCA or FAMD compute the continuous variables

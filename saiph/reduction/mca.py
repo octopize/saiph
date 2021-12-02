@@ -74,7 +74,6 @@ def fit(
     df_dummies = pd.get_dummies(df.astype("category"))
     dummies_col_prop = len(df_dummies) / df_dummies.sum(axis=0)
 
-
     # apply the weights and compute the svd
     Z = ((T * col_weights).T * row_w).T
     U, s, V = SVD(Z)

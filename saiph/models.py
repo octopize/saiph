@@ -40,7 +40,7 @@ class Model:
 class Parameters:
     nf: int
     """Number of components kept."""
-    col_w: NDArray[Any]             
+    col_w: NDArray[Any]
     """Weights that were applied to each column."""
     row_w: NDArray[Any]
     """Weights that were applied to each row."""
@@ -56,4 +56,3 @@ class Parameters:
     cos2: Optional[pd.DataFrame] = None
     dummies_col_prop: Optional[NDArray[Any]] = None
     """Proportion of individuals taking each modality."""
-

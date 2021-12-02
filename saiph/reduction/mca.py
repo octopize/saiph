@@ -69,7 +69,7 @@ def fit(
     )
 
     df_scale, _modalities, r, c = center(df)
-    df_scale, T, D_c = diag_compute(df_scale, r, c)
+    df_scale, T, D_c = _diag_compute(df_scale, r, c)
 
     df_dummies = pd.get_dummies(df.astype("category"))
     dummies_col_prop = len(df_dummies) / df_dummies.sum(axis=0)
@@ -180,7 +180,7 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     return df_scaled
 
 
-def diag_compute(
+def _diag_compute(
     df_scale: pd.DataFrame, r: NDArray[Any], c: NDArray[Any]
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Compute diagonal matrices and scale data."""

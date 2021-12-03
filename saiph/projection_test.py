@@ -28,10 +28,40 @@ def test_transform_then_inverse_PCA(iris_quanti_df: pd.DataFrame) -> None:
 def test_transform_then_inverse_MCA() -> None:
     df = pd.DataFrame(
         {
-            "tool": ["toaster", "toaster", "hammer"],
-            "score": ["aa", "ca", "bb"],
-            "car": ["tesla", "renault", "tesla"],
-            "moto": ["Bike", "Bike", "Motor"],
+            "tool": [
+                "toaster",
+                "toaster",
+                "hammer",
+                "toaster",
+                "toaster",
+                "hammer",
+                "toaster",
+                "toaster",
+                "hammer",
+            ],
+            "score": ["aa", "ca", "bb", "aa", "ca", "bb", "aa", "ca", "bb"],
+            "car": [
+                "tesla",
+                "renault",
+                "tesla",
+                "tesla",
+                "renault",
+                "tesla",
+                "tesla",
+                "renault",
+                "tesla",
+            ],
+            "moto": [
+                "Bike",
+                "Bike",
+                "Motor",
+                "Bike",
+                "Bike",
+                "Motor",
+                "Bike",
+                "Bike",
+                "Motor",
+            ],
         }
     )
 
@@ -44,10 +74,40 @@ def test_transform_then_inverse_MCA() -> None:
 def test_transform_then_inverse_MCA_type() -> None:
     df = pd.DataFrame(
         {
-            "tool": ["toaster", "toaster", "hammer"],
-            "score": [1, 1, 0],
-            "car": ["tesla", "renault", "tesla"],
-            "moto": ["Bike", "Bike", "Motor"],
+            "tool": [
+                "toaster",
+                "toaster",
+                "hammer",
+                "toaster",
+                "toaster",
+                "hammer",
+                "toaster",
+                "toaster",
+                "hammer",
+            ],
+            "score": [1, 1, 0, 1, 1, 1, 1, 0, 0],
+            "car": [
+                "tesla",
+                "renault",
+                "tesla",
+                "tesla",
+                "renault",
+                "tesla",
+                "tesla",
+                "renault",
+                "tesla",
+            ],
+            "moto": [
+                "Bike",
+                "Bike",
+                "Motor",
+                "Bike",
+                "Bike",
+                "Motor",
+                "Bike",
+                "Bike",
+                "Motor",
+            ],
         }
     )
 

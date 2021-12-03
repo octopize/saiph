@@ -54,3 +54,5 @@ class Parameters:
     cor: Optional[pd.DataFrame] = None
     contrib: Optional[pd.DataFrame] = None
     cos2: Optional[pd.DataFrame] = None
+    dummies_col_prop: Optional[NDArray[Any]] = None
+    """Proportion of individuals taking each modality."""

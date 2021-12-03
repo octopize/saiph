@@ -70,6 +70,10 @@ def fit(
 
     df_scale, _modalities, r, c = center(df)
     df_scale, T, D_c = _diag_compute(df_scale, r, c)
+    
+    # get the array gathering proportion of each modality among individual (N/n)
+    df_dummies = pd.get_dummies(df.astype("category"))
+    dummies_col_prop = len(df_dummies) / df_dummies.sum(axis=0)
 
     # apply the weights and compute the svd
     Z = ((T * col_weights).T * row_w).T
@@ -97,7 +101,13 @@ def fit(
         type="mca",
     )
 
-    param = Parameters(nf=nf, col_w=col_weights, row_w=row_w, columns=columns)
+    param = Parameters(
+        nf=nf,
+        col_w=col_weights,
+        row_w=row_w,
+        columns=columns,
+        dummies_col_prop=dummies_col_prop,
+    )
 
     return coord, model, param
 

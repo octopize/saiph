@@ -74,9 +74,7 @@ def fit(
     U = U[:, :nf]
     s = s[:nf]
     V = V[:nf, :]
-
     columns = column_names(nf)
-
     coord = df_scale @ V.T
     coord.columns = columns
 

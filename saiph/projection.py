@@ -54,7 +54,7 @@ def fit(
 
     _nf: int
     if not nf or isinstance(nf, str):
-        _nf = len(pd.get_dummies(df).columns.values)
+        _nf = min(pd.get_dummies(df).shape)
     else:
         _nf = nf
 
@@ -182,8 +182,12 @@ def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
 
 
 def inverse_transform(
-    coord: pd.DataFrame, model: Model, param: Parameters, shuffle: bool = False
-) -> pd.DataFrame:  # ---------------------------------------finish this
+    coord: pd.DataFrame,
+    model: Model,
+    param: Parameters,
+    shuffle: bool = False,
+    seed: Optional[int] = None,
+) -> pd.DataFrame:
     """Compute the inverse transform of data coordinates.
 
     Note that if nf was stricly smaller than max(df.shape) in fit,
@@ -205,6 +209,14 @@ def inverse_transform(
     inverse: pd.DataFrame
         Inversed DataFrame.
     """
+    np.random.seed(seed)
+
+    if len(coord) < param.nf:
+        raise ValueError(
+            "Inverse_transform is not working"
+            "if the number of dimensions is greater than the number of individuals"
+        )
+
     # if PCA or FAMD compute the continuous variables
     if param.quanti is not None and len(param.quanti) != 0:
 
@@ -243,6 +255,8 @@ def inverse_transform(
         # Previously was a ndarray, but no need
         # NB: If this causes a bug, X_quali = np.array(X_quali) goes back to previous vesrion
         X_quali = coord @ (model.D_c @ model.V.T).T  # type: ignore
+        X_quali = np.divide(X_quali, param.dummies_col_prop)
+        # divinding by proportion of each modality among individual allows to get back the complete disjunctive table
         # X_quali is the complete disjunctive table ("tableau disjonctif complet" in FR)
 
     # compute the categorical variables
@@ -273,9 +287,14 @@ def inverse_transform(
 
         # for each variable we affect the value to the highest modalitie in X_quali
         for i in range(len(modalities)):
-            mod_max = X_quali.iloc[:, val : val + modalities[i]].idxmax(axis=1)
-            mod_max = [x if x not in dict_mod else dict_mod[x] for x in mod_max]
-            inverse_quali[list(model.df[param.quali].columns)[i]] = mod_max
+            # get cumululative probabilities
+            c = X_quali.iloc[:, val : val + modalities[i]].cumsum(axis=1)
+            # random draw
+            u = np.random.rand(len(c), 1)
+            # choose the modality according the probabilities of each modalities
+            mod_random = (u < c).idxmax(axis=1)
+            mod_random = [dict_mod.get(x, x) for x in mod_random]
+            inverse_quali[list(model.df[param.quali].columns)[i]] = mod_random
             val += modalities[i]
 
     # concatenate the continuous and categorical

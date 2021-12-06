@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "saiph"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["Zineb Bennis", "Julien Petot <julien@octopize-md.com>"]
 license = "MIT"

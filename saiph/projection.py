@@ -256,7 +256,8 @@ def inverse_transform(
         # NB: If this causes a bug, X_quali = np.array(X_quali) goes back to previous vesrion
         X_quali = coord @ (model.D_c @ model.V.T).T  # type: ignore
         X_quali = np.divide(X_quali, param.dummies_col_prop)
-        # divinding by proportion of each modality among individual allows to get back the complete disjunctive table
+        # divinding by proportion of each modality among individual
+        # allows to get back the complete disjunctive table
         # X_quali is the complete disjunctive table ("tableau disjonctif complet" in FR)
 
     # compute the categorical variables

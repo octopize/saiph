@@ -230,20 +230,6 @@ def inverse_transform(
         inverse_quanti = (X_quanti * std) + mean
         inverse_quanti = pd.DataFrame(inverse_quanti, columns=list(param.quanti))
 
-        # round to the right decimal
-        for column in inverse_quanti.columns:
-            inverse_quanti["decimals"] = model.df[column].apply(decimal_count)
-            # shuffling the decimals for the avatarization
-            if shuffle:
-                inverse_quanti["decimals"] = np.random.permutation(
-                    inverse_quanti["decimals"].values
-                )
-
-            inverse_quanti[column] = inverse_quanti[[column, "decimals"]].apply(
-                lambda x: np.round(x[column], int(x["decimals"])), axis=1  # type: ignore
-            )
-            inverse_quanti.drop(["decimals"], axis=1, inplace=True)
-
         # if FAMD descale the categorical variables
         if param.quali is not None and len(param.quali) != 0:
             X_quali = X[:, len(param.quanti) :]

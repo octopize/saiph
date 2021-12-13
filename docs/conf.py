@@ -16,6 +16,8 @@ from typing import List
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+import saiph
+
 # -- Project information -----------------------------------------------------
 
 project = "Saiph"
@@ -23,7 +25,7 @@ copyright = "2021, Octopize"
 author = "Zineb Bennis, Morgan Guillaudeux, Gaêl Russeil, Julien Petot"
 
 # The full version, including alpha/beta/rc tags
-release = "1.0.0"
+release = saiph.__version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -31,7 +33,7 @@ release = "1.0.0"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon"]
+extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon", "myst_parser"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -53,3 +55,9 @@ html_theme = "sphinx_rtd_theme"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path: List[str] = []
+
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.txt': 'markdown',
+    '.md': 'markdown',
+}

@@ -1,6 +1,7 @@
 [tool.poetry]
 name = "saiph"
-version = "0.2.0"
+# Also modify in saiph/__init__.py
+version = "0.2.1"
 description = "A project package"
 authors = ["Zineb Bennis", "Julien Petot <julien@octopize-md.com>"]
 license = "MIT"
@@ -26,6 +27,7 @@ black = {extras = ["jupyter"], version = "^21.12b0"}
 prince = "^0.7"
 flit = "^3.4.0"
 flake8 = "^4.0.1"
+myst-parser = "^0.16.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

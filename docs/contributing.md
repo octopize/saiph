@@ -12,4 +12,7 @@ git commit -am "chore: releasing version $VERSION"
 
 # 3. Tag
 git tag $VERSION
+
+# 4. Push
+git push --tags
 ```

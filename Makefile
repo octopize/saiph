@@ -6,6 +6,7 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
 install:  ## Install the stack
+	pre-commit install --hook-type commit-msg
 	poetry install
 .PHONY: install
 
@@ -14,11 +15,11 @@ notebook:  ## Run the notebook
 .PHONY: notebook
 
 docs:  ## Build docs
-	poetry run sphinx-build -b html docs/source docs/build
+	poetry run sphinx-build -b html docs build/docs
 .PHONY: docs
 
 docs-open:  ## Open docs
-	python -m webbrowser -t "file://$(abspath docs/build)/index.html"
+	python -m webbrowser -t "file://$(abspath build/docs)/index.html"
 .PHONY: docs-open
 
 ##@ Tests

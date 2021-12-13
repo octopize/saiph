@@ -6,6 +6,7 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
 install:  ## Install the stack
+	pre-commit install --hook-type commit-msg
 	poetry install
 .PHONY: install
 

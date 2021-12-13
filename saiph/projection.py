@@ -185,7 +185,6 @@ def inverse_transform(
     coord: pd.DataFrame,
     model: Model,
     param: Parameters,
-    shuffle: bool = False,
     seed: Optional[int] = None,
 ) -> pd.DataFrame:
     """Compute the inverse transform of data coordinates.
@@ -201,8 +200,8 @@ def inverse_transform(
         Model computed by fit.
     param: Parameters
         Param computed by fit.
-    shuffle: bool
-        Whether data should be shuffled or not.
+    seed: int|None, default: None
+        Specify the seed for np.random.
 
     Returns
     -------

@@ -2,7 +2,7 @@ from .projection import fit, inverse_transform, stats, transform
 from .visualization import plot_circle, plot_explained_var, plot_var_contribution
 
 # Also modify in pyproject.toml
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 __all__ = [
     "__version__",

@@ -8,7 +8,7 @@ VERSION="0.2.0"
 # 1. Edit version in `pyproject.toml` and `saiph/__init__.py`
 
 # 2. Commit
-git commit -am "chore: releasing version $VERSION"
+git commit -am "chore: release version $VERSION"
 
 # 3. Tag
 git tag $VERSION

@@ -9,14 +9,14 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
+
 import sys
 from pathlib import Path
 from typing import List
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-import saiph
+import saiph  # noqa: E402
 
 # -- Project information -----------------------------------------------------
 
@@ -57,7 +57,7 @@ html_theme = "sphinx_rtd_theme"
 html_static_path: List[str] = []
 
 source_suffix = {
-    '.rst': 'restructuredtext',
-    '.txt': 'markdown',
-    '.md': 'markdown',
+    ".rst": "restructuredtext",
+    ".txt": "markdown",
+    ".md": "markdown",
 }

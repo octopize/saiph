@@ -1,4 +1,4 @@
-"""MCA projection."""
+"""MCA projection module."""
 from itertools import chain, repeat
 from typing import Any, Optional, Tuple
 
@@ -117,7 +117,9 @@ def center(
 ) -> Tuple[pd.DataFrame, NDArray[Any], NDArray[Any], NDArray[Any]]:
     """Center data and compute modalities.
 
-    Used as internal function during fit. Scaler is better suited when a Model is already fitted.
+    Used as internal function during fit.
+
+    **NB**: saiph.reduction.mca.scaler is better suited when a Model is already fitted.
 
     Parameters
     ----------
@@ -147,7 +149,7 @@ def center(
 
 
 def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
-    """Scale data using fitted model.
+    """Scale data using modalities from model.
 
     Parameters
     ----------
@@ -220,7 +222,20 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
 
 
 def stats(model: Model, param: Parameters) -> Parameters:
-    """Compute the contributions of each variable in each axis."""
+    """Compute the contributions.
+
+    Parameters
+    ----------
+    model: Model
+        Model computed by fit.
+    param: Parameters
+        Param computed by fit.
+
+    Returns
+    -------
+    param: Parameters
+        param populated with contriubtion.
+    """
     V = np.dot(model.D_c, model.V.T)  # type: ignore
     total = pd.get_dummies(model.df.astype("category")).sum().sum()
     df = pd.get_dummies(model.df.astype("category"))

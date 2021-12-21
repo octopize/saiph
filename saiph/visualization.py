@@ -16,13 +16,20 @@ def plot_circle(
     min_cor: float = 0.1,
     max_var: int = 7,
 ) -> None:
-    """Plot correlation graph.
+    """Plot correlation circle.
 
-    Arguments:
-        dimensions: dimensions to help by each axis
-
-    Returns:
-        plot of the correlation circle
+    Parameters
+    ----------
+    model: Model
+        The model for transforming new data.
+    param: Parameters
+        The parameters for transforming new data.
+    dimensions: Optional[List[int]]
+        Dimensions to help by each axis
+    min_cor: float
+        Minimuim correlation threshold to display arrow
+    max_var: int
+        Number of variables to display (in descending order)
     """
     # make sure stats have been computed prior to visualization
     if param.cor is None:
@@ -97,18 +104,23 @@ def plot_circle(
 
 
 def plot_var_contribution(
-    model: Model,
     param: Parameters,
     dim: int = 1,
     max_var: int = 10,
     min_contrib: float = 0.1,
 ) -> None:
-    """Plot the variable contribution for a given dimension.
+    """Plot the variable contributions for a given dimension.
 
-    Args:
-        dim: value of the dimension to plot
-        max_var: maximum number of variables to plot
-        min_contrib: lower threshold for the variable contributions
+    Parameters
+    ----------
+    param: Parameters
+        The parameters for transforming new data.
+    dim: int
+        Value of the dimension to plot
+    max_var: int
+        Maximum number of variables to plot
+    min_contrib: float
+        Minimum contribution threshold for the variable contributions to be displayed
 
     Returns:
         graph of the contribution percentages per variables
@@ -143,14 +155,15 @@ def plot_var_contribution(
     plt.show()
 
 
-def plot_explained_var(model: Model, param: Parameters, max_dims: int = 10) -> None:
+def plot_explained_var(model: Model, max_dims: int = 10) -> None:
     """Plot explained variance per dimension.
 
-    Args:
-        max_dims: maximum number of dimensions to plot
-
-    Return:
-        plot of the explained variance
+    Parameters
+    ----------
+    model: Model
+        Model computed by fit.
+    max_dims: int
+        Maximum number of dimensions to plot
     """
     # explained_percentage
 

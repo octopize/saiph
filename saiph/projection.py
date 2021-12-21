@@ -81,7 +81,20 @@ def fit(
 
 
 def stats(model: Model, param: Parameters) -> Parameters:
-    """Compute the correlation, contributions and cos2 for each variable."""
+    """Compute the contributions and cos2.
+
+    Parameters
+    ----------
+    model: Model
+        Model computed by fit.
+    param: Parameters
+        Param computed by fit.
+
+    Returns
+    -------
+    param: Parameters
+        param populated with contriubtion.
+    """
     # Check attributes type
     if param.cor is None or param.quanti is None or param.quali is None:
         raise ValueError(
@@ -157,7 +170,7 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
 
 
 def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
-    """Compute the correlation between the axis' and the variables."""
+    """Compute the correlation between the axis and the variables."""
     # select columns and project data
     df_quanti = model.df[param.quanti]
     coord = transform(model.df, model, param)  # transform to be fixed
@@ -315,13 +328,3 @@ def inverse_transform(
             ) + np.datetime64("1970-01-01T00:00:00Z")
 
     return inverse
-
-
-def decimal_count(n: float) -> int:
-    """Return the decimal part of the number."""
-    f = str(n)
-    if "." in f:
-        digits = f[::-1].find(".")
-    else:
-        digits = 0
-    return digits

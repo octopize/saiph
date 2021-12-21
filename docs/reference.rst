@@ -39,14 +39,6 @@ saiph.pca
    :undoc-members:
    :show-inheritance:
 
-saiph.projection
-----------------
-
-.. automodule:: saiph.projection
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 saiph.svd
 ---------
 

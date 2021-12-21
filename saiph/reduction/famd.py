@@ -1,4 +1,4 @@
-"""FAMD projection."""
+"""FAMD projection module."""
 import sys
 from itertools import chain, repeat
 from typing import Any, List, Optional, Tuple
@@ -134,9 +134,11 @@ def _col_weights_compute(
 def center(
     df: pd.DataFrame, quanti: List[int], quali: List[int]
 ) -> Tuple[pd.DataFrame, float, float, NDArray[Any], NDArray[Any]]:
-    """Center data, scale it and compute modalities.
+    """Center data, scale it, compute modalities and proportions of each categorical.
 
-    Used as internal function during fit. Scaler is better suited when a Model is already fitted.
+    Used as internal function during fit.
+
+    **NB**: saiph.reduction.famd.scaler is better suited when a Model is already fitted.
 
     Parameters
     ----------
@@ -183,7 +185,7 @@ def center(
 def scaler(
     model: Model, param: Parameters, df: Optional[pd.DataFrame] = None
 ) -> pd.DataFrame:
-    """Scale data using fitted model.
+    """Scale data using mean, std, modalities and proportions of each categorical from model.
 
     Parameters
     ----------
@@ -246,7 +248,20 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
 
 
 def stats(model: Model, param: Parameters) -> Parameters:
-    """Compute contributions and cos2 for each variable."""
+    """Compute contributions and cos2.
+
+    Parameters
+    ----------
+    model: Model
+        Model computed by fit.
+    param: Parameters
+        Param computed by fit.
+
+    Returns
+    -------
+    param: Parameters
+        param populated with contriubtion ans cos2.
+    """
     if param.quanti is None or model.U is None or model.s is None:
         raise ValueError(
             "empty param, run fit function to create Model class and Parameters class objects"

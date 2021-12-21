@@ -1,4 +1,4 @@
-"""PCA projection."""
+"""PCA projection module."""
 import sys
 from typing import Any, Optional, Tuple
 
@@ -93,9 +93,11 @@ def fit(
 def center(
     df: pd.DataFrame, scale: Optional[bool] = True
 ) -> Tuple[pd.DataFrame, float, float]:
-    """Center data and standardize it if scale == true.
+    """Center data and standardize it if scale. Compute mean and std values.
 
-    Used as internal function during fit. Scaler is better suited when a Model is already fitted.
+    Used as internal function during fit.
+
+    **NB**: saiph.reduction.pca.scaler is better suited when a Model is already fitted.
 
     Parameters
     ----------

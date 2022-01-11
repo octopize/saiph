@@ -18,9 +18,14 @@ To get the documentation, clone the repo then
 make install docs docs-open
 ```
 
-## MacOS M1 specification 
+## MacOS M1 prerequisites
 
-You probably need to install the package `cython` and `pybind11` (in the dev dependencies) and run the command
+install openblas 
+```bash
+brew install openblas
+```
+
+You also probably need to install the package `cython` and `pybind11` (in the dev dependencies) and run the command
 ```bash
 OPENBLAS=$(brew --prefix openblas) CFLAGS="-falign-functions=8 ${CFLAGS}" poetry install
 ```

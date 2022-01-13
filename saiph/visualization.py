@@ -1,11 +1,12 @@
 """Visualization functions."""
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
+from saiph import transform
 from saiph.models import Model, Parameters
 
 
@@ -184,4 +185,51 @@ def plot_explained_var(model: Model, max_dims: int = 10) -> None:
     plt.title("Explained variance plot")
     plt.ylabel("Percentage of explained variance")
     plt.xlabel("Dimensions")
+    plt.show()
+
+
+def plot_projections(
+    model: Model, param: Parameters, data: pd.DataFrame, dim: Tuple[int, int] = (0, 1)
+) -> None:
+    """Plot projections in reduced space for input data.
+
+    Parameters
+    ----------
+    model: Model
+        Model computed by fit.
+    param: Parameters
+        The parameters for transforming the data.
+    data: pd.DataFrame
+        Data to plot in the reduced space
+    dim: Tuple
+        Axes to use for the 2D plot (default (0,1))
+    """
+    dim_x = dim[0]
+    dim_y = dim[1]
+
+    transformed_data = transform(data, model, param)
+
+    # Retrieve column names matching the selected dimensions
+    x_name = transformed_data.columns[dim_x]
+    y_name = transformed_data.columns[dim_y]
+
+    # Retrieve data
+    x = transformed_data[x_name]
+    y = transformed_data[y_name]
+
+    # Set axes names and title
+    explained_percentage: NDArray[Any] = model.explained_var_ratio * 100
+    x_title: str = (
+        x_name + " (" + str("%.1f" % explained_percentage[dim_x]) + "% variance)"
+    )
+    y_title: str = (
+        y_name + " (" + str("%.f" % explained_percentage[dim_y]) + "% variance)"
+    )
+
+    # Plot
+    plt.figure(figsize=(12, 6))
+    plt.scatter(x, y, c="b")
+    plt.title("Projections in the reduced space")
+    plt.xlabel(x_title)
+    plt.ylabel(y_title)
     plt.show()

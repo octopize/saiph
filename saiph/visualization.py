@@ -167,7 +167,6 @@ def plot_explained_var(model: Model, max_dims: int = 10) -> None:
         Maximum number of dimensions to plot
     """
     # explained_percentage
-
     explained_percentage: NDArray[Any] = model.explained_var_ratio * 100
     if len(explained_percentage) > max_dims:
         explained_percentage = explained_percentage[:max_dims]
@@ -195,17 +194,16 @@ def plot_projections(
 
     Parameters
     ----------
-    model: Model
+    model
         Model computed by fit.
-    param: Parameters
+    param
         The parameters for transforming the data.
-    data: pd.DataFrame
+    data
         Data to plot in the reduced space
-    dim: Tuple
+    dim
         Axes to use for the 2D plot (default (0,1))
     """
-    dim_x = dim[0]
-    dim_y = dim[1]
+    dim_x, dim_y = dim
 
     transformed_data = transform(data, model, param)
 
@@ -218,13 +216,9 @@ def plot_projections(
     y = transformed_data[y_name]
 
     # Set axes names and title
-    explained_percentage: NDArray[Any] = model.explained_var_ratio * 100
-    x_title: str = (
-        x_name + " (" + str("%.1f" % explained_percentage[dim_x]) + "% variance)"
-    )
-    y_title: str = (
-        y_name + " (" + str("%.f" % explained_percentage[dim_y]) + "% variance)"
-    )
+    explained_percentage: NDArray[np.float64] = model.explained_var_ratio * 100
+    x_title: str = f"{x_name} ({explained_percentage[dim_x]:.1f} % variance)"
+    y_title: str = f"{y_name} ({explained_percentage[dim_y]:.1f} % variance)"
 
     # Plot
     plt.figure(figsize=(12, 6))

@@ -232,13 +232,13 @@ def inverse_transform(
     # if PCA or FAMD compute the continuous variables
     if param.quanti is not None and len(param.quanti) != 0:
 
-        X = np.array(coord @ model.V * np.sqrt(param.col_w))
+        X: NDArray[np.float_] = np.array(coord @ model.V * np.sqrt(param.col_w))
         X = X / np.sqrt(param.col_w) * param.col_w
         X_quanti = X[:, : len(param.quanti)]
 
         # descale
-        std = np.array(model.std)
-        mean = np.array(model.mean)
+        std: NDArray[np.float_] = np.array(model.std)
+        mean: NDArray[np.float_] = np.array(model.mean)
         inverse_quanti = (X_quanti * std) + mean
         # Handle floats -> int conversion. decimals=14 brings errors when casting as int
         inverse_quanti = pd.DataFrame(inverse_quanti, columns=list(param.quanti)).round(
@@ -248,14 +248,14 @@ def inverse_transform(
         # if FAMD descale the categorical variables
         if param.quali is not None and len(param.quali) != 0:
             X_quali = X[:, len(param.quanti) :]
-            prop = np.array(model.prop)
+            prop: NDArray[np.float_] = np.array(model.prop)
             X_quali = (X_quali) * (np.sqrt(prop)) + prop
 
     # if MCA no descaling
     else:
         # Previously was a ndarray, but no need
         # NB: If this causes a bug, X_quali = np.array(X_quali) goes back to previous vesrion
-        X_quali = coord @ (model.D_c @ model.V.T).T  # type: ignore
+        X_quali = coord @ (model.D_c @ model.V.T).T
         X_quali = np.divide(X_quali, param.dummies_col_prop)
         # divinding by proportion of each modality among individual
         # allows to get back the complete disjunctive table

@@ -1,5 +1,5 @@
 """Visualization functions."""
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
@@ -156,7 +156,9 @@ def plot_var_contribution(
     plt.show()
 
 
-def plot_explained_var(model: Model, max_dims: int = 10) -> None:
+def plot_explained_var(
+    model: Model, max_dims: int = 10, cumulative: bool = False
+) -> None:
     """Plot explained variance per dimension.
 
     Parameters
@@ -167,13 +169,21 @@ def plot_explained_var(model: Model, max_dims: int = 10) -> None:
         Maximum number of dimensions to plot
     """
     # explained_percentage
-    explained_percentage: NDArray[Any] = model.explained_var_ratio * 100
+
+    explained_percentage: NDArray[np.float_] = (
+        np.cumsum(model.explained_var_ratio)
+        if cumulative
+        else model.explained_var_ratio
+    )
+
     if len(explained_percentage) > max_dims:
         explained_percentage = explained_percentage[:max_dims]
 
     # plot
     plt.figure(figsize=(12, 6))
-    plt.bar(range(len(explained_percentage)), explained_percentage, align="center")
+    plt.bar(
+        range(len(explained_percentage)), explained_percentage * 100, align="center"
+    )
     plt.xticks(
         range(len(explained_percentage)),
         range(1, len(explained_percentage) + 1),
@@ -216,7 +226,7 @@ def plot_projections(
     y = transformed_data[y_name]
 
     # Set axes names and title
-    explained_percentage: NDArray[np.float64] = model.explained_var_ratio * 100
+    explained_percentage: NDArray[np.float_] = model.explained_var_ratio * 100
     x_title: str = f"{x_name} ({explained_percentage[dim_x]:.1f} % variance)"
     y_title: str = f"{y_name} ({explained_percentage[dim_y]:.1f} % variance)"
 

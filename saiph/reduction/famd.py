@@ -322,7 +322,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     # compute eta2
     model.df.index = range(len(model.df))
     dfquali = model.df[param.quali]
-    eta2_list = []
+    eta2: NDArray[np.float_] = np.array([])
     fi = 0
     coord = pd.DataFrame(
         model.U[:, :ncp0] * model.s[:ncp0], columns=param.columns[:ncp0]
@@ -345,16 +345,18 @@ def stats(model: Model, param: Parameters) -> Parameters:
         eta1 = (
             np.array(dim) / np.array((coord ** 2).T * param.row_w).sum(axis=1).tolist()
         )
-        eta2_list += [eta1]
+        eta2 = np.append(eta2, eta1)
         fi += len(dummy.columns)
 
         cos2 = cos2[: len(param.quanti)]
 
     cos2 = cos2 ** 2
-    eta2: NDArray[np.int_] = np.array(eta2_list) ** 2
-    eta2 = (pd.DataFrame(eta2).T / mods).T
+    eta2 = eta2 ** 2
+    eta2 = ((eta2).T / mods).T
+    print("cos2", cos2)
+    print("eta2", eta2)
 
-    cos2 = np.concatenate([cos2, eta2], axis=0)
+    cos2 = np.concatenate([cos2, [eta2]], axis=0)
     param.contrib = contrib_var
     param.cos2 = cos2
     return param

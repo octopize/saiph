@@ -187,7 +187,7 @@ def _diag_compute(
     df_scale: pd.DataFrame, r: NDArray[Any], c: NDArray[Any]
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Compute diagonal matrices and scale data."""
-    eps = np.finfo(float).eps
+    eps: np.float_ = np.finfo(float).eps
     if df_scale.shape[0] >= 10000:
         D_r = diag(1 / (eps + np.sqrt(r)), use_scipy=True)
     else:

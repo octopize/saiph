@@ -19,7 +19,7 @@ def diag(arr: NDArray[Any], use_scipy: bool = False) -> NDArray[Any]:
     if use_scipy:
         return scipy.sparse.diags(arr)  # type: ignore
     else:
-        return np.diag(arr)  # type: ignore
+        return np.diag(arr)
 
 
 def explain_variance(
@@ -28,7 +28,7 @@ def explain_variance(
     explained_var: NDArray[Any] = ((s ** 2) / (df.shape[0] - 1))[:nf]
     summed_explained_var = explained_var.sum()
     if summed_explained_var == 0:
-        explained_var_ratio = np.array([np.nan])
+        explained_var_ratio: NDArray[np.float_] = np.array([np.nan])
     else:
         explained_var_ratio = explained_var / explained_var.sum()
     return explained_var, explained_var_ratio

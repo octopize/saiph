@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
+import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
@@ -10,9 +11,9 @@ class Model:
     df: pd.DataFrame
     """DataFrame on which the model was fit."""
 
-    explained_var: NDArray[Any]
+    explained_var: NDArray[np.float_]
     """Explained variance."""
-    explained_var_ratio: NDArray[Any]
+    explained_var_ratio: NDArray[np.float_]
     """Explained variance divided by the sum of the variances."""
     variable_coord: pd.DataFrame
     """Coordinates of the variables in the projection space."""

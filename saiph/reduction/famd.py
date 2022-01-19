@@ -304,12 +304,12 @@ def stats(model: Model, param: Parameters) -> Parameters:
     # end of the svd
 
     # compute the contribution
-    coord_var = np.array(V[0] * s)
+    coord_var: NDArray[np.float_] = np.array(V[0] * s)
     for i in range(1, len(V[:, 0])):
         coord_var = np.vstack((coord_var, V[i] * s))
     contrib_var = (((((coord_var ** 2) / eig).T) * param.col_w).T) * 100
     # compute cos2
-    dfrow_w = np.array(pd.DataFrame((df2.T) * param.row_w).T)
+    dfrow_w: NDArray[np.float_] = np.array(pd.DataFrame((df2.T) * param.row_w).T)
     dist2 = []
     for i in range(len(dfrow_w[0])):
         dist2 += [np.sum(dfrow_w[:, i])]
@@ -322,7 +322,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     # compute eta2
     model.df.index = range(len(model.df))
     dfquali = model.df[param.quali]
-    eta2 = []
+    eta2: NDArray[np.float_] = np.array([])
     fi = 0
     coord = pd.DataFrame(
         model.U[:, :ncp0] * model.s[:ncp0], columns=param.columns[:ncp0]
@@ -345,16 +345,18 @@ def stats(model: Model, param: Parameters) -> Parameters:
         eta1 = (
             np.array(dim) / np.array((coord ** 2).T * param.row_w).sum(axis=1).tolist()
         )
-        eta2 += [eta1]
+        eta2 = np.append(eta2, eta1)
         fi += len(dummy.columns)
 
         cos2 = cos2[: len(param.quanti)]
 
     cos2 = cos2 ** 2
-    eta2 = np.array(eta2) ** 2
-    eta2 = (pd.DataFrame(eta2).T / mods).T
+    eta2 = eta2 ** 2
+    eta2 = ((eta2).T / mods).T
+    print("cos2", cos2)
+    print("eta2", eta2)
 
-    cos2 = np.concatenate([cos2, eta2], axis=0)  # type: ignore
+    cos2 = np.concatenate([cos2, [eta2]], axis=0)
     param.contrib = contrib_var
     param.cos2 = cos2
     return param

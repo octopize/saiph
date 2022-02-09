@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 from numpy.testing import assert_allclose
@@ -129,7 +130,7 @@ def test_transform_then_inverse_FAMD_weighted() -> None:
         }
     )
 
-    _, model, param = fit(df, col_w=[2, 1, 3, 2])
+    _, model, param = fit(df, col_w=np.array([2, 1, 3, 2]))
     transformed = transform(df, model, param)
     un_transformed = inverse_transform(transformed, model, param)
 
@@ -145,7 +146,7 @@ def test_transform_then_inverse_PCA_weighted() -> None:
         }
     )
 
-    _, model, param = fit(df, col_w=[2, 1, 3])
+    _, model, param = fit(df, col_w=np.array([2, 1, 3]))
     transformed = transform(df, model, param)
     un_transformed = inverse_transform(transformed, model, param)
 
@@ -173,7 +174,7 @@ def test_transform_then_inverse_MCA_weighted() -> None:
         }
     )
 
-    _, model, param = fit(df, col_w=[2, 1, 3, 2])
+    _, model, param = fit(df, col_w=np.array([2, 1, 3, 2]))
     transformed = transform(df, model, param)
     un_transformed = inverse_transform(transformed, model, param)
 

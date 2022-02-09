@@ -22,7 +22,7 @@ from saiph.reduction.utils.svd import SVD
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_w: Optional[NDArray[Any]] = None,
+    col_w: Optional[NDArray[np.float_]] = None,
     scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a MCA model on data.
@@ -49,7 +49,11 @@ def fit(
         The parameters for transforming new data.
     """
     nf = nf or min(df.shape)
-    _col_weights = col_w or np.ones(df.shape[1])
+    if col_w is not None:
+        _col_weights = col_w
+    else:
+        _col_weights = np.ones(df.shape[1])
+
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
     fit_check_params(nf, _col_weights, df.shape[1])

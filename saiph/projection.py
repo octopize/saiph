@@ -1,5 +1,5 @@
 """Project any dataframe, inverse transform and compute stats."""
-from typing import Any, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -14,7 +14,7 @@ from saiph.models import Model, Parameters
 def fit(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
-    col_w: Optional[NDArray[Any]] = None,
+    col_w: Optional[NDArray[np.float_]] = None,
     scale: bool = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.

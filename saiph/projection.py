@@ -181,16 +181,16 @@ def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
     else:
         bind = df_quanti
 
-    # compute correlations
-    cor = pd.DataFrame(
-        {
-            component: {
-                var: coord[component].corr(bind[var].reset_index(drop=True))
-                for var in bind.columns
-            }
-            for component in coord.columns
-        }
-    )
+    # compute correlations between bind and coord
+    # cor = (
+    #     pd.concat([bind, coord], axis=1, keys=["bind", "coord"])
+    #     .corr()
+    #     .loc["bind", "coord"]
+    # )
+    concat = pd.concat([bind, coord], axis=1, keys=["bind", "coord"])
+    cor = pd.DataFrame(np.corrcoef(concat, rowvar=False), columns=concat.columns).loc[
+        0 : len(bind.columns) - 1, "coord"
+    ]
     return cor
 
 

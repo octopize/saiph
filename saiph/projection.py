@@ -215,7 +215,6 @@ def inverse_transform(
     inverse: pd.DataFrame
         Inversed DataFrame.
     """
-    np.random.seed(seed)
 
     if len(coord) < param.nf:
         raise ValueError(
@@ -282,13 +281,14 @@ def inverse_transform(
         dict_mod = dict(zip(X_quali.columns, modalities_type))
 
         # for each variable we affect the value to the highest modalitie in X_quali
+        random_gen = np.random.default_rng(seed)
         for i in range(len(modalities)):
             # get cumululative probabilities
-            c = X_quali.iloc[:, val : val + modalities[i]].cumsum(axis=1)
+            cum_probability = X_quali.iloc[:, val : val + modalities[i]].cumsum(axis=1)
             # random draw
-            u = np.random.rand(len(c), 1)
+            random_probability = random_gen.random((len(cum_probability), 1))
             # choose the modality according the probabilities of each modalities
-            mod_random = (u < c).idxmax(axis=1)
+            mod_random = (random_probability < cum_probability).idxmax(axis=1)
             mod_random = [dict_mod.get(x, x) for x in mod_random]
             inverse_quali[list(model.df[param.quali].columns)[i]] = mod_random
             val += modalities[i]

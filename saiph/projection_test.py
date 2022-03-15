@@ -383,3 +383,41 @@ def test_var_ratio(df_input, expected_var_ratio):
     _, model, param = fit(df_input)
     stats(model, param)
     assert_allclose(model.explained_var_ratio[0:5], expected_var_ratio, atol=1e-07)
+
+
+def test_transform_then_inverse_wbcd_weigthed(wbcd_df: pd.DataFrame) -> None:
+
+    wbcd_df = wbcd_df.astype("object")
+    numeric = ["Clump_Thickness", "Mitoses"]
+    wbcd_df[numeric] = wbcd_df[numeric].astype("float")
+
+    wbcd_df = wbcd_df[:60]
+    print(pd.get_dummies(wbcd_df).shape)
+    coord, model, param = fit(
+        wbcd_df, 
+        nf="all", 
+        col_w=np.array([1,1,1,1,2,1,1,1,1,1])
+        )
+
+    un_transformed = inverse_transform(coord, model, param, seed = 123)
+
+    assert_frame_equal(un_transformed, wbcd_df)
+
+
+
+@pytest.mark.parametrize(
+    "df_input", [df_pca, df_mca, df_famd]
+)
+def test_transform_then_inverse_wbcd_weigthed(wbcd_df: pd.DataFrame) -> None:
+
+    wbcd_df = wbcd_df[:60]
+    print(pd.get_dummies(wbcd_df).shape)
+    coord, model, param = fit(
+        wbcd_df, 
+        nf="all", 
+        col_w=np.array([1,1,1,1,2,1,1,1,1,1])
+        )
+
+    un_transformed = inverse_transform(coord, model, param, seed = 123)
+
+    assert_frame_equal(un_transformed, wbcd_df)        

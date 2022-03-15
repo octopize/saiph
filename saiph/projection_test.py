@@ -1,3 +1,5 @@
+import tracemalloc
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -5,6 +7,7 @@ from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
 from saiph import fit, inverse_transform, stats, transform
+from saiph.lib.size import get_readable_size
 
 # mypy: ignore-errors
 
@@ -383,3 +386,27 @@ def test_var_ratio(df_input, expected_var_ratio):
     _, model, param = fit(df_input)
     stats(model, param)
     assert_allclose(model.explained_var_ratio[0:5], expected_var_ratio, atol=1e-07)
+
+
+# def test_memory_usage() -> None:
+#     from scalene import scalene_profiler
+#     df = pd.DataFrame(data=np.random.randint(0, 100, size=(1000, 1)), dtype=object)
+#     print(f"using {get_readable_size(df.memory_usage(index=True).sum())}")
+
+#     # tracemalloc.start()
+#     scalene_profiler.start()
+#     fit(df)
+#     scalene_profiler.stop()
+
+#     # snapshot = tracemalloc.take_snapshot()
+#     # top_stats = snapshot.statistics('lineno')
+#     # [print(t) for t in top_stats[:30]]
+
+#     # _, peak = tracemalloc.get_traced_memory()
+#     # tracemalloc.stop()
+
+#     # print(get_readable_size(peak))
+
+#     # memory usage should be below x kiB
+#     # assert peak < 300 * 1024
+#     # record_property("peak_memory_usage", peak)

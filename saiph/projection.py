@@ -9,6 +9,7 @@ import saiph.reduction.famd as famd
 import saiph.reduction.mca as mca
 import saiph.reduction.pca as pca
 from saiph.models import Model, Parameters
+from saiph.lib.size import get_readable_size
 
 
 def fit(
@@ -169,22 +170,32 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     return coord
 
 
+def corr(df1, df2):
+    n = len(df1)
+    v1, v2 = df1.values, df2.values
+    sums = np.multiply.outer(v2.sum(0), v1.sum(0))
+    stds = np.multiply.outer(v2.std(0), v1.std(0))
+    return pd.DataFrame((v2.T.dot(v1) - sums / n) / stds / n, df2.columns, df1.columns)
+
+
 def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
     """Compute the correlation between the axis and the variables."""
-    # select columns and project data
-    df_quanti = model.df[param.quanti]
     coord = transform(model.df, model, param)  # transform to be fixed
+    encoded = pd.get_dummies(model.df, sparse=True)
 
-    if param.quali is not None and len(param.quali) > 0:
-        df_quali = pd.get_dummies(model.df[param.quali].astype("category"))
-        bind = pd.concat([df_quanti, df_quali], axis=1)
-    else:
-        bind = df_quanti
+    # concat = pd.concat([encoded, coord], axis=1, keys=["encoded", "coord"])
+    # # import ipdb; ipdb.set_trace()  # FIXME REMOVE
+    # cor1 = pd.DataFrame(np.corrcoef(concat, rowvar=False), columns=concat.columns)
+    # cor = pd.DataFrame(np.corrcoef(concat, rowvar=False), columns=concat.columns).loc[
+    #     0 : len(encoded.columns) - 1, "coord"
+    # ]
 
-    concat = pd.concat([bind, coord], axis=1, keys=["bind", "coord"])
-    cor = pd.DataFrame(np.corrcoef(concat, rowvar=False), columns=concat.columns).loc[
-        0 : len(bind.columns) - 1, "coord"
-    ]
+    # import ipdb; ipdb.set_trace()  # FIXME REMOVE
+    cor = pd.DataFrame(corr(encoded, coord), columns=coord.columns)
+    # print(cor1.memory_usage(index=True))
+    # print(f"concat= {get_readable_size(concat.memory_usage(index=True).sum())}")
+    # print(f"cor1= {get_readable_size(cor1.memory_usage(index=True).sum())}")
+    print(f"cor= {get_readable_size(cor.memory_usage(index=True).sum())}")
     return cor
 
 

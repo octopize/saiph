@@ -191,7 +191,7 @@ def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
     # ]
 
     # import ipdb; ipdb.set_trace()  # FIXME REMOVE
-    cor = pd.DataFrame(corr(encoded, coord), columns=coord.columns)
+    cor = corr(coord, encoded)
     # print(cor1.memory_usage(index=True))
     # print(f"concat= {get_readable_size(concat.memory_usage(index=True).sum())}")
     # print(f"cor1= {get_readable_size(cor1.memory_usage(index=True).sum())}")

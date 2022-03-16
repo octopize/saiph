@@ -71,7 +71,6 @@ def fit(
     param.quanti = quanti
     param.quali = quali
     param.datetime_variables = np.array(datetime_variables)
-    param.cor = _variable_correlation(model, param)
 
     if quanti.size == 0:
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
@@ -96,6 +95,8 @@ def stats(model: Model, param: Parameters) -> Parameters:
     param: Parameters
         param populated with contriubtion.
     """
+    param.cor = _variable_correlation(model, param)
+
     # Check attributes type
     if param.cor is None or param.quanti is None or param.quali is None:
         raise ValueError(

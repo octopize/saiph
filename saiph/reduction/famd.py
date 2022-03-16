@@ -22,6 +22,7 @@ def fit(
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
     scale: Optional[bool] = True,
+    algorithm : str = 'randomized', 
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a FAMD model on data.
 
@@ -47,6 +48,8 @@ def fit(
         The parameters for transforming new data.
     """
     nf = nf or min(df.shape)
+    if algorithm == 'randomized': 
+        nf  -=1
     if col_w is not None:
         _col_weights = col_w
     else:
@@ -69,7 +72,7 @@ def fit(
     Z = ((df_scale * col_weights).T * row_w).T
 
     # compute the svd
-    _U, s, _V = SVD(Z)
+    _U, s, _V = SVD(Z, algorithm = algorithm)
     U = ((_U.T) / np.sqrt(row_w)).T
     V = _V / np.sqrt(col_weights)
 

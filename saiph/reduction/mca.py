@@ -24,6 +24,7 @@ def fit(
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
     scale: Optional[bool] = True,
+    algorithm = 'randomized',
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a MCA model on data.
 
@@ -49,6 +50,8 @@ def fit(
         The parameters for transforming new data.
     """
     nf = nf or min(df.shape)
+    if algorithm == 'randomized': 
+        nf  -=1
     if col_w is not None:
         _col_weights = col_w
     else:
@@ -81,7 +84,7 @@ def fit(
 
     # apply the weights and compute the svd
     Z = ((T * col_weights).T * row_w).T
-    U, s, V = SVD(Z)
+    U, s, V = SVD(Z, algorithm=algorithm)
 
     explained_var, explained_var_ratio = explain_variance(s, df, nf)
 

@@ -30,8 +30,13 @@ class Model:
     """Standard deviation of the original data. Calculated while scaling."""
     prop: Any = None  # FAMD only
     """Modality proportions of categorical variables."""
+
+    # Modalities for the MCA/FAMD.
+    # We need to keep the modalities of categorical values so that we can add
+    # them back (with value 0) to a df we would like to transform. Some
+    # modalities could be missing and would break the transform.
     _modalities: Optional[NDArray[Any]] = None
-    """Modalities for the MCA/FAMD."""
+
     D_c: Optional[NDArray[Any]] = None
     """Diagonal matrix containing sums along columns of the scaled data as diagonals."""
     type: Optional[str] = None

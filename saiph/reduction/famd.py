@@ -59,11 +59,13 @@ def fit(
     # select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
+    dummies = pd.get_dummies(df, sparse=True)
 
     row_w = row_weights_uniform(len(df))
     col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
 
-    df_scale, mean, std, prop, _modalities = center(df, quanti, quali)
+    # FIXME
+    df_scale, mean, std = center(df, quanti, quali)
 
     # apply the weights
     Z = ((df_scale * col_weights).T * row_w).T
@@ -92,8 +94,9 @@ def fit(
         variable_coord=pd.DataFrame(V.T),
         mean=mean,
         std=std,
-        prop=prop,
-        _modalities=_modalities,
+        # FIXME
+        prop=None,
+        _modalities=dummies.columns.values,
         type="famd",
     )
 
@@ -137,7 +140,7 @@ def _col_weights_compute(
 
 def center(
     df: pd.DataFrame, quanti: List[int], quali: List[int]
-) -> Tuple[pd.DataFrame, float, float, NDArray[Any], NDArray[Any]]:
+) -> Tuple[pd.DataFrame, float, float, NDArray[Any]]:
     """Center data, scale it, compute modalities and proportions of each categorical.
 
     Used as internal function during fit.
@@ -163,27 +166,17 @@ def center(
         Standard deviation of the input dataframe. Returns nan as std if no std was asked.
     prop: np.ndarray
         Proportion of each categorical.
-    _modalities: np.ndarray
-        Modalities for the MCA.
     """
-    # Scale the continuous data
-    df_quanti = df[quanti]
-    mean = np.mean(df_quanti, axis=0)
-    df_quanti -= mean
-    std = np.std(df_quanti, axis=0)
+    df = pd.get_dummies(df)
+    mean = np.mean(df, axis=0)
+    df -= mean
+    std = np.std(df, axis=0)
     std[std <= sys.float_info.min] = 1
-    df_quanti /= std
+    df /= std
 
-    # scale the categorical data
-    df_quali = pd.get_dummies(df[quali].astype("category"))
-    prop = np.mean(df_quali, axis=0)
-    df_quali -= prop
-    df_quali /= np.sqrt(prop)
-    _modalities = df_quali.columns.values
+    # prop = np.mean(df[quali], axis=0)
 
-    df_scale = pd.concat([df_quanti, df_quali], axis=1)
-
-    return df_scale, mean, std, prop, _modalities
+    return df, mean, std
 
 
 def scaler(
@@ -212,20 +205,20 @@ def scaler(
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
 
-    df_quanti = df[param.quanti]
-    df_quanti = (df_quanti - model.mean) / model.std
-
     # scale
-    df_quali = pd.get_dummies(df[param.quali].astype("category"))
+    df = pd.get_dummies(df)
     if model._modalities is not None:
         for mod in model._modalities:
-            if mod not in df_quali:
-                df_quali[mod] = 0
-    df_quali = df_quali[model._modalities]
-    df_quali = (df_quali - model.prop) / np.sqrt(model.prop)
+            if mod not in df:
+                df[mod] = 0
 
-    df_scaled = pd.concat([df_quanti, df_quali], axis=1)
-    return df_scaled
+    df = (df - model.mean) / model.std
+
+    # df_quali = df_quali[model._modalities]
+    # df_quali = (df_quali - model.prop) / np.sqrt(model.prop)
+
+    # df_scaled = pd.concat([df_quanti, df_quali], axis=1)
+    return df
 
 
 def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
@@ -357,8 +350,6 @@ def stats(model: Model, param: Parameters) -> Parameters:
     cos2 = cos2 ** 2
     eta2 = eta2 ** 2
     eta2 = ((eta2).T / mods).T
-    print("cos2", cos2)
-    print("eta2", eta2)
 
     cos2 = np.concatenate([cos2, [eta2]], axis=0)
     param.contrib = contrib_var

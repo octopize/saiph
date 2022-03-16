@@ -1,15 +1,16 @@
 """Project any dataframe, inverse transform and compute stats."""
-from typing import Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
+from unittest import result
 
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from saiph.reduction import DUMMIES_PREFIX_SEP
 import saiph.reduction.famd as famd
 import saiph.reduction.mca as mca
 import saiph.reduction.pca as pca
 from saiph.models import Model, Parameters
+from saiph.reduction import DUMMIES_PREFIX_SEP
 
 
 def fit(
@@ -166,7 +167,9 @@ def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
     coord = transform(model.df, model, param)  # transform to be fixed
 
     if param.quali is not None and len(param.quali) > 0:
-        df_quali = pd.get_dummies(model.df[param.quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+        df_quali = pd.get_dummies(
+            model.df[param.quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        )
         bind = pd.concat([df_quanti, df_quali], axis=1)
     else:
         bind = df_quanti
@@ -213,73 +216,64 @@ def inverse_transform(
         )
 
     # if PCA or FAMD compute the continuous variables
-    if param.quanti is not None and len(param.quanti) != 0:
+    nb_quanti = len(param.quanti)
+    nb_quali = len(param.quali)
 
-        X: NDArray[np.float_] = np.array(coord @ model.V * np.sqrt(param.col_w))
+    has_some_quanti = param.quanti is not None and nb_quanti != 0
+    has_some_quali = param.quali is not None and nb_quali != 0
+    if has_some_quanti:
+        X = np.array(coord @ model.V * np.sqrt(param.col_w))
         X = X / np.sqrt(param.col_w) * param.col_w
-        X_quanti = X[:, : len(param.quanti)]
 
-        # descale
-        std: NDArray[np.float_] = np.array(model.std)
-        mean: NDArray[np.float_] = np.array(model.mean)
-        inverse_quanti = (X_quanti * std) + mean
-        # Handle floats -> int conversion. decimals=14 brings errors when casting as int
-        inverse_quanti = pd.DataFrame(inverse_quanti, columns=list(param.quanti)).round(
-            decimals=13
-        )
+        X_quanti = X[:, :nb_quanti]
+        rescaled = (X_quanti * model.std.to_numpy()) + model.mean.to_numpy()
+        inverse_quanti = pd.DataFrame(rescaled, columns=param.quanti).round(1)
 
         # if FAMD descale the categorical variables
-        if param.quali is not None and len(param.quali) != 0:
-            X_quali = X[:, len(param.quanti) :]
-            prop: NDArray[np.float_] = np.array(model.prop)
-            X_quali = (X_quali) * (np.sqrt(prop)) + prop
+        if has_some_quali:
+            X_quali = X[:, nb_quanti:]
+            prop = model.prop.to_numpy()
+            X_quali = (X_quali * np.sqrt(prop)) + prop
 
-    # if MCA no descaling
     else:
-        # Previously was a ndarray, but no need
-        # NB: If this causes a bug, X_quali = np.array(X_quali) goes back to previous vesrion
         X_quali = coord @ (model.D_c @ model.V.T).T
         X_quali = np.divide(X_quali, param.dummies_col_prop)
-        # divinding by proportion of each modality among individual
+        # dividing by proportion of each modality among individual
         # allows to get back the complete disjunctive table
         # X_quali is the complete disjunctive table ("tableau disjonctif complet" in FR)
 
     # compute the categorical variables
-    if param.quali is not None and len(param.quali) != 0:
-        inverse_quali = pd.DataFrame()
+    if has_some_quali:
         X_quali = pd.DataFrame(X_quali)
-        dummy_columns = pd.get_dummies(model.df[param.quali], prefix_sep=DUMMIES_PREFIX_SEP).columns
+        dummy_columns = pd.get_dummies(
+            model.df[param.quali], prefix_sep=DUMMIES_PREFIX_SEP
+        ).columns
         X_quali.columns = dummy_columns
 
         modalities = get_number_unique(model.df[param.quali])
         dict_mod = get_column_mapping(dummy_columns)
-        
+
         random_gen = np.random.default_rng(seed)
         inverse_quali = pd.DataFrame()
-
 
         index = 0
         columns = model.df[param.quali].columns
         for i, modality in enumerate(modalities):
             # get cumululative probabilities
-            cum_probability = X_quali.iloc[:, val : val + modalities[i]].cumsum(axis=1)
+            upper_index = index + modality
+            cum_probability = X_quali.iloc[:, index:upper_index].cumsum(axis=1)
             # random draw
             random_probability = random_gen.random((len(cum_probability), 1))
             # choose the modality according the probabilities of each modalities
-            mod_random = (random_probability < cum_probability).idxmax(axis=1)
-            mod_random = [dict_mod.get(x, x) for x in mod_random]
-            inverse_quali[list(model.df[param.quali].columns)[i]] = mod_random
-            val += modalities[i]
+            chosen_modalities = (random_probability < cum_probability).idxmax(axis=1)
+            chosen_modalities = [dict_mod.get(x, x) for x in chosen_modalities]
+            inverse_quali[columns[i]] = chosen_modalities
+            index += modality
 
     # concatenate the continuous and categorical
-    if (
-        param.quali is not None
-        and param.quanti is not None
-        and len(param.quali) != 0
-        and len(param.quanti) != 0
-    ):
+    if has_some_quanti and has_some_quali:
         inverse = pd.concat([inverse_quali, inverse_quanti], axis=1)
-    elif param.quanti is not None and len(param.quanti) != 0:
+    elif has_some_quanti:
         inverse = inverse_quanti
     else:
         inverse = inverse_quali
@@ -292,11 +286,12 @@ def inverse_transform(
     # reorder columns
     return inverse[model.df.columns]
 
-  
+
 def get_column_mapping(dummy_columns):
     """Get mapping between dummy columns and original columns."""
-    get_suffix = lambda col : col.split(DUMMIES_PREFIX_SEP)[1]
-    return {col : get_suffix(col) for col in dummy_columns}
+    get_suffix = lambda col: col.split(DUMMIES_PREFIX_SEP)[1]
+    return {col: get_suffix(col) for col in dummy_columns}
 
-def get_number_unique(df : pd.DataFrame):
+
+def get_number_unique(df: pd.DataFrame):
     return df.nunique().to_list()

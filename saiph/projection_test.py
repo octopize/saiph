@@ -10,6 +10,7 @@ from saiph.reduction import DUMMIES_PREFIX_SEP
 
 # mypy: ignore-errors
 
+
 @pytest.fixture()
 def quanti_df() -> pd.DataFrame:
     return pd.DataFrame(
@@ -19,6 +20,8 @@ def quanti_df() -> pd.DataFrame:
             "variable_3": [100, 50, -30, -50, -19, -29, -20],
         }
     )
+
+
 @pytest.fixture()
 def quali_df() -> pd.DataFrame:
     return pd.DataFrame(
@@ -76,7 +79,7 @@ def test_transform_then_inverse_PCA(iris_quanti_df: pd.DataFrame) -> None:
     assert_frame_equal(un_transformed, iris_quanti_df)
 
 
-def test_transform_then_inverse_MCA(quali_df : pd.DataFrame) -> None:
+def test_transform_then_inverse_MCA(quali_df: pd.DataFrame) -> None:
 
     df = quali_df
     _, model, param = fit(df)
@@ -85,7 +88,7 @@ def test_transform_then_inverse_MCA(quali_df : pd.DataFrame) -> None:
     assert_frame_equal(un_transformed, df)
 
 
-def test_transform_then_inverse_MCA_type(quali_df : pd.DataFrame) -> None:
+def test_transform_then_inverse_MCA_type(quali_df: pd.DataFrame) -> None:
     df = quali_df
 
     df = df.astype("object")
@@ -111,6 +114,7 @@ def test_transform_then_inverse_FAMD_weighted() -> None:
     un_transformed = inverse_transform(transformed, model, param)
 
     assert_frame_equal(un_transformed, df)
+
 
 def test_transform_then_inverse_PCA_weighted(quanti_df: pd.DataFrame) -> None:
     df = quanti_df
@@ -352,23 +356,24 @@ def test_var_ratio(df_input, expected_var_ratio):
     assert_allclose(model.explained_var_ratio[0:5], expected_var_ratio, atol=1e-07)
 
 
-def test_get_modalities(quali_df : pd.DataFrame):
+def test_get_modalities(quali_df: pd.DataFrame):
     result = get_number_unique(quali_df)
     assert result == [2, 3, 2, 2]
 
-def test_get_column_mapping(quali_df : pd.DataFrame):
+
+def test_get_column_mapping(quali_df: pd.DataFrame):
     dummy_columns = pd.get_dummies(quali_df, prefix_sep=DUMMIES_PREFIX_SEP).columns
     result = get_column_mapping(dummy_columns)
 
     expected = {
-        'tool*^_hammer': 'hammer', 
-        'tool*^_toaster': 'toaster',
-        'score*^_aa': 'aa', 
-        'score*^_bb': 'bb', 
-        'score*^_ca': 'ca', 
-        'car*^_renault': 'renault', 
-        'car*^_tesla': 'tesla', 
-        'moto*^_Bike': 'Bike', 
-        'moto*^_Motor': 'Motor'
+        "tool*^_hammer": "hammer",
+        "tool*^_toaster": "toaster",
+        "score*^_aa": "aa",
+        "score*^_bb": "bb",
+        "score*^_ca": "ca",
+        "car*^_renault": "renault",
+        "car*^_tesla": "tesla",
+        "moto*^_Bike": "Bike",
+        "moto*^_Motor": "Motor",
     }
     assert result == expected

@@ -176,7 +176,9 @@ def center(
     df_quanti /= std
 
     # scale the categorical data
-    df_quali = pd.get_dummies(df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df_quali = pd.get_dummies(
+        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+    )
     prop = np.mean(df_quali, axis=0)
     df_quali -= prop
     df_quali /= np.sqrt(prop)
@@ -217,7 +219,9 @@ def scaler(
     df_quanti = (df_quanti - model.mean) / model.std
 
     # scale
-    df_quali = pd.get_dummies(df[param.quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df_quali = pd.get_dummies(
+        df[param.quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+    )
     if model._modalities is not None:
         for mod in model._modalities:
             if mod not in df_quali:
@@ -335,7 +339,9 @@ def stats(model: Model, param: Parameters) -> Parameters:
     mods = []
     # for each qualitative column in the original data set
     for count, col in enumerate(dfquali.columns):
-        dummy = pd.get_dummies(dfquali[col].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+        dummy = pd.get_dummies(
+            dfquali[col].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        )
         mods += [len(dummy.columns) - 1]
         # for each dimension
         dim = []

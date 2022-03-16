@@ -1,3 +1,6 @@
+import io
+
+import pytest
 import numpy as np
 import pandas as pd
 from numpy.testing import assert_allclose
@@ -10,6 +13,18 @@ from saiph.reduction.pca import fit as fit_pca
 from saiph.reduction.pca import scaler as scaler_pca
 
 # mypy: ignore-errors
+
+
+@pytest.fixture
+def df() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "tool": ["toaster", "hammer"],
+            "score": ["15", "20"],
+            "size": [1.0, 4.0],
+            "age": [55, 62],
+        }
+    )
 
 
 def test_fit_mix() -> None:
@@ -127,6 +142,19 @@ def test_fit_zero() -> None:
     assert_frame_equal(result, expected, check_exact=False, atol=0.01)
 
 
+def test_scaler(df: pd.DataFrame) -> None:
+    _, model, param = fit(df)
+    scaled = scaler(model, param)
+
+    expected = pd.read_csv(io.StringIO("""
+size,age,tool_hammer,tool_toaster,score_15,score_20
+0,-1.0,-1.0,-1.0,1.0,1.0,-1.0
+1,1.0,1.0,1.0,-1.0,-1.0,1.0
+"""))
+
+    assert_frame_equal(scaled, expected)
+
+
 def test_scaler_pca_famd() -> None:
     original_df = pd.DataFrame(
         {
@@ -157,7 +185,7 @@ def test_center_pca_famd() -> None:
     )
 
     _, _, param = fit(original_df)
-    df, mean1, std1, _, _ = center(original_df, quali=param.quali, quanti=param.quanti)
+    df, mean1, std1 = center(original_df, quali=param.quali, quanti=param.quanti)
 
     df_pca, mean2, std2 = center_pca(original_df[param.quanti])
 

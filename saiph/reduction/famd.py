@@ -22,7 +22,7 @@ def fit(
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
     scale: Optional[bool] = True,
-    algorithm : str = 'randomized', 
+    algorithm : str = 'lapack', 
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a FAMD model on data.
 
@@ -48,8 +48,6 @@ def fit(
         The parameters for transforming new data.
     """
     nf = nf or min(df.shape)
-    if algorithm == 'randomized': 
-        nf  -=1
     if col_w is not None:
         _col_weights = col_w
     else:
@@ -67,6 +65,9 @@ def fit(
     col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
 
     df_scale, mean, std, prop, _modalities = center(df, quanti, quali)
+    
+    if algorithm == 'randomized' and nf == df_scale.shape[1] : 
+        nf  -=1
 
     # apply the weights
     Z = ((df_scale * col_weights).T * row_w).T
@@ -98,6 +99,7 @@ def fit(
         prop=prop,
         _modalities=_modalities,
         type="famd",
+        algorithm=algorithm
     )
 
     param = Parameters(
@@ -281,7 +283,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     weightedTc = _rmultiplication(
         _rmultiplication(df.T, np.sqrt(param.col_w)).T, np.sqrt(param.row_w)
     )
-    U, s, V = SVD(weightedTc.T, svd_flip=False)
+    U, s, V = SVD(weightedTc.T, algorithm=model.algorithm, svd_flip=False)
     ncp0 = min(len(weightedTc.iloc[0]), len(weightedTc), param.nf)
     U = U[:, :ncp0]
     V = V.T[:, :ncp0]

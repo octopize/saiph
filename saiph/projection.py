@@ -16,6 +16,7 @@ def fit(
     nf: Optional[Union[int, str]] = None,
     col_w: Optional[NDArray[np.float_]] = None,
     scale: bool = True,
+    algorithm: str = 'randomized',
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
@@ -60,7 +61,7 @@ def fit(
     else:
         _fit = famd.fit
 
-    coord, model, param = _fit(df, _nf, col_w, scale)
+    coord, model, param = _fit(df, _nf, col_w, scale, algorithm)
     param.quanti = quanti
     param.quali = quali
     param.cor = _variable_correlation(model, param)

@@ -36,6 +36,8 @@ class Model:
     """Diagonal matrix containing sums along columns of the scaled data as diagonals."""
     type: Optional[str] = None
     """Type of dimension reduction that was performed."""
+    algorithm:  Optional[str] = None
+    """Type of SVD algorithm (lapack or randomized)."""
 
 
 @dataclass

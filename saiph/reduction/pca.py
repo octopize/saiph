@@ -21,7 +21,7 @@ def fit(
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
     scale: Optional[bool] = True,
-    algorithm = 'randomized',
+    algorithm : str = 'lapack',
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a PCA model on data.
 
@@ -47,8 +47,6 @@ def fit(
         The parameters for transforming new data.
     """
     nf = nf or min(df.shape)
-    if algorithm == 'randomized': 
-        nf  -=1
     if col_w is not None:
         _col_weights = col_w
     else:
@@ -62,6 +60,9 @@ def fit(
     row_w = row_weights_uniform(len(df))
 
     df_centered, mean, std = center(df, scale)
+
+    if algorithm == 'randomized' and nf == df_centered.shape[1] : 
+        nf  -=1
 
     # apply weights and compute svd
     Z = ((df_centered * _col_weights).T * row_w).T
@@ -90,6 +91,7 @@ def fit(
         mean=mean,
         std=std,
         type="pca",
+        algorithm=algorithm
     )
 
     param = Parameters(nf=nf, col_w=_col_weights, row_w=row_w, columns=columns)

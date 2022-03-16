@@ -131,9 +131,7 @@ def test_transform_simple() -> None:
     _, model, param = fit(df, scale=True)
 
     df_transformed = transform(df, model, param)
-
-    print(df_transformed)
-
+    
     expected_transform = pd.DataFrame(
         {
             "Dim. 1": [0.707107, 0.707107],

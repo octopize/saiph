@@ -24,7 +24,7 @@ def fit(
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
     scale: Optional[bool] = True,
-    algorithm = 'randomized',
+    algorithm : str = 'lapack',
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a MCA model on data.
 
@@ -50,8 +50,6 @@ def fit(
         The parameters for transforming new data.
     """
     nf = nf or min(df.shape)
-    if algorithm == 'randomized': 
-        nf  -=1
     if col_w is not None:
         _col_weights = col_w
     else:
@@ -82,6 +80,9 @@ def fit(
     df_dummies = pd.get_dummies(df.astype("category"))
     dummies_col_prop = len(df_dummies) / df_dummies.sum(axis=0)
 
+    if algorithm == 'randomized' and nf == df_dummies.shape[1] : 
+        nf  -=1
+
     # apply the weights and compute the svd
     Z = ((T * col_weights).T * row_w).T
     U, s, V = SVD(Z, algorithm=algorithm)
@@ -106,6 +107,7 @@ def fit(
         _modalities=_modalities,
         D_c=D_c,
         type="mca",
+        algorithm=algorithm
     )
 
     param = Parameters(
@@ -271,7 +273,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     weightedTc = _rmultiplication(
         _rmultiplication(Tc.T, np.sqrt(marge_col)).T, np.sqrt(marge_row)
     )
-    U, s, V = SVD(weightedTc.T, svd_flip=False)
+    U, s, V = SVD(weightedTc.T, algorithm=model.algorithm, svd_flip=False)
     ncp0 = min(len(weightedTc.iloc[0]), len(weightedTc), param.nf)
     U = U[:, :ncp0]
     V = V.T[:, :ncp0]

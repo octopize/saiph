@@ -272,7 +272,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
         )
 
     df = pd.DataFrame(scaler(model, param))
-    df2: NDArray[Any] = np.array(pd.DataFrame(df).applymap(lambda x: x ** 2))
+    df2: NDArray[np.float_] = np.array(df) ** 2
 
     # svd of x with row_w and col_w
     weightedTc = _rmultiplication(

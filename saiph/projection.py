@@ -19,6 +19,7 @@ def fit(
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
+    Datetimes must be stored as numbers of seconds since epoch.
     Parameters
     ----------
     df: pd.DataFrame
@@ -40,13 +41,6 @@ def fit(
     param: Parameters
         The parameters for transforming new data.
     """
-    datetime_variables = []
-    for i in range(0, df.shape[1]):
-        if df.iloc[:, i].dtype == ("datetime64[ns]"):
-            df.iloc[:, i] = (
-                df.iloc[:, i] - np.datetime64("1970-01-01T00:00:00Z")
-            ) / np.timedelta64(1, "s")
-            datetime_variables.append(i)
 
     # Check column types
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
@@ -69,7 +63,6 @@ def fit(
     coord, model, param = _fit(df, _nf, col_w, scale)
     param.quanti = quanti
     param.quali = quali
-    param.datetime_variables = np.array(datetime_variables)
     param.cor = _variable_correlation(model, param)
 
     if quanti.size == 0:
@@ -154,12 +147,9 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     coord: pd.DataFrame
         Coordinates of the dataframe in the fitted space.
     """
-    if param.quali is None or param.quanti is None or param.datetime_variables is None:
+    if param.quali is None or param.quanti is None:
         raise ValueError("Need to fit before using transform")
-    for i in param.datetime_variables:
-        df.iloc[:, i] = (
-            df.iloc[:, i] - np.datetime64("1970-01-01T00:00:00Z")
-        ) / np.timedelta64(1, "s")
+
     if param.quali.size == 0:
         coord = pca.transform(df, model, param)
     elif param.quanti.size == 0:
@@ -311,14 +301,5 @@ def inverse_transform(
         column_type = model.df.loc[:, column].dtype
         inverse[column] = inverse[column].astype(column_type)
 
-    # reorder back columns
-    inverse = inverse[model.df.columns]
-
-    # Turn back datetime variables to original dtype
-    if param.datetime_variables is not None:
-        for i in param.datetime_variables:
-            inverse.iloc[:, i] = (
-                inverse.iloc[:, i] * np.timedelta64(1, "s")
-            ) + np.datetime64("1970-01-01T00:00:00Z")
-
-    return inverse
+    # reorder columns
+    return inverse[model.df.columns]

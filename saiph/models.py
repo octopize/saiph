@@ -52,8 +52,6 @@ class Parameters:
     """Indices of columns that are considered quantitative."""
     quali: Optional[NDArray[Any]] = None
     """Indices of columns that are considered qualitative."""
-    datetime_variables: Optional[NDArray[Any]] = None
-    """Indices of columns that are considered datetimes."""
     cor: Optional[pd.DataFrame] = None
     """Correlation between the axis and the variables."""
     contrib: Optional[pd.DataFrame] = None

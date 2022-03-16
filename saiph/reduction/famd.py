@@ -138,7 +138,9 @@ def _col_weights_compute(
 
 def center(
     df: pd.DataFrame, quanti: List[int], quali: List[int]
-) -> Tuple[pd.DataFrame, float, float, NDArray[Any], NDArray[Any]]:
+) -> Tuple[
+    pd.DataFrame, NDArray[np.float_], NDArray[np.float_], NDArray[Any], NDArray[Any]
+]:
     """Center data, scale it, compute modalities and proportions of each categorical.
 
     Used as internal function during fit.
@@ -158,9 +160,9 @@ def center(
     -------
     df_scale: pd.DataFrame
         The scaled DataFrame.
-    mean: float
+    mean: NDArray[np.float_]
         Mean of the input dataframe.
-    std: float
+    std: NDArray[np.float_]
         Standard deviation of the input dataframe. Returns nan as std if no std was asked.
     prop: np.ndarray
         Proportion of each categorical.

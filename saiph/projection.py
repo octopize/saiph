@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
+from saiph.reduction import DUMMIES_PREFIX_SEP
 import saiph.reduction.famd as famd
 import saiph.reduction.mca as mca
 import saiph.reduction.pca as pca
@@ -48,7 +49,7 @@ def fit(
 
     _nf: int
     if not nf or isinstance(nf, str):
-        _nf = min(pd.get_dummies(df).shape)
+        _nf = min(pd.get_dummies(df, prefix_sep=DUMMIES_PREFIX_SEP).shape)
     else:
         _nf = nf
 
@@ -165,7 +166,7 @@ def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
     coord = transform(model.df, model, param)  # transform to be fixed
 
     if param.quali is not None and len(param.quali) > 0:
-        df_quali = pd.get_dummies(model.df[param.quali].astype("category"))
+        df_quali = pd.get_dummies(model.df[param.quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
         bind = pd.concat([df_quanti, df_quali], axis=1)
     else:
         bind = df_quanti
@@ -247,31 +248,19 @@ def inverse_transform(
     if param.quali is not None and len(param.quali) != 0:
         inverse_quali = pd.DataFrame()
         X_quali = pd.DataFrame(X_quali)
-        X_quali.columns = list(
-            pd.get_dummies(
-                model.df[param.quali],
-                prefix=None,
-                prefix_sep="_",
-            ).columns
-        )
+        dummy_columns = pd.get_dummies(model.df[param.quali], prefix_sep=DUMMIES_PREFIX_SEP).columns
+        X_quali.columns = dummy_columns
 
-        modalities = []
-        for column in param.quali:
-            modalities += [len(model.df[column].unique())]
-        val = 0
-        # conserve the modalities in their original type
-        modalities_type = []
-        for col in param.quali:
-            mod_temp = list(model.df[col].unique())
-            mod_temp.sort()  # sort the modalities as pd.get_dummies have done
-            modalities_type += mod_temp
-
-        # create a dict that link dummies variable to the original modalitie
-        dict_mod = dict(zip(X_quali.columns, modalities_type))
-
-        # for each variable we affect the value to the highest modalitie in X_quali
+        modalities = get_number_unique(model.df[param.quali])
+        dict_mod = get_column_mapping(dummy_columns)
+        
         random_gen = np.random.default_rng(seed)
-        for i in range(len(modalities)):
+        inverse_quali = pd.DataFrame()
+
+
+        index = 0
+        columns = model.df[param.quali].columns
+        for i, modality in enumerate(modalities):
             # get cumululative probabilities
             cum_probability = X_quali.iloc[:, val : val + modalities[i]].cumsum(axis=1)
             # random draw
@@ -302,3 +291,12 @@ def inverse_transform(
 
     # reorder columns
     return inverse[model.df.columns]
+
+  
+def get_column_mapping(dummy_columns):
+    """Get mapping between dummy columns and original columns."""
+    get_suffix = lambda col : col.split(DUMMIES_PREFIX_SEP)[1]
+    return {col : get_suffix(col) for col in dummy_columns}
+
+def get_number_unique(df : pd.DataFrame):
+    return df.nunique().to_list()

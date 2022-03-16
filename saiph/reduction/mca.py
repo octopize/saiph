@@ -7,6 +7,7 @@ import pandas as pd
 from numpy.typing import NDArray
 
 from saiph.models import Model, Parameters
+from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
 
 # from scipy.sparse import diags
@@ -76,7 +77,7 @@ def fit(
     df_scale, T, D_c = _diag_compute(df_scale, r, c)
 
     # get the array gathering proportion of each modality among individual (N/n)
-    df_dummies = pd.get_dummies(df.astype("category"))
+    df_dummies = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
     dummies_col_prop = len(df_dummies) / df_dummies.sum(axis=0)
 
     # apply the weights and compute the svd
@@ -141,7 +142,7 @@ def center(
     c: np.ndarray
         Sums column by column
     """
-    df_scale = pd.get_dummies(df.astype("category"))
+    df_scale = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
     _modalities = df_scale.columns.values
 
     # scale data
@@ -174,7 +175,7 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
 
-    df_scaled = pd.get_dummies(df.astype("category"))
+    df_scaled = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
     if model._modalities is not None:
         for mod in model._modalities:
             if mod not in df_scaled:
@@ -241,9 +242,8 @@ def stats(model: Model, param: Parameters) -> Parameters:
         param populated with contriubtion.
     """
     V = np.dot(model.D_c, model.V.T)  # type: ignore
-    total = pd.get_dummies(model.df.astype("category")).sum().sum()
-    df = pd.get_dummies(model.df.astype("category"))
-    F = df / total
+    df = pd.get_dummies(model.df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    F = df / df.sum().sum()
 
     # Column and row weights
     marge_col = F.sum(axis=0)

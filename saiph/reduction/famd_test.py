@@ -3,6 +3,7 @@ import pandas as pd
 from numpy.testing import assert_allclose
 from pandas._testing.asserters import assert_series_equal
 from pandas.testing import assert_frame_equal
+from saiph.reduction import DUMMIES_PREFIX_SEP
 
 from saiph.reduction.famd import center, fit, scaler, transform
 from saiph.reduction.pca import center as center_pca
@@ -49,7 +50,7 @@ def test_fit_mix() -> None:
     assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),
     assert_allclose(model.variable_coord, model.V.T)
     assert np.array_equal(
-        model._modalities, ["tool_hammer", "tool_toaster", "score_aa", "score_ab"]
+        model._modalities, [f"tool{DUMMIES_PREFIX_SEP}hammer", f"tool{DUMMIES_PREFIX_SEP}toaster", f"score{DUMMIES_PREFIX_SEP}aa", f"score{DUMMIES_PREFIX_SEP}ab"]
     )
     # Pertinent ?
     # assert_allclose(model.D_c,np.array([[2.0, 0.0, 0.0],
@@ -65,7 +66,7 @@ def test_fit_mix() -> None:
         atol=0.01,
     )
     assert np.array_equal(
-        model._modalities, ["tool_hammer", "tool_toaster", "score_aa", "score_ab"]
+        model._modalities, [f"tool{DUMMIES_PREFIX_SEP}hammer", f"tool{DUMMIES_PREFIX_SEP}toaster", f"score{DUMMIES_PREFIX_SEP}aa", f"score{DUMMIES_PREFIX_SEP}ab"]
     )
 
 

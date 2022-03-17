@@ -25,9 +25,9 @@ class Model:
     s: Optional[NDArray[np.float_]] = None
 
     # Mean of the original data. Calculated while centering.
-    mean: Optional[NDArray[np.float_]] = None
+    mean: Optional[pd.Series] = None
     # Standard deviation of the original data. Calculated while scaling.
-    std: Optional[NDArray[np.float_]] = None
+    std: Optional[pd.Series] = None
 
     # Modality proportions of categorical variables.
     prop: Any = None  # FAMD only
@@ -49,10 +49,10 @@ class Parameters:
     row_w: NDArray[np.float_]
     # Column names once data is projected.
     columns: List[str]
-    # Indices of columns that are considered quantitative.
-    quanti: Optional[NDArray[np.int_]] = None
-    # Indices of columns that are considered qualitative.
-    quali: Optional[NDArray[np.int_]] = None
+    # Column labels that are considered quantitative.
+    quanti: List[str]
+    # Column labels that are considered qualitative.
+    quali: List[str]
     # Correlation between the axis and the variables.
     cor: Optional[pd.DataFrame] = None
     # Contributions for each variable.

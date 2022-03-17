@@ -97,10 +97,10 @@ def stats(model: Model, param: Parameters) -> Parameters:
     model.variable_coord.columns = param.cor.columns
     model.variable_coord.index = list(param.cor.index)
 
-    if param.quali.size == 0:
+    if len(param.quali) == 0:
         param.cos2 = param.cor ** 2
         param.contrib = param.cos2.div(param.cos2.sum(axis=0), axis=1).mul(100)
-    elif param.quanti.size == 0:
+    elif len(param.quanti) == 0:
         param = mca.stats(model, param)
         if param.cor is None:
             raise ValueError(
@@ -150,9 +150,9 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     if param.quali is None or param.quanti is None:
         raise ValueError("Need to fit before using transform")
 
-    if param.quali.size == 0:
+    if len(param.quali) == 0:
         coord = pca.transform(df, model, param)
-    elif param.quanti.size == 0:
+    elif len(param.quanti) == 0:
         coord = mca.transform(df, model, param)
     else:
         coord = famd.transform(df, model, param)
@@ -228,7 +228,7 @@ def inverse_transform_raw(
     coord: pd.DataFrame, model: Model, param: Parameters, seed: Optional[int] = None
 ) -> pd.DataFrame:
 
-    has_some_quanti = param.quanti is not None and param.quanti.shape[0] != 0
+    has_some_quanti = param.quanti is not None and len(param.quanti) != 0
     has_some_quali = param.quali is not None and len(param.quali) != 0
 
     inverse_coord_quanti, inverse_coord_quali = inverse_coordinates(coord, model, param)
@@ -255,7 +255,7 @@ def inverse_transform_raw(
 
     inverse_quali = (
         inverse_transform_quali(
-            model.df[param.quali], seed, pd.DataFrame(inverse_coord_quali)
+            model.df[param.quali], pd.DataFrame(inverse_coord_quali), seed
         )
         if has_some_quali
         else None
@@ -280,7 +280,7 @@ def inverse_coordinates(
     # Scale
     inverse_coords = inverse_coords / np.sqrt(param.col_w) * param.col_w
 
-    nb_quanti = param.quanti.shape[0]
+    nb_quanti = len(param.quanti)
 
     inverse_coord_quanti = inverse_coords[:, :nb_quanti]
     inverse_coord_quali = inverse_coords[:, nb_quanti:]
@@ -293,8 +293,8 @@ def inverse_transform_quanti(
     model: Model,
     param: Parameters,
 ) -> pd.DataFrame:
-    std: float = model.std.to_numpy()
-    mean: float = model.mean.to_numpy()
+    std: NDArray[np.float_] = model.std.to_numpy()
+    mean: NDArray[np.float_] = model.mean.to_numpy()
     inverse_quanti = pd.DataFrame(
         data=(inverse_coords * std) + mean,
         columns=param.quanti,
@@ -305,8 +305,8 @@ def inverse_transform_quanti(
 
 def inverse_transform_quali(
     train_df: pd.DataFrame,
-    seed: int,
     inverse_coords: pd.DataFrame,
+    seed: Optional[int] = None,
 ) -> pd.DataFrame:
     """Inverse transform categorical variables by weighted random selection.
 

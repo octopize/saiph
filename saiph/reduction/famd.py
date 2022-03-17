@@ -58,8 +58,8 @@ def fit(
     fit_check_params(nf, _col_weights, df.shape[1])
 
     # select the categorical and continuous columns
-    quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
-    quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
+    quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
+    quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.to_list()
 
     row_w = row_weights_uniform(len(df))
     col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
@@ -160,11 +160,11 @@ def center(
     -------
     df_scale: pd.DataFrame
         The scaled DataFrame.
-    mean: NDArray[np.float_]
+    mean: pd.Series
         Mean of the input dataframe.
-    std: NDArray[np.float_]
+    std: pd.Series
         Standard deviation of the input dataframe. Returns nan as std if no std was asked.
-    prop: np.ndarray
+    prop: pd.Series
         Proportion of each categorical.
     _modalities: np.ndarray
         Modalities for the MCA.

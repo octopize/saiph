@@ -112,6 +112,8 @@ def fit(
         row_w=row_w,
         columns=columns,
         dummies_col_prop=dummies_col_prop,
+        quali=[],
+        quanti=[],
     )
 
     return coord, model, param

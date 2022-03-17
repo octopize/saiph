@@ -1,1 +1,1 @@
-DUMMIES_PREFIX_SEP = "*^_"
+DUMMIES_PREFIX_SEP = "___"

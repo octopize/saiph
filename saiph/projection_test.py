@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -5,12 +7,11 @@ from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
 from saiph import fit, inverse_transform, stats, transform
-from saiph.projection import get_column_mapping, get_number_unique
+from saiph.projection import get_dummies_mapping, get_random_weighted_columns
 from saiph.reduction import DUMMIES_PREFIX_SEP
 
+
 # mypy: ignore-errors
-
-
 @pytest.fixture()
 def quanti_df() -> pd.DataFrame:
     return pd.DataFrame(
@@ -350,30 +351,37 @@ expected_famd_explained_var_ratio = [
         (df_famd, expected_famd_explained_var_ratio),
     ],
 )
-def test_var_ratio(df_input, expected_var_ratio):
+def test_var_ratio(df_input, expected_var_ratio) -> None:
     _, model, param = fit(df_input)
     stats(model, param)
     assert_allclose(model.explained_var_ratio[0:5], expected_var_ratio, atol=1e-07)
 
 
-def test_get_modalities(quali_df: pd.DataFrame):
-    result = get_number_unique(quali_df)
-    assert result == [2, 3, 2, 2]
+def test_get_dummies_mapping(quali_df: pd.DataFrame) -> None:
+    original_columns = ["tool", "score"]
+    dummy_columns = pd.get_dummies(
+        quali_df[original_columns], prefix_sep=DUMMIES_PREFIX_SEP
+    ).columns
+    result = get_dummies_mapping(original_columns, dummy_columns)
 
-
-def test_get_column_mapping(quali_df: pd.DataFrame):
-    dummy_columns = pd.get_dummies(quali_df, prefix_sep=DUMMIES_PREFIX_SEP).columns
-    result = get_column_mapping(dummy_columns)
-
+    sep = DUMMIES_PREFIX_SEP
     expected = {
-        "tool*^_hammer": "hammer",
-        "tool*^_toaster": "toaster",
-        "score*^_aa": "aa",
-        "score*^_bb": "bb",
-        "score*^_ca": "ca",
-        "car*^_renault": "renault",
-        "car*^_tesla": "tesla",
-        "moto*^_Bike": "Bike",
-        "moto*^_Motor": "Motor",
+        "tool": {f"tool{sep}hammer", f"tool{sep}toaster"},
+        "score": {f"score{sep}aa", f"score{sep}bb", f"score{sep}ca"},
     }
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "weights, expected_index",
+    [
+        ([0.3, 0.7, 0.01], 1),
+        ([0.7, 0.3, 0.01], 0),
+        ([0.01, 0.7, 0.3], 1),
+        ([0.01, 0.3, 0.7], 2),
+    ],
+)
+def test_get_random_weighted_columns(weights: List[float], expected_index: int):
+    df = pd.DataFrame(data=[weights])
+    result = get_random_weighted_columns(df, np.random.default_rng(1))
+    assert result.values[0] == expected_index

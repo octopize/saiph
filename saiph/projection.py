@@ -1,5 +1,5 @@
 """Project any dataframe, inverse transform and compute stats."""
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -213,7 +213,7 @@ def inverse_transform(
             "if the number of dimensions is greater than the number of individuals"
         )
 
-    inverse = inverse_transfrom_raw(coord, model, param, seed)
+    inverse = inverse_transform_raw(coord, model, param, seed)
 
     # Cast columns to same type as input
     for column in model.df.columns:
@@ -224,45 +224,43 @@ def inverse_transform(
     return inverse[model.df.columns]
 
 
-def inverse_transfrom_raw(
+def inverse_transform_raw(
     coord: pd.DataFrame, model: Model, param: Parameters, seed: Optional[int] = None
 ) -> pd.DataFrame:
 
     has_some_quanti = param.quanti is not None and param.quanti.shape[0] != 0
     has_some_quali = param.quali is not None and len(param.quali) != 0
 
-    X: NDArray[np.float_] = np.array(coord @ model.V * np.sqrt(param.col_w))
-    X = X / np.sqrt(param.col_w) * param.col_w
-    nb_quanti = param.quanti.shape[0]
-
-    X_quanti = X[:, :nb_quanti]
-    X_quali = X[:, nb_quanti:]
+    inverse_coord_quanti, inverse_coord_quali = inverse_coordinates(coord, model, param)
 
     if not has_some_quanti:
-        # We can just do a matrix multiplication and we're done.
-        X_quali = coord @ (model.D_c @ model.V.T).T
-        X_quali = np.divide(X_quali, param.dummies_col_prop)
+        inverse_coord_quali = coord @ (model.D_c @ model.V.T).T
+        inverse_coord_quali = np.divide(inverse_coord_quali, param.dummies_col_prop)
 
         # dividing by proportion of each modality among individual
         # allows to get back the complete disjunctive table
         # X_quali is the complete disjunctive table ("tableau disjonctif complet" in FR)
 
     inverse_quanti = (
-        inverse_transformm_quanti(model, param, X_quanti) if has_some_quanti else None
+        inverse_transform_quanti(inverse_coord_quanti, model, param)
+        if has_some_quanti
+        else None
     )
 
     # Rescale quali
+    # FIXME: Can we avoid doing an operation on just X_quali when we have both quanti and quali?
     if has_some_quanti and has_some_quali:
         prop = model.prop.to_numpy()
-        X_quali = (X_quali * np.sqrt(prop)) + prop
+        inverse_coord_quali = (inverse_coord_quali * np.sqrt(prop)) + prop
 
     inverse_quali = (
-        inverse_transform_quali(model.df[param.quali], seed, pd.DataFrame(X_quali))
+        inverse_transform_quali(
+            model.df[param.quali], seed, pd.DataFrame(inverse_coord_quali)
+        )
         if has_some_quali
         else None
     )
 
-    # concatenate the continuous and categorical
     if inverse_quali is None:
         return inverse_quanti
     elif inverse_quanti is None:
@@ -271,54 +269,103 @@ def inverse_transfrom_raw(
         return pd.concat([inverse_quali, inverse_quanti], axis=1)
 
 
-def inverse_transformm_quanti(
+def inverse_coordinates(
+    coord: NDArray[np.float_], model: Model, param: Parameters
+) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
+    # Inverse
+    inverse_coords: NDArray[np.float_] = np.array(
+        coord @ model.V * np.sqrt(param.col_w)
+    )
+
+    # Scale
+    inverse_coords = inverse_coords / np.sqrt(param.col_w) * param.col_w
+
+    nb_quanti = param.quanti.shape[0]
+
+    inverse_coord_quanti = inverse_coords[:, :nb_quanti]
+    inverse_coord_quali = inverse_coords[:, nb_quanti:]
+
+    return inverse_coord_quanti, inverse_coord_quali
+
+
+def inverse_transform_quanti(
+    inverse_coords: NDArray[np.float_],
     model: Model,
     param: Parameters,
-    X_quanti: NDArray[np.float_],
 ) -> pd.DataFrame:
     std: float = model.std.to_numpy()
     mean: float = model.mean.to_numpy()
     inverse_quanti = pd.DataFrame(
-        data=(X_quanti * std) + mean,
+        data=(inverse_coords * std) + mean,
         columns=param.quanti,
     )
+    # FIXME: Why are we rounding here ? Removing it makes tests fail.
     return inverse_quanti.round(1)
 
 
 def inverse_transform_quali(
     train_df: pd.DataFrame,
     seed: int,
-    X: pd.DataFrame,
+    inverse_coords: pd.DataFrame,
 ) -> pd.DataFrame:
+    """Inverse transform categorical variables by weighted random selection.
 
+    Args:
+        train_df (pd.DataFrame): dataframe used to fit the model
+        seed (int): seed to fix randomness
+        inverse_coords (pd.DataFrame): coordinates that we want to transform
+
+    Returns:
+        inverse_quali: transformed categorical dataframe that is similar to `train_df`
+    """
     dummy_columns = pd.get_dummies(train_df, prefix_sep=DUMMIES_PREFIX_SEP).columns
-    X.columns = dummy_columns
+    inverse_coords.columns = dummy_columns
 
-    modalities = get_number_unique(train_df)
-    dict_mod = get_column_mapping(dummy_columns)
+    dummies_mapping = get_dummies_mapping(train_df.columns, dummy_columns)
 
     random_gen = np.random.default_rng(seed)
     inverse_quali = pd.DataFrame()
 
-    index = 0
-    for i, modality in enumerate(modalities):
-        # get cumululative probabilities
-        upper_index = index + modality
-        cum_probability = X.iloc[:, index:upper_index].cumsum(axis=1)
-        # random draw
-        random_probability = random_gen.random((len(cum_probability), 1))
-        # choose the modality according the probabilities of each modalities
-        chosen_modalities = (random_probability < cum_probability).idxmax(axis=1)
-        chosen_modalities = [dict_mod.get(x, x) for x in chosen_modalities]
-        inverse_quali[train_df.columns[i]] = chosen_modalities
-        index += modality
+    def get_suffix(string: str) -> str:
+        return string.split(DUMMIES_PREFIX_SEP)[1]
+
+    for original_column, dummy_columns in dummies_mapping.items():
+        # Handle a single category with all the possible modalities
+        single_category = inverse_coords[dummy_columns]
+        chosen_modalities = get_random_weighted_columns(single_category, random_gen)
+        inverse_quali[original_column] = list(map(get_suffix, chosen_modalities))
+
     return inverse_quali
 
 
-def get_column_mapping(dummy_columns: List[str]) -> Dict[str, str]:
-    """Get mapping between dummy columns and original columns."""
-    return {col: col.split(DUMMIES_PREFIX_SEP)[1] for col in dummy_columns}
+def get_random_weighted_columns(
+    df: pd.DataFrame, random_gen: np.random.Generator
+) -> pd.Series:
+    """Randomly select column labels weighted by proportions.
+
+    Args:
+        df : dataframe containing proportions
+        random_gen (np.random.Generator): random generator
+
+    Returns:
+        selected column labels
+    """
+    # Example for 1 row:  [0.1, 0.3, 0.6] --> [0.1, 0.4, 1.0]
+    cum_probability = df.cumsum(axis=1)
+    random_probability = random_gen.random((cum_probability.shape[0], 1))
+    # [0.342] < [0.1, 0.4, 1.0] --> [False, True, True] --> idx: 1
+    column_labels = (random_probability < cum_probability).idxmax(axis=1)
+
+    return column_labels
 
 
-def get_number_unique(df: pd.DataFrame) -> List[int]:
-    return df.nunique().to_list()  # type: ignore
+def get_dummies_mapping(
+    columns: List[str], dummy_columns: List[str]
+) -> Dict[str, Set[str]]:
+    """Get mapping between original column and all dummy columns."""
+    return {
+        col: set(
+            filter(lambda c: c.startswith(f"{col}{DUMMIES_PREFIX_SEP}"), dummy_columns)
+        )
+        for col in columns
+    }

@@ -16,7 +16,7 @@ def fit(
     nf: Optional[Union[int, str]] = None,
     col_w: Optional[NDArray[np.float_]] = None,
     scale: bool = True,
-    algorithm: str = 'randomized',
+    algorithm: str = 'lapack',
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 

@@ -29,11 +29,14 @@ def SVD(
         Unitary matrix having right singular vectors as rows.
     """
     if algorithm == 'lapack':
+        print('svd lapack')
         U, s, V = linalg.svd(df, full_matrices=False)
         if svd_flip:
             U, V = extmath.svd_flip(U, V)
     
     if algorithm == 'randomized':
+        print('svd randomized')
+
         X = csr_matrix(df)
         svd = TruncatedSVD(n_components=X.shape[1] - 1, n_iter=7, random_state=42)
         U=svd.fit_transform(X)

@@ -85,6 +85,7 @@ def fit(
     columns = column_names(nf)
     coord = df_scale @ V.T
     coord.columns = columns
+    print(coord.shape)
 
     model = Model(
         df=df,
@@ -362,8 +363,6 @@ def stats(model: Model, param: Parameters) -> Parameters:
     cos2 = cos2 ** 2
     eta2 = eta2 ** 2
     eta2 = ((eta2).T / mods).T
-    print("cos2", cos2)
-    print("eta2", eta2)
 
     cos2 = np.concatenate([cos2, [eta2]], axis=0)
     param.contrib = contrib_var

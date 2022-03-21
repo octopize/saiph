@@ -18,7 +18,6 @@ def contributions():
 
 def test_get_variable_contribution_is_sorted(contributions: pd.DataFrame) -> None:
     """Verify that we get sorted descending values."""
-
     result = get_variable_contribution(
         contributions=contributions, dim=2, max_var=None, min_contrib=None
     )

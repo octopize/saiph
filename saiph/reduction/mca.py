@@ -299,7 +299,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     U = np.array(U).T
 
     # computing the contribution
-    eig: Any = s ** 2
+    eig: Any = s**2
 
     for i in range(len(V[0])):
         V[:, i] = V[:, i] * np.sqrt(eig[i])
@@ -308,7 +308,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     for i in range(len(U[0])):
         U[:, i] = U[:, i] * np.sqrt(eig[i])
 
-    coord_col = coord_col ** 2
+    coord_col = coord_col**2
 
     for i in range(len(coord_col[0])):
         coord_col[:, i] = (coord_col[:, i] * marge_col) / eig[i]

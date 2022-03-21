@@ -11,7 +11,6 @@ from saiph.projection import get_dummies_mapping, get_random_weighted_columns
 from saiph.reduction import DUMMIES_PREFIX_SEP
 
 
-# mypy: ignore-errors
 @pytest.fixture()
 def quanti_df() -> pd.DataFrame:
     return pd.DataFrame(

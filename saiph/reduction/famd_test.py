@@ -10,8 +10,6 @@ from saiph.reduction.pca import center as center_pca
 from saiph.reduction.pca import fit as fit_pca
 from saiph.reduction.pca import scaler as scaler_pca
 
-# mypy: ignore-errors
-
 
 def test_fit_mix() -> None:
     df = pd.DataFrame(

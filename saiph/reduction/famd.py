@@ -22,7 +22,6 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-    scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a FAMD model on data.
 
@@ -35,8 +34,6 @@ def fit(
     col_w: np.ndarrayn default: np.ones(df.shape[1])
         Weight assigned to each variable in the projection
         (more weight = more importance in the axes).
-    scale: bool
-        Unused. Kept for compatibility with model enabling scale=True|False.
 
     Returns
     -------

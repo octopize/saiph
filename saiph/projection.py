@@ -5,15 +5,17 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
+import saiph.reduction.famd as famd
+import saiph.reduction.mca as mca
+import saiph.reduction.pca as pca
 from saiph.models import Model, Parameters
-from saiph.reduction import DUMMIES_PREFIX_SEP, famd, mca, pca
+from saiph.reduction import DUMMIES_PREFIX_SEP
 
 
 def fit(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-    scale: bool = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
@@ -28,8 +30,6 @@ def fit(
     col_w: np.ndarrayn default: np.ones(df.shape[1])
         Weight assigned to each variable in the projection
         (more weight = more importance in the axes).
-    scale: bool
-        Unused. Kept for compatibility with model enabling scale=True|False.
 
     Returns
     -------
@@ -58,7 +58,7 @@ def fit(
     else:
         _fit = famd.fit
 
-    coord, model, param = _fit(df, _nf, col_w, scale)
+    coord, model, param = _fit(df, _nf, col_w)
     param.quanti = quanti
     param.quali = quali
     param.cor = _variable_correlation(model, param)

@@ -20,7 +20,6 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-    scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a PCA model on data.
 
@@ -33,8 +32,6 @@ def fit(
     col_w: np.ndarrayn default: np.ones(df.shape[1])
         Weight assigned to each variable in the projection
         (more weight = more importance in the axes).
-    scale: bool
-        Wether to scale data or not.
 
     Returns
     -------
@@ -58,7 +55,7 @@ def fit(
     # set row weights
     row_w = row_weights_uniform(len(df))
 
-    df_centered, mean, std = center(df, scale)
+    df_centered, mean, std = center(df)
 
     # apply weights and compute svd
     Z = ((df_centered * _col_weights).T * row_w).T
@@ -96,9 +93,7 @@ def fit(
     return coord, model, param
 
 
-def center(
-    df: pd.DataFrame, scale: Optional[bool] = True
-) -> Tuple[pd.DataFrame, float, float]:
+def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, float, float]:
     """Center data and standardize it if scale. Compute mean and std values.
 
     Used as internal function during fit.
@@ -109,8 +104,6 @@ def center(
     ----------
     df: pd.DataFrame
         DataFrame to center.
-    scale: bool
-        Whether dataframe should be standardized ot not.
 
     Returns
     -------
@@ -124,13 +117,11 @@ def center(
     df = df.copy()
     mean = np.mean(df, axis=0)
     df -= mean
-    std = 0
-    if scale:
-        std = np.std(df, axis=0)
-        std[std <= sys.float_info.min] = 1  # type: ignore
-        df /= std
-    # else:
-    #     std = np.nan
+
+    std = np.std(df, axis=0)
+    std[std <= sys.float_info.min] = 1  # type: ignore
+    df /= std
+
     return df, mean, std
 
 

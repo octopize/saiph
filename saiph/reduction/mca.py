@@ -9,8 +9,6 @@ from numpy.typing import NDArray
 from saiph.models import Model, Parameters
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
-
-# from scipy.sparse import diags
 from saiph.reduction.utils.common import (
     column_names,
     diag,
@@ -24,7 +22,6 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-    scale: Optional[bool] = True,
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a MCA model on data.
 
@@ -37,8 +34,6 @@ def fit(
     col_w: np.ndarrayn default: np.ones(df.shape[1])
         Weight assigned to each variable in the projection
         (more weight = more importance in the axes).
-    scale: bool
-        Unused. Kept for compatibility with model enabling scale=True|False.
 
     Returns
     -------

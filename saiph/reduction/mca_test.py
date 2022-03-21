@@ -6,8 +6,6 @@ from pandas.testing import assert_frame_equal
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.mca import fit, transform
 
-# mypy: ignore-errors
-
 
 def test_fit() -> None:
     df = pd.DataFrame(
@@ -138,7 +136,7 @@ def test_transform_simple() -> None:
             "score": ["aa", "aa"],
         }
     )
-    _, model, param = fit(df, scale=True)
+    _, model, param = fit(df)
 
     df_transformed = transform(df, model, param)
 

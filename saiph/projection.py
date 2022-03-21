@@ -13,10 +13,14 @@ from saiph.models import Model, Parameters
 
 def fit(
     df: pd.DataFrame,
-    nf: Optional[Union[int, str]] = None,
+    *,
+    nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-    scale: bool = True,
-    algorithm: str = 'lapack',
+    scale: Optional[bool] = True,
+    approximate : bool = False,
+    algorithm : Optional[str] = 'randomized',
+    n_components : Optional[int] = None
+
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
@@ -61,7 +65,7 @@ def fit(
     else:
         _fit = famd.fit
 
-    coord, model, param = _fit(df, _nf, col_w, scale, algorithm)
+    coord, model, param = _fit(df, nf=_nf, col_w=col_w, scale=scale, algorithm=algorithm)
     param.quanti = quanti
     param.quali = quali
     param.cor = _variable_correlation(model, param)

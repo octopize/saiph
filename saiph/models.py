@@ -39,6 +39,9 @@ class Model:
     algorithm:  Optional[str] = None
     """Type of SVD algorithm (lapack or randomized)."""
 
+    n_components: Optional[int] = None
+    """Number of components for the TruncatedSVD."""
+
 
 @dataclass
 class Parameters:

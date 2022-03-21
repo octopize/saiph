@@ -215,3 +215,4 @@ def test_compare_prince_full(iris_quanti_df) -> None:
     coord, _, _ = fit(iris_quanti_df, scale=False)
 
     assert_allclose(coord.to_numpy(), pca, atol=0.0001)
+    

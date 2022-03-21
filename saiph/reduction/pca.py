@@ -18,10 +18,13 @@ from saiph.reduction.utils.svd import SVD
 
 def fit(
     df: pd.DataFrame,
+    *,
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
     scale: Optional[bool] = True,
-    algorithm : str = 'lapack',
+    approximate : bool = False,
+    algorithm : Optional[str] = 'randomized',
+    n_components : Optional[int] = None
 ) -> Tuple[pd.DataFrame, Model, Parameters]:
     """Fit a PCA model on data.
 
@@ -36,6 +39,10 @@ def fit(
         (more weight = more importance in the axes).
     scale: bool
         Wether to scale data or not.
+    algorithm:
+        algorithm for TruncatedSVD
+    n_components:
+        number of components for TruncatedSVD. Default (df.shape[1] - 1).
 
     Returns
     -------
@@ -46,7 +53,13 @@ def fit(
     param: Parameters
         The parameters for transforming new data.
     """
+
     nf = nf or min(df.shape)
+    if approximate:
+        if not n_components:
+            raise ValueError("You must set n_components with approximate==True")
+        nf = min(nf, n_components)
+
     if col_w is not None:
         _col_weights = col_w
     else:
@@ -61,18 +74,15 @@ def fit(
 
     df_centered, mean, std = center(df, scale)
 
-    if algorithm == 'randomized' and nf == df_centered.shape[1] : 
-        nf  -=1
-
     # apply weights and compute svd
     Z = ((df_centered * _col_weights).T * row_w).T
-    U, s, V = SVD(Z, algorithm=algorithm)
-
+    U, s, V = SVD(Z, approximate=approximate, n_components=n_components, algorithm=algorithm)
     U = ((U.T) / np.sqrt(row_w)).T
     V = V / np.sqrt(_col_weights)
 
     explained_var, explained_var_ratio = explain_variance(s, df_centered, nf)
-
+    print(f"Explained variance : {explained_var}")
+    print(f"Explained variance ratio: {explained_var_ratio}")
     U = U[:, :nf]
     s = s[:nf]
     V = V[:nf, :]

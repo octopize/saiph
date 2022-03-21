@@ -15,13 +15,13 @@ def get_variable_contribution(
 
     Parameters
     ----------
-    contributions: pd.Dataframe
+    contributions
         Variable contributions of the model, per dimension.
-    dim: int
+    dim
         Dimension to plot
-    max_var: int
+    max_var
         Maximum number of variables to plot
-    min_contrib: float
+    min_contrib
         Minimum contribution threshold for the variable contributions to be displayed
 
     Returns:

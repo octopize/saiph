@@ -5,11 +5,8 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-import saiph.reduction.famd as famd
-import saiph.reduction.mca as mca
-import saiph.reduction.pca as pca
 from saiph.models import Model, Parameters
-from saiph.reduction import DUMMIES_PREFIX_SEP
+from saiph.reduction import DUMMIES_PREFIX_SEP, famd, mca, pca
 
 
 def fit(
@@ -98,7 +95,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     model.variable_coord.index = list(param.cor.index)
 
     if len(param.quali) == 0:
-        param.cos2 = param.cor ** 2
+        param.cos2 = param.cor**2
         param.contrib = param.cos2.div(param.cos2.sum(axis=0), axis=1).mul(100)
     elif len(param.quanti) == 0:
         param = mca.stats(model, param)
@@ -106,7 +103,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
             raise ValueError(
                 "empty param, run fit function to create Model class and Parameters class objects"
             )
-        param.cos2 = param.cor ** 2
+        param.cos2 = param.cor**2
 
         param.contrib = pd.DataFrame(
             param.contrib,

@@ -25,7 +25,7 @@ def diag(arr: NDArray[Any], use_scipy: bool = False) -> NDArray[Any]:
 def explain_variance(
     s: NDArray[Any], df: pd.DataFrame, nf: int
 ) -> Tuple[NDArray[Any], NDArray[Any]]:
-    explained_var: NDArray[Any] = ((s ** 2) / (df.shape[0] - 1))[:nf]
+    explained_var: NDArray[Any] = ((s**2) / (df.shape[0] - 1))[:nf]
     summed_explained_var = explained_var.sum()
     if summed_explained_var == 0:
         explained_var_ratio: NDArray[np.float_] = np.array([np.nan])

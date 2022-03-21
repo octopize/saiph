@@ -2,9 +2,6 @@
 from typing import List, Optional, Tuple
 
 import matplotlib
-
-matplotlib.use("TkAgg", force=True)
-
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt  # type: ignore
@@ -12,6 +9,8 @@ from numpy.typing import NDArray
 
 from saiph import transform
 from saiph.models import Model, Parameters
+
+matplotlib.use("TkAgg", force=True)  # Default matplotlib backend is not GUI compatible
 
 
 def plot_circle(
@@ -110,11 +109,10 @@ def plot_circle(
 
 def plot_var_contribution(
     values: NDArray[np.float_],
-    names: NDArray[str],
+    names: NDArray[np.string_],
     title: str = "Variables contributions",
 ) -> None:
     """Plot the variable contributions for a given dimension."""
-
     # plot
     plt.figure(figsize=(12, 6))
     indices = range(len(values))

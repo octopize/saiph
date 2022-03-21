@@ -29,7 +29,6 @@ def get_variable_contribution(
             Contributions of the specified dimension, sorted by descending importance
             and filtered by the given values of `max_var` and `min_contrib`.
     """
-
     nb_variables = max_var or len(contributions)
     min_contrib = min_contrib or sys.float_info.min
     label = contributions.columns[dim - 1]  # Dimensions starts at 1

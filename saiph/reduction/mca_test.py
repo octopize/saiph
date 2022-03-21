@@ -3,6 +3,7 @@ import pandas as pd
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
+from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.mca import fit, transform
 
 # mypy: ignore-errors
@@ -34,8 +35,14 @@ def test_fit() -> None:
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),
+    print(model._modalities)
     assert np.array_equal(
-        model._modalities, ["tool_hammer", "tool_toaster", "score_aa"]
+        model._modalities,
+        [
+            f"tool{DUMMIES_PREFIX_SEP}hammer",
+            f"tool{DUMMIES_PREFIX_SEP}toaster",
+            f"score{DUMMIES_PREFIX_SEP}aa",
+        ],
     )
     assert_allclose(
         model.D_c,
@@ -70,7 +77,10 @@ def test_fit_zero() -> None:
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     assert pd.isna(model.explained_var_ratio)
-    assert np.array_equal(model._modalities, ["tool_toaster", "score_aa"])
+    assert np.array_equal(
+        model._modalities,
+        [f"tool{DUMMIES_PREFIX_SEP}toaster", f"score{DUMMIES_PREFIX_SEP}aa"],
+    )
     assert_allclose(
         model.D_c,
         np.array([[1.414214, 0.0], [0.0, 1.414214]]),
@@ -131,8 +141,6 @@ def test_transform_simple() -> None:
     _, model, param = fit(df, scale=True)
 
     df_transformed = transform(df, model, param)
-
-    print(df_transformed)
 
     expected_transform = pd.DataFrame(
         {

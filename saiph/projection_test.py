@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -5,29 +7,25 @@ from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
 from saiph import fit, inverse_transform, stats, transform
+from saiph.projection import get_dummies_mapping, get_random_weighted_columns
+from saiph.reduction import DUMMIES_PREFIX_SEP
+
 
 # mypy: ignore-errors
+@pytest.fixture()
+def quanti_df() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "variable_1": [4, 5, 6, 7, 11, 2, 52],
+            "variable_2": [10, 20, 30, 40, 10, 74, 10],
+            "variable_3": [100, 50, -30, -50, -19, -29, -20],
+        }
+    )
 
 
-def test_transform_then_inverse_FAMD(iris_df: pd.DataFrame) -> None:
-    _, model, param = fit(iris_df, nf="all")
-    transformed = transform(iris_df, model, param)
-    un_transformed = inverse_transform(transformed, model, param)
-    print(un_transformed)
-    print(iris_df)
-
-    assert_frame_equal(un_transformed, iris_df)
-
-
-def test_transform_then_inverse_PCA(iris_quanti_df: pd.DataFrame) -> None:
-    _, model, param = fit(iris_quanti_df, nf="all")
-    transformed = transform(iris_quanti_df, model, param)
-    un_transformed = inverse_transform(transformed, model, param)
-    assert_frame_equal(un_transformed, iris_quanti_df)
-
-
-def test_transform_then_inverse_MCA() -> None:
-    df = pd.DataFrame(
+@pytest.fixture()
+def quali_df() -> pd.DataFrame:
+    return pd.DataFrame(
         {
             "tool": [
                 "toaster",
@@ -66,51 +64,33 @@ def test_transform_then_inverse_MCA() -> None:
         }
     )
 
+
+def test_transform_then_inverse_FAMD(iris_df: pd.DataFrame) -> None:
+    _, model, param = fit(iris_df, nf="all")
+    transformed = transform(iris_df, model, param)
+    un_transformed = inverse_transform(transformed, model, param)
+
+    assert_frame_equal(un_transformed, iris_df)
+
+
+def test_transform_then_inverse_PCA(iris_quanti_df: pd.DataFrame) -> None:
+    _, model, param = fit(iris_quanti_df, nf="all")
+    transformed = transform(iris_quanti_df, model, param)
+    un_transformed = inverse_transform(transformed, model, param)
+    assert_frame_equal(un_transformed, iris_quanti_df)
+
+
+def test_transform_then_inverse_MCA(quali_df: pd.DataFrame) -> None:
+
+    df = quali_df
     _, model, param = fit(df)
     transformed = transform(df, model, param)
     un_transformed = inverse_transform(transformed, model, param)
     assert_frame_equal(un_transformed, df)
 
 
-def test_transform_then_inverse_MCA_type() -> None:
-    df = pd.DataFrame(
-        {
-            "tool": [
-                "toaster",
-                "toaster",
-                "hammer",
-                "toaster",
-                "toaster",
-                "hammer",
-                "toaster",
-                "toaster",
-                "hammer",
-            ],
-            "score": [1, 1, 0, 1, 1, 1, 1, 0, 0],
-            "car": [
-                "tesla",
-                "renault",
-                "tesla",
-                "tesla",
-                "renault",
-                "tesla",
-                "tesla",
-                "renault",
-                "tesla",
-            ],
-            "moto": [
-                "Bike",
-                "Bike",
-                "Motor",
-                "Bike",
-                "Bike",
-                "Motor",
-                "Bike",
-                "Bike",
-                "Motor",
-            ],
-        }
-    )
+def test_transform_then_inverse_MCA_type(quali_df: pd.DataFrame) -> None:
+    df = quali_df
 
     df = df.astype("object")
     _, model, param = fit(df)
@@ -137,18 +117,10 @@ def test_transform_then_inverse_FAMD_weighted() -> None:
     assert_frame_equal(un_transformed, df)
 
 
-def test_transform_then_inverse_PCA_weighted() -> None:
-    df = pd.DataFrame(
-        {
-            "variable_1": [4, 5, 6, 7, 11, 2, 52],
-            "variable_2": [10, 20, 30, 40, 10, 74, 10],
-            "variable_3": [100, 50, -30, -50, -19, -29, -20],
-        }
-    )
-
-    _, model, param = fit(df, col_w=np.array([2, 1, 3]))
-    transformed = transform(df, model, param)
-    un_transformed = inverse_transform(transformed, model, param)
+def test_transform_then_inverse_PCA_weighted(quanti_df: pd.DataFrame) -> None:
+    df = quanti_df
+    coords, model, param = fit(df, col_w=np.array([2, 1, 3]))
+    un_transformed = inverse_transform(coords, model, param)
 
     assert_frame_equal(un_transformed, df)
 
@@ -379,7 +351,37 @@ expected_famd_explained_var_ratio = [
         (df_famd, expected_famd_explained_var_ratio),
     ],
 )
-def test_var_ratio(df_input, expected_var_ratio):
+def test_var_ratio(df_input, expected_var_ratio) -> None:
     _, model, param = fit(df_input)
     stats(model, param)
     assert_allclose(model.explained_var_ratio[0:5], expected_var_ratio, atol=1e-07)
+
+
+def test_get_dummies_mapping(quali_df: pd.DataFrame) -> None:
+    original_columns = ["tool", "score"]
+    dummy_columns = pd.get_dummies(
+        quali_df[original_columns], prefix_sep=DUMMIES_PREFIX_SEP
+    ).columns
+    result = get_dummies_mapping(original_columns, dummy_columns)
+
+    sep = DUMMIES_PREFIX_SEP
+    expected = {
+        "tool": {f"tool{sep}hammer", f"tool{sep}toaster"},
+        "score": {f"score{sep}aa", f"score{sep}bb", f"score{sep}ca"},
+    }
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "weights, expected_index",
+    [
+        ([0.3, 0.7, 0.01], 1),
+        ([0.7, 0.3, 0.01], 0),
+        ([0.01, 0.7, 0.3], 1),
+        ([0.01, 0.3, 0.7], 2),
+    ],
+)
+def test_get_random_weighted_columns(weights: List[float], expected_index: int):
+    df = pd.DataFrame(data=[weights])
+    result = get_random_weighted_columns(df, np.random.default_rng(1))
+    assert result.values[0] == expected_index

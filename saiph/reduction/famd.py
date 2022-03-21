@@ -8,6 +8,7 @@ import pandas as pd
 from numpy.typing import NDArray
 
 from saiph.models import Model, Parameters
+from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
     column_names,
@@ -57,8 +58,8 @@ def fit(
     fit_check_params(nf, _col_weights, df.shape[1])
 
     # select the categorical and continuous columns
-    quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
-    quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
+    quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
+    quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.to_list()
 
     row_w = row_weights_uniform(len(df))
     col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
@@ -137,7 +138,9 @@ def _col_weights_compute(
 
 def center(
     df: pd.DataFrame, quanti: List[int], quali: List[int]
-) -> Tuple[pd.DataFrame, float, float, NDArray[Any], NDArray[Any]]:
+) -> Tuple[
+    pd.DataFrame, NDArray[np.float_], NDArray[np.float_], NDArray[Any], NDArray[Any]
+]:
     """Center data, scale it, compute modalities and proportions of each categorical.
 
     Used as internal function during fit.
@@ -157,11 +160,11 @@ def center(
     -------
     df_scale: pd.DataFrame
         The scaled DataFrame.
-    mean: float
+    mean: pd.Series
         Mean of the input dataframe.
-    std: float
+    std: pd.Series
         Standard deviation of the input dataframe. Returns nan as std if no std was asked.
-    prop: np.ndarray
+    prop: pd.Series
         Proportion of each categorical.
     _modalities: np.ndarray
         Modalities for the MCA.
@@ -175,7 +178,9 @@ def center(
     df_quanti /= std
 
     # scale the categorical data
-    df_quali = pd.get_dummies(df[quali].astype("category"))
+    df_quali = pd.get_dummies(
+        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+    )
     prop = np.mean(df_quali, axis=0)
     df_quali -= prop
     df_quali /= np.sqrt(prop)
@@ -216,7 +221,9 @@ def scaler(
     df_quanti = (df_quanti - model.mean) / model.std
 
     # scale
-    df_quali = pd.get_dummies(df[param.quali].astype("category"))
+    df_quali = pd.get_dummies(
+        df[param.quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+    )
     if model._modalities is not None:
         for mod in model._modalities:
             if mod not in df_quali:
@@ -272,7 +279,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
         )
 
     df = pd.DataFrame(scaler(model, param))
-    df2: NDArray[Any] = np.array(pd.DataFrame(df).applymap(lambda x: x ** 2))
+    df2: NDArray[np.float_] = np.array(df) ** 2
 
     # svd of x with row_w and col_w
     weightedTc = _rmultiplication(
@@ -334,7 +341,9 @@ def stats(model: Model, param: Parameters) -> Parameters:
     mods = []
     # for each qualitative column in the original data set
     for count, col in enumerate(dfquali.columns):
-        dummy = pd.get_dummies(dfquali[col].astype("category"))
+        dummy = pd.get_dummies(
+            dfquali[col].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        )
         mods += [len(dummy.columns) - 1]
         # for each dimension
         dim = []
@@ -357,8 +366,6 @@ def stats(model: Model, param: Parameters) -> Parameters:
     cos2 = cos2 ** 2
     eta2 = eta2 ** 2
     eta2 = ((eta2).T / mods).T
-    print("cos2", cos2)
-    print("eta2", eta2)
 
     cos2 = np.concatenate([cos2, [eta2]], axis=0)
     param.contrib = contrib_var

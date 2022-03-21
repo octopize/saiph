@@ -89,7 +89,9 @@ def fit(
         type="pca",
     )
 
-    param = Parameters(nf=nf, col_w=_col_weights, row_w=row_w, columns=columns)
+    param = Parameters(
+        nf=nf, col_w=_col_weights, row_w=row_w, columns=columns, quali=[], quanti=[]
+    )
 
     return coord, model, param
 
@@ -114,9 +116,9 @@ def center(
     -------
     df: pd.DataFrame
         The centered DataFrame.
-    mean: float
+    mean: pd.Series
         Mean of the input dataframe.
-    std: float
+    std: pd.Series
         Standard deviation of the input dataframe. Returns nan as std if no std was asked.
     """
     df = df.copy()

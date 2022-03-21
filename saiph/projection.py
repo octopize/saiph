@@ -1,5 +1,5 @@
 """Project any dataframe, inverse transform and compute stats."""
-from typing import Optional, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -9,6 +9,7 @@ import saiph.reduction.famd as famd
 import saiph.reduction.mca as mca
 import saiph.reduction.pca as pca
 from saiph.models import Model, Parameters
+from saiph.reduction import DUMMIES_PREFIX_SEP
 
 
 def fit(
@@ -20,6 +21,7 @@ def fit(
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
     Datetimes must be stored as numbers of seconds since epoch.
+
     Parameters
     ----------
     df: pd.DataFrame
@@ -41,14 +43,13 @@ def fit(
     param: Parameters
         The parameters for transforming new data.
     """
-
     # Check column types
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
 
     _nf: int
     if not nf or isinstance(nf, str):
-        _nf = min(pd.get_dummies(df).shape)
+        _nf = min(pd.get_dummies(df, prefix_sep=DUMMIES_PREFIX_SEP).shape)
     else:
         _nf = nf
 
@@ -96,18 +97,17 @@ def stats(model: Model, param: Parameters) -> Parameters:
     model.variable_coord.columns = param.cor.columns
     model.variable_coord.index = list(param.cor.index)
 
-    if param.quali.size == 0:
-        param.cos2 = param.cor.applymap(lambda x: x ** 2)
-        param.contrib = param.cos2.div(param.cos2.sum(axis=0), axis=1).applymap(
-            lambda x: x * 100
-        )
-    elif param.quanti.size == 0:
+    if len(param.quali) == 0:
+        param.cos2 = param.cor ** 2
+        param.contrib = param.cos2.div(param.cos2.sum(axis=0), axis=1).mul(100)
+    elif len(param.quanti) == 0:
         param = mca.stats(model, param)
         if param.cor is None:
             raise ValueError(
                 "empty param, run fit function to create Model class and Parameters class objects"
             )
-        param.cos2 = param.cor.applymap(lambda x: x ** 2)
+        param.cos2 = param.cor ** 2
+
         param.contrib = pd.DataFrame(
             param.contrib,
             columns=param.cor.columns,
@@ -150,9 +150,9 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     if param.quali is None or param.quanti is None:
         raise ValueError("Need to fit before using transform")
 
-    if param.quali.size == 0:
+    if len(param.quali) == 0:
         coord = pca.transform(df, model, param)
-    elif param.quanti.size == 0:
+    elif len(param.quanti) == 0:
         coord = mca.transform(df, model, param)
     else:
         coord = famd.transform(df, model, param)
@@ -166,7 +166,9 @@ def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
     coord = transform(model.df, model, param)  # transform to be fixed
 
     if param.quali is not None and len(param.quali) > 0:
-        df_quali = pd.get_dummies(model.df[param.quali].astype("category"))
+        df_quali = pd.get_dummies(
+            model.df[param.quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        )
         bind = pd.concat([df_quanti, df_quali], axis=1)
     else:
         bind = df_quanti
@@ -205,96 +207,13 @@ def inverse_transform(
     inverse: pd.DataFrame
         Inversed DataFrame.
     """
-
     if len(coord) < param.nf:
         raise ValueError(
             "Inverse_transform is not working"
             "if the number of dimensions is greater than the number of individuals"
         )
 
-    # if PCA or FAMD compute the continuous variables
-    if param.quanti is not None and len(param.quanti) != 0:
-
-        X: NDArray[np.float_] = np.array(coord @ model.V * np.sqrt(param.col_w))
-        X = X / np.sqrt(param.col_w) * param.col_w
-        X_quanti = X[:, : len(param.quanti)]
-
-        # descale
-        std: NDArray[np.float_] = np.array(model.std)
-        mean: NDArray[np.float_] = np.array(model.mean)
-        inverse_quanti = (X_quanti * std) + mean
-        # Handle floats -> int conversion. decimals=14 brings errors when casting as int
-        inverse_quanti = pd.DataFrame(inverse_quanti, columns=list(param.quanti)).round(
-            decimals=13
-        )
-
-        # if FAMD descale the categorical variables
-        if param.quali is not None and len(param.quali) != 0:
-            X_quali = X[:, len(param.quanti) :]
-            prop: NDArray[np.float_] = np.array(model.prop)
-            X_quali = (X_quali) * (np.sqrt(prop)) + prop
-
-    # if MCA no descaling
-    else:
-        # Previously was a ndarray, but no need
-        # NB: If this causes a bug, X_quali = np.array(X_quali) goes back to previous vesrion
-        X_quali = coord @ (model.D_c @ model.V.T).T
-        X_quali = np.divide(X_quali, param.dummies_col_prop)
-        # divinding by proportion of each modality among individual
-        # allows to get back the complete disjunctive table
-        # X_quali is the complete disjunctive table ("tableau disjonctif complet" in FR)
-
-    # compute the categorical variables
-    if param.quali is not None and len(param.quali) != 0:
-        inverse_quali = pd.DataFrame()
-        X_quali = pd.DataFrame(X_quali)
-        X_quali.columns = list(
-            pd.get_dummies(
-                model.df[param.quali],
-                prefix=None,
-                prefix_sep="_",
-            ).columns
-        )
-
-        modalities = []
-        for column in param.quali:
-            modalities += [len(model.df[column].unique())]
-        val = 0
-        # conserve the modalities in their original type
-        modalities_type = []
-        for col in param.quali:
-            mod_temp = list(model.df[col].unique())
-            mod_temp.sort()  # sort the modalities as pd.get_dummies have done
-            modalities_type += mod_temp
-
-        # create a dict that link dummies variable to the original modalitie
-        dict_mod = dict(zip(X_quali.columns, modalities_type))
-
-        # for each variable we affect the value to the highest modalitie in X_quali
-        random_gen = np.random.default_rng(seed)
-        for i in range(len(modalities)):
-            # get cumululative probabilities
-            cum_probability = X_quali.iloc[:, val : val + modalities[i]].cumsum(axis=1)
-            # random draw
-            random_probability = random_gen.random((len(cum_probability), 1))
-            # choose the modality according the probabilities of each modalities
-            mod_random = (random_probability < cum_probability).idxmax(axis=1)
-            mod_random = [dict_mod.get(x, x) for x in mod_random]
-            inverse_quali[list(model.df[param.quali].columns)[i]] = mod_random
-            val += modalities[i]
-
-    # concatenate the continuous and categorical
-    if (
-        param.quali is not None
-        and param.quanti is not None
-        and len(param.quali) != 0
-        and len(param.quanti) != 0
-    ):
-        inverse = pd.concat([inverse_quali, inverse_quanti], axis=1)
-    elif param.quanti is not None and len(param.quanti) != 0:
-        inverse = inverse_quanti
-    else:
-        inverse = inverse_quali
+    inverse = inverse_transform_raw(coord, model, param, seed)
 
     # Cast columns to same type as input
     for column in model.df.columns:
@@ -303,3 +222,150 @@ def inverse_transform(
 
     # reorder columns
     return inverse[model.df.columns]
+
+
+def inverse_transform_raw(
+    coord: pd.DataFrame, model: Model, param: Parameters, seed: Optional[int] = None
+) -> pd.DataFrame:
+
+    has_some_quanti = param.quanti is not None and len(param.quanti) != 0
+    has_some_quali = param.quali is not None and len(param.quali) != 0
+
+    inverse_coord_quanti, inverse_coord_quali = inverse_coordinates(coord, model, param)
+
+    if not has_some_quanti:
+        inverse_coord_quali = coord @ (model.D_c @ model.V.T).T
+        inverse_coord_quali = np.divide(inverse_coord_quali, param.dummies_col_prop)
+
+        # dividing by proportion of each modality among individual
+        # allows to get back the complete disjunctive table
+        # X_quali is the complete disjunctive table ("tableau disjonctif complet" in FR)
+
+    inverse_quanti = (
+        inverse_transform_quanti(inverse_coord_quanti, model, param)
+        if has_some_quanti
+        else None
+    )
+
+    # Rescale quali
+    # FIXME: Can we avoid doing an operation on just X_quali when we have both quanti and quali?
+    if has_some_quanti and has_some_quali:
+        prop = model.prop.to_numpy()
+        inverse_coord_quali = (inverse_coord_quali * np.sqrt(prop)) + prop
+
+    inverse_quali = (
+        inverse_transform_quali(
+            model.df[param.quali], pd.DataFrame(inverse_coord_quali), seed
+        )
+        if has_some_quali
+        else None
+    )
+
+    if inverse_quali is None:
+        return inverse_quanti
+    elif inverse_quanti is None:
+        return inverse_quali
+    else:
+        return pd.concat([inverse_quali, inverse_quanti], axis=1)
+
+
+def inverse_coordinates(
+    coord: NDArray[np.float_], model: Model, param: Parameters
+) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
+    # Inverse
+    inverse_coords: NDArray[np.float_] = np.array(
+        coord @ model.V * np.sqrt(param.col_w)
+    )
+
+    # Scale
+    inverse_coords = inverse_coords / np.sqrt(param.col_w) * param.col_w
+
+    nb_quanti = len(param.quanti)
+
+    inverse_coord_quanti = inverse_coords[:, :nb_quanti]
+    inverse_coord_quali = inverse_coords[:, nb_quanti:]
+
+    return inverse_coord_quanti, inverse_coord_quali
+
+
+def inverse_transform_quanti(
+    inverse_coords: NDArray[np.float_],
+    model: Model,
+    param: Parameters,
+) -> pd.DataFrame:
+    std: NDArray[np.float_] = model.std.to_numpy()
+    mean: NDArray[np.float_] = model.mean.to_numpy()
+    inverse_quanti = pd.DataFrame(
+        data=(inverse_coords * std) + mean,
+        columns=param.quanti,
+    )
+    # FIXME: Why are we rounding here ? Removing it makes tests fail.
+    return inverse_quanti.round(1)
+
+
+def inverse_transform_quali(
+    train_df: pd.DataFrame,
+    inverse_coords: pd.DataFrame,
+    seed: Optional[int] = None,
+) -> pd.DataFrame:
+    """Inverse transform categorical variables by weighted random selection.
+
+    Args:
+        train_df (pd.DataFrame): dataframe used to fit the model
+        seed (int): seed to fix randomness
+        inverse_coords (pd.DataFrame): coordinates that we want to transform
+
+    Returns:
+        inverse_quali: transformed categorical dataframe that is similar to `train_df`
+    """
+    dummy_columns = pd.get_dummies(train_df, prefix_sep=DUMMIES_PREFIX_SEP).columns
+    inverse_coords.columns = dummy_columns
+
+    dummies_mapping = get_dummies_mapping(train_df.columns, dummy_columns)
+
+    random_gen = np.random.default_rng(seed)
+    inverse_quali = pd.DataFrame()
+
+    def get_suffix(string: str) -> str:
+        return string.split(DUMMIES_PREFIX_SEP)[1]
+
+    for original_column, dummy_columns in dummies_mapping.items():
+        # Handle a single category with all the possible modalities
+        single_category = inverse_coords[dummy_columns]
+        chosen_modalities = get_random_weighted_columns(single_category, random_gen)
+        inverse_quali[original_column] = list(map(get_suffix, chosen_modalities))
+
+    return inverse_quali
+
+
+def get_random_weighted_columns(
+    df: pd.DataFrame, random_gen: np.random.Generator
+) -> pd.Series:
+    """Randomly select column labels weighted by proportions.
+
+    Args:
+        df : dataframe containing proportions
+        random_gen (np.random.Generator): random generator
+
+    Returns:
+        selected column labels
+    """
+    # Example for 1 row:  [0.1, 0.3, 0.6] --> [0.1, 0.4, 1.0]
+    cum_probability = df.cumsum(axis=1)
+    random_probability = random_gen.random((cum_probability.shape[0], 1))
+    # [0.342] < [0.1, 0.4, 1.0] --> [False, True, True] --> idx: 1
+    column_labels = (random_probability < cum_probability).idxmax(axis=1)
+
+    return column_labels
+
+
+def get_dummies_mapping(
+    columns: List[str], dummy_columns: List[str]
+) -> Dict[str, Set[str]]:
+    """Get mapping between original column and all dummy columns."""
+    return {
+        col: set(
+            filter(lambda c: c.startswith(f"{col}{DUMMIES_PREFIX_SEP}"), dummy_columns)
+        )
+        for col in columns
+    }

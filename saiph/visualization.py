@@ -1,9 +1,13 @@
 """Visualization functions."""
 from typing import List, Optional, Tuple
 
-import matplotlib.pyplot as plt  # type: ignore
+import matplotlib
+
+matplotlib.use("TkAgg", force=True)
+
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt  # type: ignore
 from numpy.typing import NDArray
 
 from saiph import transform
@@ -105,52 +109,20 @@ def plot_circle(
 
 
 def plot_var_contribution(
-    param: Parameters,
-    dim: int = 1,
-    max_var: int = 10,
-    min_contrib: float = 0.1,
+    values: NDArray[np.float_],
+    names: NDArray[str],
+    title: str = "Variables contributions",
 ) -> None:
-    """Plot the variable contributions for a given dimension.
-
-    Parameters
-    ----------
-    param: Parameters
-        The parameters for transforming new data.
-    dim: int
-        Value of the dimension to plot
-    max_var: int
-        Maximum number of variables to plot
-    min_contrib: float
-        Minimum contribution threshold for the variable contributions to be displayed
-
-    Returns:
-        graph of the contribution percentages per variables
-    """
-    if param.cos2 is None or param.contrib is None:
-        raise ValueError(
-            "empty param, run fit function to create Model class and Parameters class objects"
-        )
-    # Dimensions start from 1
-
-    # get the useful contributions
-    var_contrib = param.contrib[param.contrib.columns[dim - 1]]
-    if len(var_contrib) > max_var:
-        var_contrib = var_contrib[:max_var]
-
-    # check threshold
-    var_contrib = [var for var in var_contrib if var > min_contrib]
-    var_contrib = pd.DataFrame(var_contrib)[0]
-
-    indices = list((-var_contrib).argsort())
-    names = [list(param.contrib.index)[indices[i]] for i in range(len(indices))]
+    """Plot the variable contributions for a given dimension."""
 
     # plot
     plt.figure(figsize=(12, 6))
-    plt.bar(range(len(var_contrib)), var_contrib[indices], align="center")
-    plt.xticks(range(len(var_contrib)), names, rotation="horizontal")
+    indices = range(len(values))
+    plt.bar(indices, values, align="center")
+    plt.xticks(indices, names, rotation="horizontal")
 
     # setting labels and title
-    plt.title("Variables contributions to Dim. " + str(dim))
+    plt.title(title)
     plt.ylabel("Importance")
     plt.xlabel("Variables")
     plt.show()

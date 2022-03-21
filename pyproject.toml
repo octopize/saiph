@@ -24,7 +24,6 @@ pytest = "^6.2"
 pydocstyle = "^6.1"
 mypy = "^0.920"
 black = {extras = ["jupyter"], version = "^22.1.0"}
-prince = "^0.7"
 flit = "^3.4.0"
 flake8 = "^4.0.1"
 myst-parser = "^0.16.0"

@@ -1,0 +1,42 @@
+import sys
+from typing import Optional
+
+import pandas as pd
+
+
+def get_variable_contribution(
+    contributions: pd.DataFrame,
+    dim: int = 1,
+    *,
+    max_var: Optional[int] = 10,
+    min_contrib: Optional[float] = 0.1,
+) -> pd.Series:
+    """Get sorted and filtered variable contributions for a given dimension.
+
+    Parameters
+    ----------
+    contributions: pd.Dataframe
+        Variable contributions of the model, per dimension.
+    dim: int
+        Dimension to plot
+    max_var: int
+        Maximum number of variables to plot
+    min_contrib: float
+        Minimum contribution threshold for the variable contributions to be displayed
+
+    Returns:
+        selected:
+            Contributions of the specified dimension, sorted by descending importance
+            and filtered by the given values of `max_var` and `min_contrib`.
+    """
+
+    nb_variables = max_var or len(contributions)
+    min_contrib = min_contrib or sys.float_info.min
+    label = contributions.columns[dim - 1]  # Dimensions starts at 1
+    selected = (
+        contributions[label]
+        .loc[lambda v: v > min_contrib]
+        .head(nb_variables)
+        .sort_values(ascending=False)
+    )
+    return selected

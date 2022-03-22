@@ -107,9 +107,9 @@ def fit(
 
     param = Parameters(
         nf=nf,
-        col_w=col_weights,
-        row_w=row_w,
-        columns=columns,
+        column_weights=col_weights,
+        row_weights=row_w,
+        projected_columns=columns,
         dummies_col_prop=dummies_col_prop,
     )
 
@@ -214,7 +214,7 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.D_c @ model.V.T
-    coord.columns = param.columns
+    coord.columns = param.projected_columns
     return coord
 
 
@@ -305,7 +305,7 @@ def stats(model: Model, param: Parameters, df: pd.DataFrame) -> Parameters:
     for i in range(len(coord_col[0])):
         coord_col[:, i] = (coord_col[:, i] * marge_col) / eig[i]
 
-    param.contrib = coord_col * 100
+    param.contributions = coord_col * 100
 
     return param
 

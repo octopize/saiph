@@ -60,7 +60,7 @@ def fit(
 
     coord, model, param = _fit(df, _nf, col_w)
 
-    param.cor = _variable_correlation(model, df, param)
+    param.correlations = _variable_correlation(model, df, param)
 
     if quanti.size == 0:
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
@@ -93,8 +93,8 @@ def stats(model: Model, param: Parameters, df: pd.DataFrame) -> Parameters:
             "empty param, run fit function to create Model class and Parameters class objects"
         )
 
-    model.variable_coord.columns = param.cor.columns
-    model.variable_coord.index = list(param.cor.index)
+    model.variable_coord.columns = param.correlations.columns
+    model.variable_coord.index = list(param.correlations.index)
 
     has_some_quanti = (
         model.original_continuous is not None and len(model.original_continuous) != 0
@@ -104,26 +104,26 @@ def stats(model: Model, param: Parameters, df: pd.DataFrame) -> Parameters:
     )
 
     if not has_some_quali:
-        param.cos2 = param.cor**2
-        param.contrib = param.cos2.div(param.cos2.sum(axis=0), axis=1).mul(100)
+        param.cos2 = param.correlations**2
+        param.contributions = param.cos2.div(param.cos2.sum(axis=0), axis=1).mul(100)
     elif not has_some_quanti:
         param = mca.stats(model, param, df)
-        param.cos2 = param.cor**2
+        param.cos2 = param.correlations**2
 
-        param.contrib = pd.DataFrame(
-            param.contrib,
-            columns=param.cor.columns,
-            index=list(param.cor.index),
+        param.contributions = pd.DataFrame(
+            param.contributions,
+            columns=param.correlations.columns,
+            index=list(param.correlations.index),
         )
     else:
         param = famd.stats(model, param, df)
         param.cos2 = pd.DataFrame(
             param.cos2, index=model.original_continuous + model.original_categorical
         )
-        param.contrib = pd.DataFrame(
-            param.contrib,
-            columns=param.cor.columns,
-            index=list(param.cor.index),
+        param.contributions = pd.DataFrame(
+            param.contributions,
+            columns=param.correlations.columns,
+            index=list(param.correlations.index),
         )
     return param
 
@@ -290,11 +290,13 @@ def inverse_coordinates(
 ) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
     # Inverse
     inverse_coords: NDArray[np.float_] = np.array(
-        coord @ model.V * np.sqrt(param.col_w)
+        coord @ model.V * np.sqrt(param.column_weights)
     )
 
     # Scale
-    inverse_coords = inverse_coords / np.sqrt(param.col_w) * param.col_w
+    inverse_coords = (
+        inverse_coords / np.sqrt(param.column_weights) * param.column_weights
+    )
 
     nb_quanti = len(model.original_continuous)
 

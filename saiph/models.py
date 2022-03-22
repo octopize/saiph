@@ -57,15 +57,15 @@ class Parameters:
     # Number of components kept.
     nf: int
     # Weights that were applied to each column.
-    col_w: NDArray[np.float_]
+    column_weights: NDArray[np.float_]
     # Weights that were applied to each row.
-    row_w: NDArray[np.float_]
+    row_weights: NDArray[np.float_]
     # Column names once data is projected.
-    columns: List[str]
+    projected_columns: List[str]
     # Correlation between the axis and the variables.
-    cor: Optional[pd.DataFrame] = None
+    correlations: Optional[pd.DataFrame] = None
     # Contributions for each variable.
-    contrib: Optional[pd.DataFrame] = None
+    contributions: Optional[pd.DataFrame] = None
     # Cos2 for each variable.
     cos2: Optional[pd.DataFrame] = None
     # Proportion of individuals taking each modality.

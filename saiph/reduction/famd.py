@@ -104,9 +104,9 @@ def fit(
 
     param = Parameters(
         nf=nf,
-        col_w=col_weights,
-        row_w=row_w,
-        columns=columns,
+        column_weights=col_weights,
+        row_weights=row_w,
+        projected_columns=columns,
     )
 
     return coord, model, param
@@ -245,7 +245,7 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.V.T
-    coord.columns = param.columns
+    coord.columns = param.projected_columns
     return coord
 
 
@@ -274,7 +274,8 @@ def stats(model: Model, param: Parameters, original_df: pd.DataFrame) -> Paramet
 
     # svd of x with row_w and col_w
     weightedTc = _rmultiplication(
-        _rmultiplication(df.T, np.sqrt(param.col_w)).T, np.sqrt(param.row_w)
+        _rmultiplication(df.T, np.sqrt(param.column_weights)).T,
+        np.sqrt(param.row_weights),
     )
     U, s, V = SVD(weightedTc.T, svd_flip=False)
     ncp0 = min(len(weightedTc.iloc[0]), len(weightedTc), param.nf)
@@ -292,7 +293,7 @@ def stats(model: Model, param: Parameters, original_df: pd.DataFrame) -> Paramet
     )
     V = pd.DataFrame()
     for i in range(len(mult1)):
-        V[i] = mult1.iloc[i] / np.sqrt(param.col_w[i])
+        V[i] = mult1.iloc[i] / np.sqrt(param.column_weights[i])
     V = np.array(V).T
     # final U
     mult1 = pd.DataFrame(
@@ -300,7 +301,7 @@ def stats(model: Model, param: Parameters, original_df: pd.DataFrame) -> Paramet
     )
     U = pd.DataFrame()
     for i in range(len(mult1)):
-        U[i] = mult1.iloc[i] / np.sqrt(param.row_w[i])
+        U[i] = mult1.iloc[i] / np.sqrt(param.row_weights[i])
     U = np.array(U).T
     eig: Any = s**2
     # end of the svd
@@ -309,9 +310,9 @@ def stats(model: Model, param: Parameters, original_df: pd.DataFrame) -> Paramet
     coord_var: NDArray[np.float_] = np.array(V[0] * s)
     for i in range(1, len(V[:, 0])):
         coord_var = np.vstack((coord_var, V[i] * s))
-    contrib_var = (((((coord_var**2) / eig).T) * param.col_w).T) * 100
+    contrib_var = (((((coord_var**2) / eig).T) * param.column_weights).T) * 100
     # compute cos2
-    dfrow_w: NDArray[np.float_] = np.array(pd.DataFrame((df2.T) * param.row_w).T)
+    dfrow_w: NDArray[np.float_] = np.array(pd.DataFrame((df2.T) * param.row_weights).T)
     dist2 = []
     for i in range(len(dfrow_w[0])):
         dist2 += [np.sum(dfrow_w[:, i])]
@@ -325,7 +326,7 @@ def stats(model: Model, param: Parameters, original_df: pd.DataFrame) -> Paramet
     eta2: NDArray[np.float_] = np.array([])
     fi = 0
     coord = pd.DataFrame(
-        model.U[:, :ncp0] * model.s[:ncp0], columns=param.columns[:ncp0]
+        model.U[:, :ncp0] * model.s[:ncp0], columns=param.projected_columns[:ncp0]
     )
     mods = []
     # for each qualitative column in the original data set
@@ -341,11 +342,12 @@ def stats(model: Model, param: Parameters, original_df: pd.DataFrame) -> Paramet
             p = 0
             for i in range(len(dummy.columns)):
                 p += (
-                    np.array(dummy.T)[i] * coord[coordcol] * param.row_w
+                    np.array(dummy.T)[i] * coord[coordcol] * param.row_weights
                 ).sum() ** 2 / model.prop[fi + i]
             dim += [p]
         eta1 = (
-            np.array(dim) / np.array((coord**2).T * param.row_w).sum(axis=1).tolist()
+            np.array(dim)
+            / np.array((coord**2).T * param.row_weights).sum(axis=1).tolist()
         )
         eta2 = np.append(eta2, eta1)
         fi += len(dummy.columns)
@@ -357,7 +359,7 @@ def stats(model: Model, param: Parameters, original_df: pd.DataFrame) -> Paramet
     eta2 = ((eta2).T / mods).T
 
     cos2 = np.concatenate([cos2, [eta2]], axis=0)
-    param.contrib = contrib_var
+    param.contributions = contrib_var
     param.cos2 = cos2
     return param
 

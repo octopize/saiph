@@ -90,7 +90,9 @@ def fit(
         is_fitted=True,
     )
 
-    param = Parameters(nf=nf, col_w=_col_weights, row_w=row_w, columns=columns)
+    param = Parameters(
+        nf=nf, column_weights=_col_weights, row_weights=row_w, projected_columns=columns
+    )
 
     return coord, model, param
 
@@ -168,5 +170,5 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.V.T
-    coord.columns = param.columns
+    coord.columns = param.projected_columns
     return coord

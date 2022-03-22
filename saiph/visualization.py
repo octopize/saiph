@@ -36,7 +36,7 @@ def plot_circle(
         Number of variables to display (in descending order)
     """
     # make sure stats have been computed prior to visualization
-    if param.cor is None:
+    if param.correlations is None:
         raise ValueError(
             "empty param, run fit function to create Model class and Parameters class objects"
         )
@@ -54,7 +54,7 @@ def plot_circle(
     fig.gca().add_artist(circle1)
 
     # Order dataframe
-    cor = param.cor.copy()
+    cor = param.correlations.copy()
     cor["sum"] = cor.apply(
         lambda x: abs(x[dimensions[0] - 1]) + abs(x[dimensions[1] - 1]), axis=1
     )

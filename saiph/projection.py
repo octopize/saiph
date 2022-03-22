@@ -4,7 +4,6 @@ from typing import Dict, List, Optional, Set, Tuple, Union
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
-from pyparsing import original_text_for
 
 import saiph.reduction.famd as famd
 import saiph.reduction.mca as mca
@@ -60,9 +59,8 @@ def fit(
         _fit = famd.fit
 
     coord, model, param = _fit(df, _nf, col_w)
-    param.quanti = quanti
-    param.quali = quali
-    param.cor = _variable_correlation(model, param, df, quanti, quali)
+
+    param.cor = _variable_correlation(model, df, param)
 
     if quanti.size == 0:
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
@@ -90,22 +88,26 @@ def stats(model: Model, param: Parameters, df: pd.DataFrame) -> Parameters:
         param populated with contriubtion.
     """
     # Check attributes type
-    if param.cor is None or param.quanti is None or param.quali is None:
+    if not model.is_fitted:
         raise ValueError(
             "empty param, run fit function to create Model class and Parameters class objects"
         )
+
     model.variable_coord.columns = param.cor.columns
     model.variable_coord.index = list(param.cor.index)
 
-    if len(param.quali) == 0:
+    has_some_quanti = (
+        model.original_continuous is not None and len(model.original_continuous) != 0
+    )
+    has_some_quali = (
+        model.original_categorical is not None and len(model.original_categorical) != 0
+    )
+
+    if not has_some_quali:
         param.cos2 = param.cor**2
         param.contrib = param.cos2.div(param.cos2.sum(axis=0), axis=1).mul(100)
-    elif len(param.quanti) == 0:
+    elif not has_some_quanti:
         param = mca.stats(model, param, df)
-        if param.cor is None:
-            raise ValueError(
-                "empty param, run fit function to create Model class and Parameters class objects"
-            )
         param.cos2 = param.cor**2
 
         param.contrib = pd.DataFrame(
@@ -115,12 +117,8 @@ def stats(model: Model, param: Parameters, df: pd.DataFrame) -> Parameters:
         )
     else:
         param = famd.stats(model, param, df)
-        if param.cor is None or param.quanti is None or param.quali is None:
-            raise ValueError(
-                "empty param, run fit function to create Model class and Parameters class objects"
-            )
         param.cos2 = pd.DataFrame(
-            param.cos2, index=list(param.quanti) + list(param.quali)
+            param.cos2, index=model.original_continuous + model.original_categorical
         )
         param.contrib = pd.DataFrame(
             param.contrib,
@@ -147,12 +145,12 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     coord: pd.DataFrame
         Coordinates of the dataframe in the fitted space.
     """
-    if param.quali is None or param.quanti is None:
+    if not model.is_fitted:
         raise ValueError("Need to fit before using transform")
 
-    if len(param.quali) == 0:
+    if len(model.original_categorical) == 0:
         coord = pca.transform(df, model, param)
-    elif len(param.quanti) == 0:
+    elif len(model.original_continuous) == 0:
         coord = mca.transform(df, model, param)
     else:
         coord = famd.transform(df, model, param)
@@ -161,16 +159,13 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
 
 def _variable_correlation(
     model: Model,
-    param: Parameters,
     df: pd.DataFrame,
-    quanti: List[str],
-    quali: List[str],
+    param: Parameters,
 ) -> pd.DataFrame:
     """Compute the correlation between the axis and the variables.
 
     Args:
         model (Model): the model
-        param (Parameters): the parameteres
         df (pd.DataFrame): dataframe
         quali : categorical variables
         quali : continuous variables
@@ -179,11 +174,15 @@ def _variable_correlation(
         pd.DataFrame: correlations between the axis and the variables
     """
     # select columns and project data
-    df_quanti = df[quanti]
+    has_some_quali = (
+        model.original_categorical is not None and len(model.original_categorical) != 0
+    )
+    df_quanti = df[model.original_continuous]
     coord = transform(df, model, param)  # transform to be
-    if param.quali is not None and len(param.quali) > 0:
+    if has_some_quali:
         df_quali = pd.get_dummies(
-            df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+            df[model.original_categorical].astype("category"),
+            prefix_sep=DUMMIES_PREFIX_SEP,
         )
         bind = pd.concat([df_quanti, df_quali], axis=1)
     else:
@@ -243,8 +242,12 @@ def inverse_transform_raw(
     coord: pd.DataFrame, model: Model, param: Parameters, seed: Optional[int] = None
 ) -> pd.DataFrame:
 
-    has_some_quanti = param.quanti is not None and len(param.quanti) != 0
-    has_some_quali = param.quali is not None and len(param.quali) != 0
+    has_some_quanti = (
+        model.original_continuous is not None and len(model.original_continuous) != 0
+    )
+    has_some_quali = (
+        model.original_categorical is not None and len(model.original_categorical) != 0
+    )
 
     inverse_coord_quanti, inverse_coord_quali = inverse_coordinates(coord, model, param)
 
@@ -257,7 +260,7 @@ def inverse_transform_raw(
         # X_quali is the complete disjunctive table ("tableau disjonctif complet" in FR)
 
     inverse_quanti = (
-        inverse_transform_quanti(inverse_coord_quanti, model, param)
+        inverse_transform_quanti(inverse_coord_quanti, model)
         if has_some_quanti
         else None
     )
@@ -293,7 +296,7 @@ def inverse_coordinates(
     # Scale
     inverse_coords = inverse_coords / np.sqrt(param.col_w) * param.col_w
 
-    nb_quanti = len(param.quanti)
+    nb_quanti = len(model.original_continuous)
 
     inverse_coord_quanti = inverse_coords[:, :nb_quanti]
     inverse_coord_quali = inverse_coords[:, nb_quanti:]
@@ -304,13 +307,12 @@ def inverse_coordinates(
 def inverse_transform_quanti(
     inverse_coords: NDArray[np.float_],
     model: Model,
-    param: Parameters,
 ) -> pd.DataFrame:
     std: NDArray[np.float_] = model.std.to_numpy()
     mean: NDArray[np.float_] = model.mean.to_numpy()
     inverse_quanti = pd.DataFrame(
         data=(inverse_coords * std) + mean,
-        columns=param.quanti,
+        columns=model.original_continuous,
     )
     # FIXME: Why are we rounding here ? Removing it makes tests fail.
     return inverse_quanti.round(1)

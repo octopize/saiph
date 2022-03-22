@@ -99,6 +99,7 @@ def fit(
         prop=prop,
         _modalities=_modalities,
         type="famd",
+        is_fitted=True,
     )
 
     param = Parameters(
@@ -106,8 +107,6 @@ def fit(
         col_w=col_weights,
         row_w=row_w,
         columns=columns,
-        quanti=quanti,
-        quali=quali,
     )
 
     return coord, model, param
@@ -194,15 +193,13 @@ def center(
     return df_scale, mean, std, prop, _modalities
 
 
-def scaler(model: Model, param: Parameters, df: pd.DataFrame) -> pd.DataFrame:
+def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     """Scale data using mean, std, modalities and proportions of each categorical from model.
 
     Parameters
     ----------
     model: Model
         Model computed by fit.
-    param: Parameters
-        Param computed by fit.
     df: pd.DataFrame
         DataFrame to scale.
 
@@ -211,12 +208,12 @@ def scaler(model: Model, param: Parameters, df: pd.DataFrame) -> pd.DataFrame:
     df_scaled: pd.DataFrame
         The scaled DataFrame.
     """
-    df_quanti = df[param.quanti]
+    df_quanti = df[model.original_continuous]
     df_quanti = (df_quanti - model.mean) / model.std
 
     # scale
     df_quali = pd.get_dummies(
-        df[param.quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
     )
     if model._modalities is not None:
         for mod in model._modalities:
@@ -246,7 +243,7 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     coord: pd.DataFrame
         Coordinates of the dataframe in the fitted space.
     """
-    df_scaled = scaler(model, param, df)
+    df_scaled = scaler(model, df)
     coord = df_scaled @ model.V.T
     coord.columns = param.columns
     return coord
@@ -267,12 +264,12 @@ def stats(model: Model, param: Parameters, original_df: pd.DataFrame) -> Paramet
     param: Parameters
         param populated with contriubtion ans cos2.
     """
-    if param.quanti is None or model.U is None or model.s is None:
+    if not model.is_fitted:
         raise ValueError(
             "empty param, run fit function to create Model class and Parameters class objects"
         )
 
-    df = pd.DataFrame(scaler(model, param, original_df))
+    df = pd.DataFrame(scaler(model, original_df))
     df2: NDArray[np.float_] = np.array(df) ** 2
 
     # svd of x with row_w and col_w
@@ -353,7 +350,7 @@ def stats(model: Model, param: Parameters, original_df: pd.DataFrame) -> Paramet
         eta2 = np.append(eta2, eta1)
         fi += len(dummy.columns)
 
-        cos2 = cos2[: len(param.quanti)]
+        cos2 = cos2[: len(model.original_continuous)]
 
     cos2 = cos2**2
     eta2 = eta2**2

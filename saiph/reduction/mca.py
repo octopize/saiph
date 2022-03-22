@@ -102,6 +102,7 @@ def fit(
         _modalities=_modalities,
         D_c=D_c,
         type="mca",
+        is_fitted=True,
     )
 
     param = Parameters(
@@ -110,8 +111,6 @@ def fit(
         row_w=row_w,
         columns=columns,
         dummies_col_prop=dummies_col_prop,
-        quali=[],
-        quanti=[],
     )
 
     return coord, model, param

@@ -87,11 +87,10 @@ def fit(
         mean=mean,
         std=std,
         type="pca",
+        is_fitted=True,
     )
 
-    param = Parameters(
-        nf=nf, col_w=_col_weights, row_w=row_w, columns=columns, quali=[], quanti=[]
-    )
+    param = Parameters(nf=nf, col_w=_col_weights, row_w=row_w, columns=columns)
 
     return coord, model, param
 
@@ -143,7 +142,6 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     df: pd.DataFrame
         The scaled DataFrame.
     """
-
     df_scaled = df.copy()
 
     df_scaled -= model.mean

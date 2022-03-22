@@ -148,12 +148,12 @@ def test_scaler_pca_famd() -> None:
     )
 
     _, model, param = fit(original_df)
-    df = scaler(model, param, original_df)
+    df = scaler(model, original_df)
 
-    _, model_pca, _ = fit_pca(original_df[param.quanti])
+    _, model_pca, _ = fit_pca(original_df[model.original_continuous])
     df_pca = scaler_pca(model_pca, original_df)
 
-    assert_frame_equal(df[param.quanti], df_pca[param.quanti])
+    assert_frame_equal(df[model.original_continuous], df_pca[model.original_continuous])
 
 
 def test_center_pca_famd() -> None:
@@ -166,12 +166,14 @@ def test_center_pca_famd() -> None:
         }
     )
 
-    _, _, param = fit(original_df)
-    df, mean1, std1, _, _ = center(original_df, quali=param.quali, quanti=param.quanti)
+    _, model, _ = fit(original_df)
+    continous = model.original_continuous
+    categorical = model.original_categorical
+    df, mean1, std1, _, _ = center(original_df, quali=categorical, quanti=continous)
 
-    df_pca, mean2, std2 = center_pca(original_df[param.quanti])
+    df_pca, mean2, std2 = center_pca(original_df[continous])
 
-    assert_frame_equal(df[param.quanti], df_pca[param.quanti])
+    assert_frame_equal(df[continous], df_pca[continous])
 
     assert_series_equal(mean1, mean2)
     assert_series_equal(std1, std2)

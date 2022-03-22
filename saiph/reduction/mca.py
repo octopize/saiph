@@ -95,7 +95,10 @@ def fit(
     coord.columns = columns
 
     model = Model(
-        df=df,
+        original_columns=df.dtypes,
+        original_categorical=df.columns,
+        original_continuous=[],
+        dummy_categorical=df_dummies.columns.to_list(),
         U=U,
         V=V,
         explained_var=explained_var,
@@ -155,7 +158,7 @@ def center(
     return df_scale, _modalities, r, c
 
 
-def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     """Scale data using modalities from model.
 
     Parameters
@@ -164,19 +167,12 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         Model computed by fit.
     df: pd.DataFrame
         DataFrame to scale.
-        If nothing is specified, takes the DataFrame on which the model was fitted.
 
     Returns
     -------
     df_scaled: pd.DataFrame
         The scaled DataFrame.
     """
-    if df is None:
-        df = model.df
-
-    if not isinstance(df, pd.DataFrame):
-        df = pd.DataFrame(df)
-
     df_scaled = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
     if model._modalities is not None:
         for mod in model._modalities:
@@ -228,7 +224,7 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     return coord
 
 
-def stats(model: Model, param: Parameters) -> Parameters:
+def stats(model: Model, param: Parameters, df: pd.DataFrame) -> Parameters:
     """Compute the contributions.
 
     Parameters
@@ -237,6 +233,8 @@ def stats(model: Model, param: Parameters) -> Parameters:
         Model computed by fit.
     param: Parameters
         Param computed by fit.
+    df : pd.Dataframe
+        original dataframe
 
     Returns
     -------
@@ -244,7 +242,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
         param populated with contriubtion.
     """
     V = np.dot(model.D_c, model.V.T)  # type: ignore
-    df = pd.get_dummies(model.df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
     F = df / df.sum().sum()
 
     # Column and row weights

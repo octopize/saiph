@@ -34,7 +34,6 @@ def test_fit_scale() -> None:
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
 
-    assert_frame_equal(model.df, df)
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01)
@@ -67,7 +66,6 @@ def test_fit_not_scale() -> None:
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
 
-    assert_frame_equal(model.df, df)
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01)
@@ -100,7 +98,6 @@ def test_fit_zero() -> None:
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
 
-    assert_frame_equal(model.df, df)
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     # np.nan == np.nan returns False
@@ -120,8 +117,8 @@ def test_center_scaler() -> None:
 
     _, model, _ = fit(df, scale=True)
 
-    df1, _, _ = center(model.df, scale=True)
-    df2 = scaler(model, None)
+    df1, _, _ = center(df, scale=True)
+    df2 = scaler(model, df)
 
     assert_frame_equal(df1, df2)
 

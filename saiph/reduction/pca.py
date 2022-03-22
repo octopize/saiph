@@ -78,7 +78,10 @@ def fit(
     coord.columns = columns
 
     model = Model(
-        df=df,
+        original_columns=df.dtypes,
+        original_categorical=[],
+        original_continuous=df.columns.to_list(),
+        dummy_categorical=[],
         U=U,
         V=V,
         explained_var=explained_var,
@@ -134,7 +137,7 @@ def center(
     return df, mean, std
 
 
-def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     """Scale data using mean and std from model.
 
     Parameters
@@ -143,15 +146,12 @@ def scaler(model: Model, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         Model computed by fit.
     df: pd.DataFrame
         DataFrame to scale.
-        If nothing is specified, takes the DataFrame on which the model was fitted.
 
     Returns
     -------
     df: pd.DataFrame
         The scaled DataFrame.
     """
-    if df is None:
-        df = model.df
 
     df_scaled = df.copy()
 

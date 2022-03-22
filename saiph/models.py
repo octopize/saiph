@@ -13,9 +13,13 @@ class Model:
     dummy_categorical: List[str]
 
     # List of original columns with dtypes
-    original_columns: pd.Series  # df.dtypes. .index is names, .values is dtypes
+    # genered with df.dtypes. Calling .index refers to column names,
+    # calling .values are the dtypes of the column names.
+    original_columns: pd.Series
 
+    # Original categorical column names
     original_categorical: List[str]
+    # Original continuous column names
     original_continuous: List[str]
 
     # Explained variance.
@@ -45,6 +49,8 @@ class Model:
     # Type of dimension reduction that was performed.
     type: Optional[str] = None
 
+    is_fitted: bool = False
+
 
 @dataclass
 class Parameters:
@@ -56,10 +62,6 @@ class Parameters:
     row_w: NDArray[np.float_]
     # Column names once data is projected.
     columns: List[str]
-    # Column labels that are considered quantitative.
-    quanti: List[str]
-    # Column labels that are considered qualitative.
-    quali: List[str]
     # Correlation between the axis and the variables.
     cor: Optional[pd.DataFrame] = None
     # Contributions for each variable.

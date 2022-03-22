@@ -277,7 +277,7 @@ expected_famd_contrib = [
 )
 def test_var_contrib(df_input, expected_contrib):
     _, model, param = fit(df_input)
-    stats(model, param)
+    stats(model, param, df_input)
     assert_allclose(param.contrib["Dim. 1"], expected_contrib, atol=1e-07)
 
 
@@ -315,7 +315,7 @@ expected_famd_cor = [
 )
 def test_var_cor(df_input, expected_cor):
     _, model, param = fit(df_input)
-    stats(model, param)
+    stats(model, param, df_input)
     assert_allclose(param.cor["Dim. 1"], expected_cor, atol=1e-07)
 
 
@@ -352,7 +352,7 @@ expected_famd_explained_var_ratio = [
 )
 def test_var_ratio(df_input, expected_var_ratio) -> None:
     _, model, param = fit(df_input)
-    stats(model, param)
+    stats(model, param, df_input)
     assert_allclose(model.explained_var_ratio[0:5], expected_var_ratio, atol=1e-07)
 
 

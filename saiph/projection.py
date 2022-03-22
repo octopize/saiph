@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Set, Tuple, Union
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
+from pyparsing import original_text_for
 
 import saiph.reduction.famd as famd
 import saiph.reduction.mca as mca
@@ -61,7 +62,7 @@ def fit(
     coord, model, param = _fit(df, _nf, col_w)
     param.quanti = quanti
     param.quali = quali
-    param.cor = _variable_correlation(model, param)
+    param.cor = _variable_correlation(model, param, df, quanti, quali)
 
     if quanti.size == 0:
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
@@ -71,7 +72,7 @@ def fit(
     return coord, model, param
 
 
-def stats(model: Model, param: Parameters) -> Parameters:
+def stats(model: Model, param: Parameters, df: pd.DataFrame) -> Parameters:
     """Compute the contributions and cos2.
 
     Parameters
@@ -80,6 +81,8 @@ def stats(model: Model, param: Parameters) -> Parameters:
         Model computed by fit.
     param: Parameters
         Param computed by fit.
+    df : pd.DataFrame
+        original dataframe
 
     Returns
     -------
@@ -98,7 +101,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
         param.cos2 = param.cor**2
         param.contrib = param.cos2.div(param.cos2.sum(axis=0), axis=1).mul(100)
     elif len(param.quanti) == 0:
-        param = mca.stats(model, param)
+        param = mca.stats(model, param, df)
         if param.cor is None:
             raise ValueError(
                 "empty param, run fit function to create Model class and Parameters class objects"
@@ -111,7 +114,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
             index=list(param.cor.index),
         )
     else:
-        param = famd.stats(model, param)
+        param = famd.stats(model, param, df)
         if param.cor is None or param.quanti is None or param.quali is None:
             raise ValueError(
                 "empty param, run fit function to create Model class and Parameters class objects"
@@ -156,15 +159,31 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     return coord
 
 
-def _variable_correlation(model: Model, param: Parameters) -> pd.DataFrame:
-    """Compute the correlation between the axis and the variables."""
-    # select columns and project data
-    df_quanti = model.df[param.quanti]
-    coord = transform(model.df, model, param)  # transform to be fixed
+def _variable_correlation(
+    model: Model,
+    param: Parameters,
+    df: pd.DataFrame,
+    quanti: List[str],
+    quali: List[str],
+) -> pd.DataFrame:
+    """Compute the correlation between the axis and the variables.
 
+    Args:
+        model (Model): the model
+        param (Parameters): the parameteres
+        df (pd.DataFrame): dataframe
+        quali : categorical variables
+        quali : continuous variables
+
+    Returns:
+        pd.DataFrame: correlations between the axis and the variables
+    """
+    # select columns and project data
+    df_quanti = df[quanti]
+    coord = transform(df, model, param)  # transform to be
     if param.quali is not None and len(param.quali) > 0:
         df_quali = pd.get_dummies(
-            model.df[param.quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+            df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
         )
         bind = pd.concat([df_quanti, df_quali], axis=1)
     else:
@@ -213,12 +232,11 @@ def inverse_transform(
     inverse = inverse_transform_raw(coord, model, param, seed)
 
     # Cast columns to same type as input
-    for column in model.df.columns:
-        column_type = model.df.loc[:, column].dtype
-        inverse[column] = inverse[column].astype(column_type)
+    for name, dtype in model.original_columns.iteritems():
+        inverse[name] = inverse[name].astype(dtype)
 
     # reorder columns
-    return inverse[model.df.columns]
+    return inverse[model.original_columns.index]
 
 
 def inverse_transform_raw(
@@ -251,9 +269,7 @@ def inverse_transform_raw(
         inverse_coord_quali = (inverse_coord_quali * np.sqrt(prop)) + prop
 
     inverse_quali = (
-        inverse_transform_quali(
-            model.df[param.quali], pd.DataFrame(inverse_coord_quali), seed
-        )
+        inverse_transform_quali(pd.DataFrame(inverse_coord_quali), model, seed)
         if has_some_quali
         else None
     )
@@ -301,8 +317,8 @@ def inverse_transform_quanti(
 
 
 def inverse_transform_quali(
-    train_df: pd.DataFrame,
     inverse_coords: pd.DataFrame,
+    model: Model,
     seed: Optional[int] = None,
 ) -> pd.DataFrame:
     """Inverse transform categorical variables by weighted random selection.
@@ -314,11 +330,13 @@ def inverse_transform_quali(
 
     Returns:
         inverse_quali: transformed categorical dataframe that is similar to `train_df`
-    """
-    dummy_columns = pd.get_dummies(train_df, prefix_sep=DUMMIES_PREFIX_SEP).columns
-    inverse_coords.columns = dummy_columns
 
-    dummies_mapping = get_dummies_mapping(train_df.columns, dummy_columns)
+    """
+    inverse_coords.columns = model.dummy_categorical
+
+    dummies_mapping = get_dummies_mapping(
+        model.original_categorical, model.dummy_categorical
+    )
 
     random_gen = np.random.default_rng(seed)
     inverse_quali = pd.DataFrame()

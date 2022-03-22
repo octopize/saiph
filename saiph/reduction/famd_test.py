@@ -40,7 +40,6 @@ def test_fit_mix() -> None:
     expected_explained_var_ratio = np.array([1.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
-    assert_frame_equal(model.df, df)
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.s, expected_s, atol=0.01)
     assert_allclose(model.U, expected_u, atol=0.01)
@@ -149,10 +148,10 @@ def test_scaler_pca_famd() -> None:
     )
 
     _, model, param = fit(original_df)
-    df = scaler(model, param)
+    df = scaler(model, param, original_df)
 
     _, model_pca, _ = fit_pca(original_df[param.quanti])
-    df_pca = scaler_pca(model_pca)
+    df_pca = scaler_pca(model_pca, original_df)
 
     assert_frame_equal(df[param.quanti], df_pca[param.quanti])
 

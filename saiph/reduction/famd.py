@@ -57,6 +57,9 @@ def fit(
     # select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.to_list()
+    dummy_categorical = pd.get_dummies(
+        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+    ).columns.to_list()
 
     row_w = row_weights_uniform(len(df))
     col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
@@ -81,7 +84,10 @@ def fit(
     coord.columns = columns
 
     model = Model(
-        df=df,
+        original_columns=df.dtypes,
+        original_categorical=quali,
+        original_continuous=quanti,
+        dummy_categorical=dummy_categorical,
         U=U,
         V=V,
         s=s,
@@ -188,9 +194,7 @@ def center(
     return df_scale, mean, std, prop, _modalities
 
 
-def scaler(
-    model: Model, param: Parameters, df: Optional[pd.DataFrame] = None
-) -> pd.DataFrame:
+def scaler(model: Model, param: Parameters, df: pd.DataFrame) -> pd.DataFrame:
     """Scale data using mean, std, modalities and proportions of each categorical from model.
 
     Parameters
@@ -201,19 +205,12 @@ def scaler(
         Param computed by fit.
     df: pd.DataFrame
         DataFrame to scale.
-        If nothing is specified, takes the DataFrame on which the model was fitted.
 
     Returns
     -------
     df_scaled: pd.DataFrame
         The scaled DataFrame.
     """
-    if df is None:
-        df = model.df
-
-    if not isinstance(df, pd.DataFrame):
-        df = pd.DataFrame(df)
-
     df_quanti = df[param.quanti]
     df_quanti = (df_quanti - model.mean) / model.std
 
@@ -255,7 +252,7 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     return coord
 
 
-def stats(model: Model, param: Parameters) -> Parameters:
+def stats(model: Model, param: Parameters, original_df: pd.DataFrame) -> Parameters:
     """Compute contributions and cos2.
 
     Parameters
@@ -275,7 +272,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
             "empty param, run fit function to create Model class and Parameters class objects"
         )
 
-    df = pd.DataFrame(scaler(model, param))
+    df = pd.DataFrame(scaler(model, param, original_df))
     df2: NDArray[np.float_] = np.array(df) ** 2
 
     # svd of x with row_w and col_w
@@ -328,8 +325,6 @@ def stats(model: Model, param: Parameters) -> Parameters:
     cos2 = cor**2
 
     # compute eta2
-    model.df.index = range(len(model.df))
-    dfquali = model.df[param.quali]
     eta2: NDArray[np.float_] = np.array([])
     fi = 0
     coord = pd.DataFrame(
@@ -337,9 +332,9 @@ def stats(model: Model, param: Parameters) -> Parameters:
     )
     mods = []
     # for each qualitative column in the original data set
-    for count, col in enumerate(dfquali.columns):
+    for col in model.original_categorical:
         dummy = pd.get_dummies(
-            dfquali[col].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+            original_df[col].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
         )
         mods += [len(dummy.columns) - 1]
         # for each dimension

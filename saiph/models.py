@@ -8,8 +8,15 @@ from numpy.typing import NDArray
 
 @dataclass
 class Model:
-    # DataFrame on which the model was fit.
-    df: pd.DataFrame
+
+    # List of categorical columns transformed into dummies using pd.get_dummies
+    dummy_categorical: List[str]
+
+    # List of original columns with dtypes
+    original_columns: pd.Series  # df.dtypes. .index is names, .values is dtypes
+
+    original_categorical: List[str]
+    original_continuous: List[str]
 
     # Explained variance.
     explained_var: NDArray[np.float_]

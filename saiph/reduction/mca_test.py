@@ -29,7 +29,6 @@ def test_fit() -> None:
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
 
-    assert_frame_equal(model.df, df)
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),
@@ -71,7 +70,6 @@ def test_fit_zero() -> None:
     expected_explained_var = np.array([0.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
-    assert_frame_equal(model.df, df)
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     assert pd.isna(model.explained_var_ratio)

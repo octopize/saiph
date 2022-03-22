@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from saiph.models import Model, Parameters
+from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
@@ -22,7 +22,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-) -> Tuple[pd.DataFrame, Model, Parameters]:
+) -> Tuple[pd.DataFrame, Model]:
     """Fit a MCA model on data.
 
     Parameters
@@ -41,8 +41,6 @@ def fit(
         The transformed data.
     model: Model
         The model for transforming new data.
-    param: Parameters
-        The parameters for transforming new data.
     """
     nf = nf or min(df.shape)
     if col_w is not None:
@@ -103,9 +101,6 @@ def fit(
         D_c=D_c,
         type="mca",
         is_fitted=True,
-    )
-
-    param = Parameters(
         nf=nf,
         column_weights=col_weights,
         row_weights=row_w,
@@ -113,7 +108,7 @@ def fit(
         dummies_col_prop=dummies_col_prop,
     )
 
-    return coord, model, param
+    return coord, model
 
 
 def center(
@@ -195,7 +190,7 @@ def _diag_compute(
     return df_scale / np.array(r)[:, None], T, D_c
 
 
-def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
+def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 
     Parameters
@@ -204,8 +199,6 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
         DataFrame to transform.
     model: Model
         Model computed by fit.
-    param: Parameters
-        Param computed by fit.
 
     Returns
     -------
@@ -214,26 +207,24 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.D_c @ model.V.T
-    coord.columns = param.projected_columns
+    coord.columns = model.projected_columns
     return coord
 
 
-def stats(model: Model, param: Parameters, df: pd.DataFrame) -> Parameters:
+def stats(model: Model, df: pd.DataFrame) -> Model:
     """Compute the contributions.
 
     Parameters
     ----------
     model: Model
         Model computed by fit.
-    param: Parameters
-        Param computed by fit.
     df : pd.Dataframe
         original dataframe
 
     Returns
     -------
-    param: Parameters
-        param populated with contriubtion.
+    model: Model
+        model populated with contriubtion.
     """
     V = np.dot(model.D_c, model.V.T)  # type: ignore
     df = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
@@ -263,7 +254,7 @@ def stats(model: Model, param: Parameters, df: pd.DataFrame) -> Parameters:
         _rmultiplication(Tc.T, np.sqrt(marge_col)).T, np.sqrt(marge_row)
     )
     U, s, V = SVD(weightedTc.T, svd_flip=False)
-    ncp0 = min(len(weightedTc.iloc[0]), len(weightedTc), param.nf)
+    ncp0 = min(len(weightedTc.iloc[0]), len(weightedTc), model.nf)
     U = U[:, :ncp0]
     V = V.T[:, :ncp0]
     s = s[:ncp0]
@@ -305,9 +296,9 @@ def stats(model: Model, param: Parameters, df: pd.DataFrame) -> Parameters:
     for i in range(len(coord_col[0])):
         coord_col[:, i] = (coord_col[:, i] * marge_col) / eig[i]
 
-    param.contributions = coord_col * 100
+    model.contributions = coord_col * 100
 
-    return param
+    return model
 
 
 def _rmultiplication(F: pd.DataFrame, marge: NDArray[Any]) -> pd.DataFrame:

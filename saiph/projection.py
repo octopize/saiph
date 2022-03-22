@@ -5,18 +5,15 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-import saiph.reduction.famd as famd
-import saiph.reduction.mca as mca
-import saiph.reduction.pca as pca
-from saiph.models import Model, Parameters
-from saiph.reduction import DUMMIES_PREFIX_SEP
+from saiph.models import Model
+from saiph.reduction import DUMMIES_PREFIX_SEP, famd, mca, pca
 
 
 def fit(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-) -> Tuple[pd.DataFrame, Model, Parameters]:
+) -> Tuple[pd.DataFrame, Model]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
     Datetimes must be stored as numbers of seconds since epoch.
@@ -37,8 +34,6 @@ def fit(
         The transformed data.
     model: Model
         The model for transforming new data.
-    param: Parameters
-        The parameters for transforming new data.
     """
     # Check column types
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
@@ -58,43 +53,41 @@ def fit(
     else:
         _fit = famd.fit
 
-    coord, model, param = _fit(df, _nf, col_w)
+    coord, model = _fit(df, _nf, col_w)
 
-    param.correlations = _variable_correlation(model, df, param)
+    model.correlations = _variable_correlation(model, df)
 
     if quanti.size == 0:
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
     else:
         model.variable_coord = pd.DataFrame(model.V.T)
 
-    return coord, model, param
+    return coord, model
 
 
-def stats(model: Model, param: Parameters, df: pd.DataFrame) -> Parameters:
+def stats(model: Model, df: pd.DataFrame) -> Model:
     """Compute the contributions and cos2.
 
     Parameters
     ----------
     model: Model
         Model computed by fit.
-    param: Parameters
-        Param computed by fit.
     df : pd.DataFrame
         original dataframe
 
     Returns
     -------
-    param: Parameters
-        param populated with contriubtion.
+    model: Model
+        model populated with contriubtion.
     """
     # Check attributes type
     if not model.is_fitted:
         raise ValueError(
-            "empty param, run fit function to create Model class and Parameters class objects"
+            "Model has not been fitted. Call fit() to create a Model instance."
         )
 
-    model.variable_coord.columns = param.correlations.columns
-    model.variable_coord.index = list(param.correlations.index)
+    model.variable_coord.columns = model.correlations.columns
+    model.variable_coord.index = list(model.correlations.index)
 
     has_some_quanti = (
         model.original_continuous is not None and len(model.original_continuous) != 0
@@ -104,31 +97,31 @@ def stats(model: Model, param: Parameters, df: pd.DataFrame) -> Parameters:
     )
 
     if not has_some_quali:
-        param.cos2 = param.correlations**2
-        param.contributions = param.cos2.div(param.cos2.sum(axis=0), axis=1).mul(100)
+        model.cos2 = model.correlations**2
+        model.contributions = model.cos2.div(model.cos2.sum(axis=0), axis=1).mul(100)
     elif not has_some_quanti:
-        param = mca.stats(model, param, df)
-        param.cos2 = param.correlations**2
+        model = mca.stats(model, df)
+        model.cos2 = model.correlations**2
 
-        param.contributions = pd.DataFrame(
-            param.contributions,
-            columns=param.correlations.columns,
-            index=list(param.correlations.index),
+        model.contributions = pd.DataFrame(
+            model.contributions,
+            columns=model.correlations.columns,
+            index=list(model.correlations.index),
         )
     else:
-        param = famd.stats(model, param, df)
-        param.cos2 = pd.DataFrame(
-            param.cos2, index=model.original_continuous + model.original_categorical
+        model = famd.stats(model, df)
+        model.cos2 = pd.DataFrame(
+            model.cos2, index=model.original_continuous + model.original_categorical
         )
-        param.contributions = pd.DataFrame(
-            param.contributions,
-            columns=param.correlations.columns,
-            index=list(param.correlations.index),
+        model.contributions = pd.DataFrame(
+            model.contributions,
+            columns=model.correlations.columns,
+            index=list(model.correlations.index),
         )
-    return param
+    return model
 
 
-def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
+def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 
     Parameters
@@ -137,8 +130,6 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
         DataFrame to transform.
     model: Model
         Model computed by fit.
-    param: Parameters
-        Param computed by fit.
 
     Returns
     -------
@@ -146,29 +137,29 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
         Coordinates of the dataframe in the fitted space.
     """
     if not model.is_fitted:
-        raise ValueError("Need to fit before using transform")
+        raise ValueError(
+            "Model has not been fitted."
+            "Call fit() to create a Model instance before calling transform()."
+        )
 
     if len(model.original_categorical) == 0:
-        coord = pca.transform(df, model, param)
+        coord = pca.transform(df, model)
     elif len(model.original_continuous) == 0:
-        coord = mca.transform(df, model, param)
+        coord = mca.transform(df, model)
     else:
-        coord = famd.transform(df, model, param)
+        coord = famd.transform(df, model)
     return coord
 
 
 def _variable_correlation(
     model: Model,
     df: pd.DataFrame,
-    param: Parameters,
 ) -> pd.DataFrame:
     """Compute the correlation between the axis and the variables.
 
     Args:
         model (Model): the model
         df (pd.DataFrame): dataframe
-        quali : categorical variables
-        quali : continuous variables
 
     Returns:
         pd.DataFrame: correlations between the axis and the variables
@@ -178,7 +169,7 @@ def _variable_correlation(
         model.original_categorical is not None and len(model.original_categorical) != 0
     )
     df_quanti = df[model.original_continuous]
-    coord = transform(df, model, param)  # transform to be
+    coord = transform(df, model)  # transform to be
     if has_some_quali:
         df_quali = pd.get_dummies(
             df[model.original_categorical].astype("category"),
@@ -198,7 +189,6 @@ def _variable_correlation(
 def inverse_transform(
     coord: pd.DataFrame,
     model: Model,
-    param: Parameters,
     seed: Optional[int] = None,
 ) -> pd.DataFrame:
     """Compute the inverse transform of data coordinates.
@@ -212,8 +202,6 @@ def inverse_transform(
         DataFrame to transform.
     model: Model
         Model computed by fit.
-    param: Parameters
-        Param computed by fit.
     seed: int|None, default: None
         Specify the seed for np.random.
 
@@ -222,13 +210,13 @@ def inverse_transform(
     inverse: pd.DataFrame
         Inversed DataFrame.
     """
-    if len(coord) < param.nf:
+    if len(coord) < model.nf:
         raise ValueError(
             "Inverse_transform is not working"
             "if the number of dimensions is greater than the number of individuals"
         )
 
-    inverse = inverse_transform_raw(coord, model, param, seed)
+    inverse = inverse_transform_raw(coord, model, seed)
 
     # Cast columns to same type as input
     for name, dtype in model.original_columns.iteritems():
@@ -239,7 +227,7 @@ def inverse_transform(
 
 
 def inverse_transform_raw(
-    coord: pd.DataFrame, model: Model, param: Parameters, seed: Optional[int] = None
+    coord: pd.DataFrame, model: Model, seed: Optional[int] = None
 ) -> pd.DataFrame:
 
     has_some_quanti = (
@@ -249,11 +237,11 @@ def inverse_transform_raw(
         model.original_categorical is not None and len(model.original_categorical) != 0
     )
 
-    inverse_coord_quanti, inverse_coord_quali = inverse_coordinates(coord, model, param)
+    inverse_coord_quanti, inverse_coord_quali = inverse_coordinates(coord, model)
 
     if not has_some_quanti:
         inverse_coord_quali = coord @ (model.D_c @ model.V.T).T
-        inverse_coord_quali = np.divide(inverse_coord_quali, param.dummies_col_prop)
+        inverse_coord_quali = np.divide(inverse_coord_quali, model.dummies_col_prop)
 
         # dividing by proportion of each modality among individual
         # allows to get back the complete disjunctive table
@@ -286,16 +274,16 @@ def inverse_transform_raw(
 
 
 def inverse_coordinates(
-    coord: NDArray[np.float_], model: Model, param: Parameters
+    coord: NDArray[np.float_], model: Model
 ) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
     # Inverse
     inverse_coords: NDArray[np.float_] = np.array(
-        coord @ model.V * np.sqrt(param.column_weights)
+        coord @ model.V * np.sqrt(model.column_weights)
     )
 
     # Scale
     inverse_coords = (
-        inverse_coords / np.sqrt(param.column_weights) * param.column_weights
+        inverse_coords / np.sqrt(model.column_weights) * model.column_weights
     )
 
     nb_quanti = len(model.original_continuous)
@@ -328,9 +316,9 @@ def inverse_transform_quali(
     """Inverse transform categorical variables by weighted random selection.
 
     Args:
-        train_df (pd.DataFrame): dataframe used to fit the model
-        seed (int): seed to fix randomness
         inverse_coords (pd.DataFrame): coordinates that we want to transform
+        model (pd.DataFrame): fitted model
+        seed (int): seed to fix randomness
 
     Returns:
         inverse_quali: transformed categorical dataframe that is similar to `train_df`

@@ -14,7 +14,7 @@ def test_fit_scale() -> None:
         }
     )
 
-    result, model, _ = fit(df)
+    result, model = fit(df)
 
     expected_result = pd.DataFrame(
         {
@@ -44,7 +44,7 @@ def test_fit_zero() -> None:
         }
     )
 
-    result, model, _ = fit(df)
+    result, model = fit(df)
 
     expected_result = pd.DataFrame(
         {
@@ -74,7 +74,7 @@ def test_center_scaler() -> None:
         }
     )
 
-    _, model, _ = fit(df)
+    _, model = fit(df)
 
     df1, _, _ = center(df)
     df2 = scaler(model, df)
@@ -90,9 +90,9 @@ def test_transform_simple() -> None:
         }
     )
 
-    _, model, param = fit(df)
+    _, model = fit(df)
 
-    df_transformed = transform(df, model, param)
+    df_transformed = transform(df, model)
 
     expected_transformed = pd.DataFrame(
         {
@@ -107,9 +107,9 @@ def test_transform_simple() -> None:
 def test_transform() -> None:
     df = pd.DataFrame({0: [-2.0, 7.0, -4.5], 1: [6.0, 2.0, 7.0], 2: [5.0, 10.0, -14.5]})
 
-    _, model, param = fit(df)
+    _, model = fit(df)
 
-    df_transformed = transform(df, model, param)
+    df_transformed = transform(df, model)
 
     expected_transformed = pd.DataFrame(
         {
@@ -126,7 +126,7 @@ def test_transform() -> None:
 
 def test_transform_vs_coord() -> None:
     df = pd.DataFrame({0: [-2.0, 7.0, -4.5], 1: [6.0, 2.0, 7.0], 2: [5.0, 10.0, -14.5]})
-    coord, model, param = fit(df)
-    df_transformed = transform(df, model, param)
+    coord, model = fit(df)
+    df_transformed = transform(df, model)
 
     assert_frame_equal(coord, df_transformed)

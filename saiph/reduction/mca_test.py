@@ -15,7 +15,7 @@ def test_fit() -> None:
         }
     )
 
-    result, model, _ = fit(df)
+    result, model = fit(df)
 
     expected_result = pd.DataFrame(
         {
@@ -58,7 +58,7 @@ def test_fit_zero() -> None:
         }
     )
 
-    result, model, _ = fit(df)
+    result, model = fit(df)
 
     expected_result = pd.DataFrame(
         {
@@ -101,8 +101,8 @@ def test_fit_zero_same_df() -> None:
         }
     )
 
-    result1, model1, _ = fit(df)
-    result2, model2, _ = fit(df_2)
+    result1, model1 = fit(df)
+    result2, model2 = fit(df_2)
 
     assert_frame_equal(result1, result2)
 
@@ -134,9 +134,9 @@ def test_transform_simple() -> None:
             "score": ["aa", "aa"],
         }
     )
-    _, model, param = fit(df)
+    _, model = fit(df)
 
-    df_transformed = transform(df, model, param)
+    df_transformed = transform(df, model)
 
     expected_transform = pd.DataFrame(
         {
@@ -157,7 +157,7 @@ def test_transform_vs_coord() -> None:
             "score": ["aa", "aa"],
         }
     )
-    coord, model, param = fit(df)
-    df_transformed = transform(df, model, param)
+    coord, model = fit(df)
+    df_transformed = transform(df, model)
 
     assert_frame_equal(coord, df_transformed)

@@ -20,7 +20,7 @@ def test_fit_mix() -> None:
         }
     )
 
-    result, model, _ = fit(df)
+    result, model = fit(df)
 
     expected_result = pd.DataFrame(
         {
@@ -89,9 +89,9 @@ def test_transform() -> None:
         }
     )
 
-    _, model, param = fit(df)
+    _, model = fit(df)
 
-    df_transformed = transform(df, model, param)
+    df_transformed = transform(df, model)
     df_expected = pd.DataFrame(
         {
             "Dim. 1": [2.0, -2],
@@ -112,8 +112,8 @@ def test_transform_vs_coord() -> None:
         }
     )
 
-    coord, model, param = fit(df)
-    df_transformed = transform(df, model, param)
+    coord, model = fit(df)
+    df_transformed = transform(df, model)
 
     assert_frame_equal(df_transformed, coord)
 
@@ -126,7 +126,7 @@ def test_fit_zero() -> None:
         }
     )
 
-    result, _, _ = fit(df)
+    result, _ = fit(df)
 
     expected = pd.DataFrame(
         {
@@ -147,10 +147,10 @@ def test_scaler_pca_famd() -> None:
         }
     )
 
-    _, model, param = fit(original_df)
+    _, model = fit(original_df)
     df = scaler(model, original_df)
 
-    _, model_pca, _ = fit_pca(original_df[model.original_continuous])
+    _, model_pca = fit_pca(original_df[model.original_continuous])
     df_pca = scaler_pca(model_pca, original_df)
 
     assert_frame_equal(df[model.original_continuous], df_pca[model.original_continuous])
@@ -166,7 +166,7 @@ def test_center_pca_famd() -> None:
         }
     )
 
-    _, model, _ = fit(original_df)
+    _, model = fit(original_df)
     continous = model.original_continuous
     categorical = model.original_categorical
     df, mean1, std1, _, _ = center(original_df, quali=categorical, quanti=continous)

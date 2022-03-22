@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from saiph.models import Model, Parameters
+from saiph.models import Model
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
     column_names,
@@ -20,7 +20,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-) -> Tuple[pd.DataFrame, Model, Parameters]:
+) -> Tuple[pd.DataFrame, Model]:
     """Fit a PCA model on data.
 
     Parameters
@@ -39,8 +39,6 @@ def fit(
         The transformed data.
     model: Model
         The model for transforming new data.
-    param: Parameters
-        The parameters for transforming new data.
     """
     nf = nf or min(df.shape)
     if col_w is not None:
@@ -88,13 +86,13 @@ def fit(
         std=std,
         type="pca",
         is_fitted=True,
+        nf=nf,
+        column_weights=_col_weights,
+        row_weights=row_w,
+        projected_columns=columns,
     )
 
-    param = Parameters(
-        nf=nf, column_weights=_col_weights, row_weights=row_w, projected_columns=columns
-    )
-
-    return coord, model, param
+    return coord, model
 
 
 def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, float, float]:
@@ -151,7 +149,7 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     return df_scaled
 
 
-def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
+def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 
     Parameters
@@ -160,8 +158,6 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
         DataFrame to transform.
     model: Model
         Model computed by fit.
-    param: Parameters
-        Param computed by fit.
 
     Returns
     -------
@@ -170,5 +166,5 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.V.T
-    coord.columns = param.projected_columns
+    coord.columns = model.projected_columns
     return coord

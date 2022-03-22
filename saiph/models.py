@@ -22,6 +22,15 @@ class Model:
     # Original continuous column names
     original_continuous: List[str]
 
+    # Number of components kept.
+    nf: int
+    # Weights that were applied to each column.
+    column_weights: NDArray[np.float_]
+    # Weights that were applied to each row.
+    row_weights: NDArray[np.float_]
+    # Column names once data is projected.
+    projected_columns: List[str]
+
     # Explained variance.
     explained_var: NDArray[np.float_]
     # Explained variance divided by the sum of the variances.
@@ -51,17 +60,6 @@ class Model:
 
     is_fitted: bool = False
 
-
-@dataclass
-class Parameters:
-    # Number of components kept.
-    nf: int
-    # Weights that were applied to each column.
-    column_weights: NDArray[np.float_]
-    # Weights that were applied to each row.
-    row_weights: NDArray[np.float_]
-    # Column names once data is projected.
-    projected_columns: List[str]
     # Correlation between the axis and the variables.
     correlations: Optional[pd.DataFrame] = None
     # Contributions for each variable.

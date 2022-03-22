@@ -11,59 +11,6 @@ from saiph.projection import get_dummies_mapping, get_random_weighted_columns
 from saiph.reduction import DUMMIES_PREFIX_SEP
 
 
-@pytest.fixture()
-def quanti_df() -> pd.DataFrame:
-    return pd.DataFrame(
-        {
-            "variable_1": [4, 5, 6, 7, 11, 2, 52],
-            "variable_2": [10, 20, 30, 40, 10, 74, 10],
-            "variable_3": [100, 50, -30, -50, -19, -29, -20],
-        }
-    )
-
-
-@pytest.fixture()
-def quali_df() -> pd.DataFrame:
-    return pd.DataFrame(
-        {
-            "tool": [
-                "toaster",
-                "toaster",
-                "hammer",
-                "toaster",
-                "toaster",
-                "hammer",
-                "toaster",
-                "toaster",
-                "hammer",
-            ],
-            "score": ["aa", "ca", "bb", "aa", "ca", "bb", "aa", "ca", "bb"],
-            "car": [
-                "tesla",
-                "renault",
-                "tesla",
-                "tesla",
-                "renault",
-                "tesla",
-                "tesla",
-                "renault",
-                "tesla",
-            ],
-            "moto": [
-                "Bike",
-                "Bike",
-                "Motor",
-                "Bike",
-                "Bike",
-                "Motor",
-                "Bike",
-                "Bike",
-                "Motor",
-            ],
-        }
-    )
-
-
 def test_transform_then_inverse_FAMD(iris_df: pd.DataFrame) -> None:
     transformed, model = fit_transform(iris_df, nf="all")
     un_transformed = inverse_transform(transformed, model)
@@ -95,16 +42,8 @@ def test_transform_then_inverse_MCA_type(quali_df: pd.DataFrame) -> None:
     assert_frame_equal(un_transformed, df)
 
 
-def test_transform_then_inverse_FAMD_weighted() -> None:
-    df = pd.DataFrame(
-        {
-            "variable_1": [4, 5, 6, 7, 11, 2, 52],
-            "variable_2": [10, 20, 30, 40, 10, 74, 10],
-            "variable_3": ["red", "blue", "blue", "green", "red", "blue", "red"],
-            "variable_4": [100, 50, -30, -50, -19, -29, -20],
-        }
-    )
-
+def test_transform_then_inverse_FAMD_weighted(mixed_df: pd.DataFrame) -> None:
+    df = mixed_df
     transformed, model = fit_transform(df, col_w=np.array([2, 1, 3, 2]))
     un_transformed = inverse_transform(transformed, model)
 

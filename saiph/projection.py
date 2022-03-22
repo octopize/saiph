@@ -1,12 +1,60 @@
 """Project any dataframe, inverse transform and compute stats."""
-from typing import Dict, List, Optional, Set, Union
+import json
+import tempfile
+from pathlib import Path
+from typing import Dict, List, Optional, Set, Tuple, Union
+from uuid import UUID
 
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
+from saiph.encoding import ModelEncoder, json_model_obj_hook
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP, famd, mca, pca
+
+
+def fit_cached(
+    df: pd.DataFrame, id: Optional[UUID] = None, **kwargs
+) -> Tuple[NDArray[np.float_], Model]:
+    """Fit a model to the data. Cached version of fit().
+
+    Parameters
+    ----------
+    df: Data to project
+    id : unique id to save to/retrieve from cache
+    kwargs: keyword arguments to fit()
+
+    Returns
+    -------
+    coord: pd.DataFrame
+        The transformed data.
+    model: Model
+        The model for transforming new data.
+    """
+    model_filename = Path(tempfile.gettempdir()) / f"model_{id}.cache"
+    coords_filename = Path(tempfile.gettempdir()) / f"coords_{id}.cache"
+
+    is_cached = not id or not model_filename.exists() or not coords_filename.exists()
+
+    # Call the fit() method, save the results to cache and return the outputs
+    if not is_cached:
+        coords, model = fit(df, **kwargs)
+        with open(model_filename, "w") as file:
+            json.dump(model.__dict__, file, cls=ModelEncoder)
+
+        with open(coords_filename, "w") as file:
+            json.dump(coords, file, cls=ModelEncoder)
+
+        return coords, model
+
+    # We just load the results from cache
+    with open(model_filename, "r") as file:
+        model_dict = json.load(file, object_hook=json_model_obj_hook)
+    with open(coords_filename, "r") as file:
+        coords = json.load(file, object_hook=json_model_obj_hook)
+
+    return coords, Model(**model_dict)
 
 
 def fit(

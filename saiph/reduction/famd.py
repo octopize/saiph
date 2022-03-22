@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from saiph.models import Model, Parameters
+from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
@@ -22,7 +22,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-) -> Tuple[pd.DataFrame, Model, Parameters]:
+) -> Tuple[pd.DataFrame, Model]:
     """Fit a FAMD model on data.
 
     Parameters
@@ -41,8 +41,6 @@ def fit(
         The transformed data.
     model: Model
         The model for transforming new data.
-    param: Parameters
-        The parameters for transforming new data.
     """
     nf = nf or min(df.shape)
     if col_w is not None:
@@ -57,6 +55,9 @@ def fit(
     # select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.to_list()
+    dummy_categorical = pd.get_dummies(
+        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+    ).columns.to_list()
 
     row_w = row_weights_uniform(len(df))
     col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
@@ -81,7 +82,10 @@ def fit(
     coord.columns = columns
 
     model = Model(
-        df=df,
+        original_dtypes=df.dtypes,
+        original_categorical=quali,
+        original_continuous=quanti,
+        dummy_categorical=dummy_categorical,
         U=U,
         V=V,
         s=s,
@@ -93,18 +97,14 @@ def fit(
         prop=prop,
         _modalities=_modalities,
         type="famd",
-    )
-
-    param = Parameters(
+        is_fitted=True,
         nf=nf,
-        col_w=col_weights,
-        row_w=row_w,
-        columns=columns,
-        quanti=quanti,
-        quali=quali,
+        column_weights=col_weights,
+        row_weights=row_w,
+        projected_columns=columns,
     )
 
-    return coord, model, param
+    return coord, model
 
 
 def _col_weights_compute(
@@ -188,38 +188,27 @@ def center(
     return df_scale, mean, std, prop, _modalities
 
 
-def scaler(
-    model: Model, param: Parameters, df: Optional[pd.DataFrame] = None
-) -> pd.DataFrame:
+def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     """Scale data using mean, std, modalities and proportions of each categorical from model.
 
     Parameters
     ----------
     model: Model
         Model computed by fit.
-    param: Parameters
-        Param computed by fit.
     df: pd.DataFrame
         DataFrame to scale.
-        If nothing is specified, takes the DataFrame on which the model was fitted.
 
     Returns
     -------
     df_scaled: pd.DataFrame
         The scaled DataFrame.
     """
-    if df is None:
-        df = model.df
-
-    if not isinstance(df, pd.DataFrame):
-        df = pd.DataFrame(df)
-
-    df_quanti = df[param.quanti]
+    df_quanti = df[model.original_continuous]
     df_quanti = (df_quanti - model.mean) / model.std
 
     # scale
     df_quali = pd.get_dummies(
-        df[param.quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
     )
     if model._modalities is not None:
         for mod in model._modalities:
@@ -232,7 +221,7 @@ def scaler(
     return df_scaled
 
 
-def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame:
+def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 
     Parameters
@@ -241,49 +230,46 @@ def transform(df: pd.DataFrame, model: Model, param: Parameters) -> pd.DataFrame
         DataFrame to transform.
     model: Model
         Model computed by fit.
-    param: Parameters
-        Param computed by fit.
 
     Returns
     -------
     coord: pd.DataFrame
         Coordinates of the dataframe in the fitted space.
     """
-    df_scaled = scaler(model, param, df)
+    df_scaled = scaler(model, df)
     coord = df_scaled @ model.V.T
-    coord.columns = param.columns
+    coord.columns = model.projected_columns
     return coord
 
 
-def stats(model: Model, param: Parameters) -> Parameters:
+def stats(model: Model, original_df: pd.DataFrame) -> Model:
     """Compute contributions and cos2.
 
     Parameters
     ----------
     model: Model
         Model computed by fit.
-    param: Parameters
-        Param computed by fit.
 
     Returns
     -------
-    param: Parameters
-        param populated with contriubtion ans cos2.
+    model: Model
+        model populated with contriubtion ans cos2.
     """
-    if param.quanti is None or model.U is None or model.s is None:
+    if not model.is_fitted:
         raise ValueError(
-            "empty param, run fit function to create Model class and Parameters class objects"
+            "Model has not been fitted. Call fit() to create a Model instance."
         )
 
-    df = pd.DataFrame(scaler(model, param))
+    df = pd.DataFrame(scaler(model, original_df))
     df2: NDArray[np.float_] = np.array(df) ** 2
 
     # svd of x with row_w and col_w
     weightedTc = _rmultiplication(
-        _rmultiplication(df.T, np.sqrt(param.col_w)).T, np.sqrt(param.row_w)
+        _rmultiplication(df.T, np.sqrt(model.column_weights)).T,
+        np.sqrt(model.row_weights),
     )
     U, s, V = SVD(weightedTc.T, svd_flip=False)
-    ncp0 = min(len(weightedTc.iloc[0]), len(weightedTc), param.nf)
+    ncp0 = min(len(weightedTc.iloc[0]), len(weightedTc), model.nf)
     U = U[:, :ncp0]
     V = V.T[:, :ncp0]
     s = s[:ncp0]
@@ -298,7 +284,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     )
     V = pd.DataFrame()
     for i in range(len(mult1)):
-        V[i] = mult1.iloc[i] / np.sqrt(param.col_w[i])
+        V[i] = mult1.iloc[i] / np.sqrt(model.column_weights[i])
     V = np.array(V).T
     # final U
     mult1 = pd.DataFrame(
@@ -306,7 +292,7 @@ def stats(model: Model, param: Parameters) -> Parameters:
     )
     U = pd.DataFrame()
     for i in range(len(mult1)):
-        U[i] = mult1.iloc[i] / np.sqrt(param.row_w[i])
+        U[i] = mult1.iloc[i] / np.sqrt(model.row_weights[i])
     U = np.array(U).T
     eig: Any = s**2
     # end of the svd
@@ -315,9 +301,9 @@ def stats(model: Model, param: Parameters) -> Parameters:
     coord_var: NDArray[np.float_] = np.array(V[0] * s)
     for i in range(1, len(V[:, 0])):
         coord_var = np.vstack((coord_var, V[i] * s))
-    contrib_var = (((((coord_var**2) / eig).T) * param.col_w).T) * 100
+    contrib_var = (((((coord_var**2) / eig).T) * model.column_weights).T) * 100
     # compute cos2
-    dfrow_w: NDArray[np.float_] = np.array(pd.DataFrame((df2.T) * param.row_w).T)
+    dfrow_w: NDArray[np.float_] = np.array(pd.DataFrame((df2.T) * model.row_weights).T)
     dist2 = []
     for i in range(len(dfrow_w[0])):
         dist2 += [np.sum(dfrow_w[:, i])]
@@ -328,18 +314,16 @@ def stats(model: Model, param: Parameters) -> Parameters:
     cos2 = cor**2
 
     # compute eta2
-    model.df.index = range(len(model.df))
-    dfquali = model.df[param.quali]
     eta2: NDArray[np.float_] = np.array([])
     fi = 0
     coord = pd.DataFrame(
-        model.U[:, :ncp0] * model.s[:ncp0], columns=param.columns[:ncp0]
+        model.U[:, :ncp0] * model.s[:ncp0], columns=model.projected_columns[:ncp0]
     )
     mods = []
     # for each qualitative column in the original data set
-    for count, col in enumerate(dfquali.columns):
+    for col in model.original_categorical:
         dummy = pd.get_dummies(
-            dfquali[col].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+            original_df[col].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
         )
         mods += [len(dummy.columns) - 1]
         # for each dimension
@@ -349,25 +333,26 @@ def stats(model: Model, param: Parameters) -> Parameters:
             p = 0
             for i in range(len(dummy.columns)):
                 p += (
-                    np.array(dummy.T)[i] * coord[coordcol] * param.row_w
+                    np.array(dummy.T)[i] * coord[coordcol] * model.row_weights
                 ).sum() ** 2 / model.prop[fi + i]
             dim += [p]
         eta1 = (
-            np.array(dim) / np.array((coord**2).T * param.row_w).sum(axis=1).tolist()
+            np.array(dim)
+            / np.array((coord**2).T * model.row_weights).sum(axis=1).tolist()
         )
         eta2 = np.append(eta2, eta1)
         fi += len(dummy.columns)
 
-        cos2 = cos2[: len(param.quanti)]
+        cos2 = cos2[: len(model.original_continuous)]
 
     cos2 = cos2**2
     eta2 = eta2**2
     eta2 = ((eta2).T / mods).T
 
     cos2 = np.concatenate([cos2, [eta2]], axis=0)
-    param.contrib = contrib_var
-    param.cos2 = cos2
-    return param
+    model.contributions = contrib_var
+    model.cos2 = cos2
+    return model
 
 
 def _rmultiplication(F: pd.DataFrame, marge: NDArray[Any]) -> pd.DataFrame:

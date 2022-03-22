@@ -8,8 +8,28 @@ from numpy.typing import NDArray
 
 @dataclass
 class Model:
-    # DataFrame on which the model was fit.
-    df: pd.DataFrame
+
+    # List of categorical columns transformed into dummies using pd.get_dummies
+    dummy_categorical: List[str]
+
+    # List of original columns with dtypes generated with df.dtypes.
+    # Calling .index refers to column names,
+    # Calling .values refers to the dtypes of the column names.
+    original_dtypes: pd.Series
+
+    # Original categorical column names
+    original_categorical: List[str]
+    # Original continuous column names
+    original_continuous: List[str]
+
+    # Number of components kept.
+    nf: int
+    # Weights that were applied to each column.
+    column_weights: NDArray[np.float_]
+    # Weights that were applied to each row.
+    row_weights: NDArray[np.float_]
+    # Column names once data is projected.
+    projected_columns: List[str]
 
     # Explained variance.
     explained_var: NDArray[np.float_]
@@ -38,25 +58,12 @@ class Model:
     # Type of dimension reduction that was performed.
     type: Optional[str] = None
 
+    is_fitted: bool = False
 
-@dataclass
-class Parameters:
-    # Number of components kept.
-    nf: int
-    # Weights that were applied to each column.
-    col_w: NDArray[np.float_]
-    # Weights that were applied to each row.
-    row_w: NDArray[np.float_]
-    # Column names once data is projected.
-    columns: List[str]
-    # Column labels that are considered quantitative.
-    quanti: List[str]
-    # Column labels that are considered qualitative.
-    quali: List[str]
     # Correlation between the axis and the variables.
-    cor: Optional[pd.DataFrame] = None
+    correlations: Optional[pd.DataFrame] = None
     # Contributions for each variable.
-    contrib: Optional[pd.DataFrame] = None
+    contributions: Optional[pd.DataFrame] = None
     # Cos2 for each variable.
     cos2: Optional[pd.DataFrame] = None
     # Proportion of individuals taking each modality.

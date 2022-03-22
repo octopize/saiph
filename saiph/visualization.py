@@ -8,14 +8,13 @@ from matplotlib import pyplot as plt  # type: ignore
 from numpy.typing import NDArray
 
 from saiph import transform
-from saiph.models import Model, Parameters
+from saiph.models import Model
 
 matplotlib.use("TkAgg", force=True)  # Default matplotlib backend is not GUI compatible
 
 
 def plot_circle(
     model: Model,
-    param: Parameters,
     dimensions: Optional[List[int]] = None,
     min_cor: float = 0.1,
     max_var: int = 7,
@@ -26,8 +25,6 @@ def plot_circle(
     ----------
     model: Model
         The model for transforming new data.
-    param: Parameters
-        The parameters for transforming new data.
     dimensions: Optional[List[int]]
         Dimensions to help by each axis
     min_cor: float
@@ -36,9 +33,9 @@ def plot_circle(
         Number of variables to display (in descending order)
     """
     # make sure stats have been computed prior to visualization
-    if param.cor is None:
+    if not model.is_fitted:
         raise ValueError(
-            "empty param, run fit function to create Model class and Parameters class objects"
+            "Model has not been fitted. Call fit() to create a Model instance."
         )
 
     # Dimensions start from 1
@@ -54,7 +51,7 @@ def plot_circle(
     fig.gca().add_artist(circle1)
 
     # Order dataframe
-    cor = param.cor.copy()
+    cor = model.correlations.copy()
     cor["sum"] = cor.apply(
         lambda x: abs(x[dimensions[0] - 1]) + abs(x[dimensions[1] - 1]), axis=1
     )
@@ -168,7 +165,7 @@ def plot_explained_var(
 
 
 def plot_projections(
-    model: Model, param: Parameters, data: pd.DataFrame, dim: Tuple[int, int] = (0, 1)
+    model: Model, data: pd.DataFrame, dim: Tuple[int, int] = (0, 1)
 ) -> None:
     """Plot projections in reduced space for input data.
 
@@ -176,8 +173,6 @@ def plot_projections(
     ----------
     model
         Model computed by fit.
-    param
-        The parameters for transforming the data.
     data
         Data to plot in the reduced space
     dim
@@ -185,7 +180,7 @@ def plot_projections(
     """
     dim_x, dim_y = dim
 
-    transformed_data = transform(data, model, param)
+    transformed_data = transform(data, model)
 
     # Retrieve column names matching the selected dimensions
     x_name = transformed_data.columns[dim_x]

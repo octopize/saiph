@@ -219,11 +219,11 @@ def inverse_transform(
     inverse = inverse_transform_raw(coord, model, seed)
 
     # Cast columns to same type as input
-    for name, dtype in model.original_columns.iteritems():
+    for name, dtype in model.original_dtypes.iteritems():
         inverse[name] = inverse[name].astype(dtype)
 
     # reorder columns
-    return inverse[model.original_columns.index]
+    return inverse[model.original_dtypes.index]
 
 
 def inverse_transform_raw(

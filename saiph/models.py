@@ -12,10 +12,10 @@ class Model:
     # List of categorical columns transformed into dummies using pd.get_dummies
     dummy_categorical: List[str]
 
-    # List of original columns with dtypes
-    # genered with df.dtypes. Calling .index refers to column names,
-    # calling .values are the dtypes of the column names.
-    original_columns: pd.Series
+    # List of original columns with dtypes generated with df.dtypes.
+    # Calling .index refers to column names,
+    # Calling .values refers to the dtypes of the column names.
+    original_dtypes: pd.Series
 
     # Original categorical column names
     original_categorical: List[str]

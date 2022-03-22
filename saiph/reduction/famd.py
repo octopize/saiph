@@ -82,7 +82,7 @@ def fit(
     coord.columns = columns
 
     model = Model(
-        original_columns=df.dtypes,
+        original_dtypes=df.dtypes,
         original_categorical=quali,
         original_continuous=quanti,
         dummy_categorical=dummy_categorical,

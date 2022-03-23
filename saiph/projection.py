@@ -97,11 +97,11 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
     )
 
     if not has_some_quali:
-        model.cos2 = model.correlations**2
+        model.cos2 = model.correlations ** 2
         model.contributions = model.cos2.div(model.cos2.sum(axis=0), axis=1).mul(100)
     elif not has_some_quanti:
         model = mca.stats(model, df)
-        model.cos2 = model.correlations**2
+        model.cos2 = model.correlations ** 2
 
         model.contributions = pd.DataFrame(
             model.contributions,
@@ -185,6 +185,7 @@ def _variable_correlation(
     ]
     return cor
 
+
 def inverse_transform(
     coord: pd.DataFrame,
     model: Model,
@@ -203,23 +204,23 @@ def inverse_transform(
         pd.DataFrame: original shape, encoding and structure
     """
     # Check dimension size regarding N
-    n_dimensions = (len(model.dummy_categorical) + len(model.original_continuous))
+    n_dimensions = len(model.dummy_categorical) + len(model.original_continuous)
     n_records = len(coord)
 
     if not approximate and n_records < n_dimensions:
         raise ValueError(
             "Inverse transform may lead to bias. ",
-            f"Number of dimensions ({n_dimensions}) is greater than the number of individuals ({n_records}). "
-            "you can reduce number of dimensions or approximate the inverse transform"
+            f"n_dimensions ({n_dimensions}) is greater than the n_individuals ({n_records}). "
+            "you can reduce number of dimensions or approximate the inverse transform",
         )
 
-    #Get back scaled_values from coord with inverse matrix operation
-    # If n_dimensions > n_records, There will be an approximation of the inverse of V.T 
+    # Get back scaled_values from coord with inverse matrix operation
+    # If n_dimensions > n_records, There will be an approximation of the inverse of V.T
     scaled_values = pd.DataFrame(np.array(coord @ np.linalg.pinv(model.V.T)))
 
     # get number of continuous variables
     nb_quanti = len(model.original_continuous)
-    
+
     # continuous variables are set first in the dummy df
     scaled_values_quanti = scaled_values.iloc[:, :nb_quanti]
     scaled_values_quanti.columns = model.original_continuous
@@ -229,21 +230,21 @@ def inverse_transform(
 
     # Descale regarding projection type
     # FAMD
-    if model.type == 'famd':
-        descaled_values_quanti = (scaled_values_quanti*model.std)+model.mean
-        descaled_values_quali = (scaled_values_quali*np.sqrt(model.prop))+model.prop
-        undummy = undummify(descaled_values_quali, model, deterministic = deterministic)
+    if model.type == "famd":
+        descaled_values_quanti = (scaled_values_quanti * model.std) + model.mean
+        descaled_values_quali = (scaled_values_quali * np.sqrt(model.prop)) + model.prop
+        undummy = undummify(descaled_values_quali, model, deterministic=deterministic)
         inverse = pd.concat([descaled_values_quanti, undummy], axis=1).round(1)
-    
+
     # PCA
-    elif model.type == 'pca':   
-        descaled_values_quanti = (scaled_values_quanti*model.std)+model.mean
+    elif model.type == "pca":
+        descaled_values_quanti = (scaled_values_quanti * model.std) + model.mean
         inverse = descaled_values_quanti.round(1)
-        
+
     # MCA
     else:
-        descaled_values_quali = scaled_values_quali*scaled_values_quali.sum().sum()
-        undummy = undummify(descaled_values_quali, model, deterministic = deterministic)
+        descaled_values_quali = scaled_values_quali * scaled_values_quali.sum().sum()
+        undummy = undummify(descaled_values_quali, model, deterministic=deterministic)
         inverse = undummy
 
     # Cast columns to same type as input
@@ -252,6 +253,7 @@ def inverse_transform(
 
     # reorder columns
     return inverse[model.original_dtypes.index]
+
 
 def undummify(
     dummy_df: pd.DataFrame,
@@ -270,7 +272,9 @@ def undummify(
     Returns:
         pd.DataFrame: undummify df of categorical variable
     """
-    dummies_mapping = get_dummies_mapping(model.original_categorical, model.dummy_categorical)
+    dummies_mapping = get_dummies_mapping(
+        model.original_categorical, model.dummy_categorical
+    )
     inverse_quali = pd.DataFrame()
     random_gen = np.random.default_rng(seed)
 
@@ -281,18 +285,23 @@ def undummify(
         # if deterministic set max value per row to 1 and 0 for other
         if deterministic:
             max = np.zeros(single_category.shape)
-            max[np.arange(single_category.shape[0]), np.argmax(np.array(single_category), axis=1)] = 1
-            max=pd.DataFrame(max)
+            max[
+                np.arange(single_category.shape[0]),
+                np.argmax(np.array(single_category), axis=1),
+            ] = 1
+            max = pd.DataFrame(max)
             max.columns = single_category.columns
             single_category = max
-        
+
         chosen_modalities = get_random_weighted_columns(single_category, random_gen)
         inverse_quali[original_column] = list(map(get_suffix, chosen_modalities))
 
-    return(inverse_quali)
+    return inverse_quali
+
 
 def get_suffix(string: str) -> str:
     return string.split(DUMMIES_PREFIX_SEP)[1]
+
 
 def get_random_weighted_columns(
     df: pd.DataFrame, random_gen: np.random.Generator

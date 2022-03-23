@@ -22,7 +22,7 @@ def fit_cached(
     Parameters
     ----------
     df: Data to project
-    id : unique id to save to/retrieve from cache
+    id : unique id to save to/retrieve from cache. If None, we do not cache.
     kwargs: keyword arguments to fit()
 
     Returns
@@ -32,14 +32,19 @@ def fit_cached(
     model: Model
         The model for transforming new data.
     """
+
     model_filename = Path(tempfile.gettempdir()) / f"model_{id}.cache"
     coords_filename = Path(tempfile.gettempdir()) / f"coords_{id}.cache"
 
-    is_cached = not id or not model_filename.exists() or not coords_filename.exists()
+    is_cached = id and model_filename.exists() and coords_filename.exists()
 
     # Call the fit() method, save the results to cache and return the outputs
     if not is_cached:
         coords, model = fit(df, **kwargs)
+
+        if not id:  # We have no ID, we don't cache.
+            return coords, model
+
         with open(model_filename, "w") as file:
             json.dump(model.__dict__, file, cls=ModelEncoder)
 

@@ -13,6 +13,7 @@ matplotlib = "^3.4"
 numpy = "^1.21"
 scipy = "^1.7"
 scikit-learn = "^1.0"
+doubles = "^1.5.3"
 
 [tool.poetry.dev-dependencies]
 Sphinx = "^4.2"

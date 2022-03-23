@@ -65,16 +65,14 @@ def quali_df() -> pd.DataFrame:
 
 
 def test_transform_then_inverse_FAMD(iris_df: pd.DataFrame) -> None:
-    _, model = fit(iris_df, nf="all")
-    transformed = transform(iris_df, model)
+    transformed, model = fit(iris_df, nf="all")
     un_transformed = inverse_transform(transformed, model)
 
     assert_frame_equal(un_transformed, iris_df)
 
 
 def test_transform_then_inverse_PCA(iris_quanti_df: pd.DataFrame) -> None:
-    _, model = fit(iris_quanti_df, nf="all")
-    transformed = transform(iris_quanti_df, model)
+    transformed, model = fit(iris_quanti_df, nf="all")
     un_transformed = inverse_transform(transformed, model)
     assert_frame_equal(un_transformed, iris_quanti_df)
 
@@ -82,8 +80,7 @@ def test_transform_then_inverse_PCA(iris_quanti_df: pd.DataFrame) -> None:
 def test_transform_then_inverse_MCA(quali_df: pd.DataFrame) -> None:
 
     df = quali_df
-    _, model = fit(df)
-    transformed = transform(df, model)
+    transformed, model = fit(df)
     un_transformed = inverse_transform(transformed, model)
     assert_frame_equal(un_transformed, df)
 
@@ -92,8 +89,7 @@ def test_transform_then_inverse_MCA_type(quali_df: pd.DataFrame) -> None:
     df = quali_df
 
     df = df.astype("object")
-    _, model = fit(df)
-    transformed = transform(df, model)
+    transformed, model = fit(df)
     un_transformed = inverse_transform(transformed, model)
 
     assert_frame_equal(un_transformed, df)
@@ -109,8 +105,7 @@ def test_transform_then_inverse_FAMD_weighted() -> None:
         }
     )
 
-    _, model = fit(df, col_w=np.array([2, 1, 3, 2]))
-    transformed = transform(df, model)
+    transformed, model = fit(df, col_w=np.array([2, 1, 3, 2]))
     un_transformed = inverse_transform(transformed, model)
 
     assert_frame_equal(un_transformed, df)
@@ -145,8 +140,7 @@ def test_transform_then_inverse_MCA_weighted() -> None:
         }
     )
 
-    _, model = fit(df, col_w=np.array([2, 1, 3, 2]))
-    transformed = transform(df, model)
+    transformed, model = fit(df, col_w=np.array([2, 1, 3, 2]))
     un_transformed = inverse_transform(transformed, model)
 
     assert_frame_equal(un_transformed, df)

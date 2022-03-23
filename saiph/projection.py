@@ -32,7 +32,6 @@ def fit_cached(
     model: Model
         The model for transforming new data.
     """
-
     model_filename = Path(tempfile.gettempdir()) / f"model_{id}.cache"
     coords_filename = Path(tempfile.gettempdir()) / f"coords_{id}.cache"
 

@@ -5,6 +5,9 @@ import pandas as pd
 
 
 class ModelEncoder(json.JSONEncoder):
+
+    VERSION = "1.0"
+
     def default(self, obj):
         """Encode numpy arrays, pandas dataframes, and pandas series, or objects containing them.
 
@@ -12,16 +15,21 @@ class ModelEncoder(json.JSONEncoder):
         """
         if isinstance(obj, np.ndarray):
             data = obj.tolist()
-            return dict(__ndarray__=data, dtype=str(obj.dtype), shape=obj.shape)
+            return dict(
+                __ndarray__=data,
+                dtype=str(obj.dtype),
+                shape=obj.shape,
+                __version__=self.VERSION,
+            )
 
         if isinstance(obj, pd.Series):
             data = obj.to_json(orient="index", default_handler=str)
-            return dict(__series__=data, dtype=str(obj.dtype))
+            return dict(__series__=data, dtype=str(obj.dtype), __version__=self.VERSION)
 
         if isinstance(obj, pd.DataFrame):
             # orient='table' includes dtypes but doesn't work
             data = obj.to_json(orient="index", default_handler=str)
-            return dict(__frame__=data)
+            return dict(__frame__=data, __version__=self.VERSION)
 
         super().default(obj)
 

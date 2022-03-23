@@ -1,5 +1,10 @@
+from typing import Any
+
+import numpy as np
 import pandas as pd
 import pytest
+
+from saiph.models import Model
 
 _iris_csv = pd.read_csv("fixtures/iris.csv")
 
@@ -77,3 +82,29 @@ def mixed_df():
             "variable_4": [100, 50, -30, -50, -19, -29, -20],
         }
     )
+
+
+def check_model_equality(
+    test: Model,
+    expected: Model,
+) -> None:
+    """Verify that two Model instances are the same."""
+    for key, value in expected.__dict__.items():
+        test_item = test.__dict__[key]
+        expected_item = value
+        check_equality(test_item, expected_item)
+
+
+def check_equality(
+    test: Any,
+    expected: Any,
+) -> None:
+    """Check equality of dataframes, series and np.arrays."""
+    if isinstance(test, pd.DataFrame) and isinstance(expected, pd.DataFrame):
+        pd.testing.assert_frame_equal(test, expected)
+    elif isinstance(test, pd.Series) and isinstance(expected, pd.Series):
+        pd.testing.assert_series_equal(test, expected)
+    elif isinstance(test, np.ndarray) and isinstance(expected, np.ndarray):
+        np.testing.assert_array_equal(test, expected)
+    else:
+        assert test == expected

@@ -185,38 +185,66 @@ def _variable_correlation(
     ]
     return cor
 
-
 def inverse_transform(
     coord: pd.DataFrame,
     model: Model,
-    seed: Optional[int] = None,
+    approximate: bool = False,
+    deterministic: bool = True,
 ) -> pd.DataFrame:
-    """Compute the inverse transform of data coordinates.
+    """Return original format dataframe from coordinates.
 
-    Note that if nf was stricly smaller than max(df.shape) in fit,
-    inverse_transform o transform != id
+    Args:
+        coord (pd.DataFrame): coord of individuals to reverse transform
+        model (Model): model used for projection
+        approximate (boolean): True for inverse transform with more dimensions than individuals
+        deterministic (boolean): True to set quali modality to max value
 
-    Parameters
-    ----------
-    coord: pd.DataFrame
-        DataFrame to transform.
-    model: Model
-        Model computed by fit.
-    seed: int|None, default: None
-        Specify the seed for np.random.
-
-    Returns
-    -------
-    inverse: pd.DataFrame
-        Inversed DataFrame.
+    Returns:
+        pd.DataFrame: original shape, encoding and structure
     """
-    if len(coord) < model.nf:
+    # Check dimension size regarding N
+    n_dimensions = (len(model.dummy_categorical) + len(model.original_continuous))
+    n_records = len(coord)
+
+    if not approximate and n_records < n_dimensions:
         raise ValueError(
-            "Inverse_transform is not working"
-            "if the number of dimensions is greater than the number of individuals"
+            "Inverse transform may lead to bias. ",
+            f"Number of dimensions ({n_dimensions}) is greater than the number of individuals ({n_records}). "
+            "you can reduce number of dimensions or approximate the inverse transform"
         )
 
-    inverse = inverse_transform_raw(coord, model, seed)
+    #Get back scaled_values from coord with inverse matrix operation
+    # If n_dimensions > n_records, There will be an approximation of the inverse of V.T 
+    scaled_values = pd.DataFrame(np.array(coord @ np.linalg.pinv(model.V.T)))
+
+    # get number of continuous variables
+    nb_quanti = len(model.original_continuous)
+    
+    # continuous variables are set first in the dummy df
+    scaled_values_quanti = scaled_values.iloc[:, :nb_quanti]
+    scaled_values_quanti.columns = model.original_continuous
+
+    scaled_values_quali = scaled_values.iloc[:, nb_quanti:]
+    scaled_values_quali.columns = model.dummy_categorical
+
+    # Descale regarding projection type
+    # FAMD
+    if model.type == 'famd':
+        descaled_values_quanti = (scaled_values_quanti*model.std)+model.mean
+        descaled_values_quali = (scaled_values_quali*np.sqrt(model.prop))+model.prop
+        undummy = undummify(descaled_values_quali, model, deterministic = deterministic)
+        inverse = pd.concat([descaled_values_quanti, undummy], axis=1).round(1)
+    
+    # PCA
+    elif model.type == 'pca':   
+        descaled_values_quanti = (scaled_values_quanti*model.std)+model.mean
+        inverse = descaled_values_quanti.round(1)
+        
+    # MCA
+    else:
+        descaled_values_quali = scaled_values_quali*scaled_values_quali.sum().sum()
+        undummy = undummify(descaled_values_quali, model, deterministic = deterministic)
+        inverse = undummy
 
     # Cast columns to same type as input
     for name, dtype in model.original_dtypes.iteritems():
@@ -225,125 +253,46 @@ def inverse_transform(
     # reorder columns
     return inverse[model.original_dtypes.index]
 
-
-def inverse_transform_raw(
-    coord: pd.DataFrame, model: Model, seed: Optional[int] = None
-) -> pd.DataFrame:
-
-    has_some_quanti = (
-        model.original_continuous is not None and len(model.original_continuous) != 0
-    )
-    has_some_quali = (
-        model.original_categorical is not None and len(model.original_categorical) != 0
-    )
-
-    inverse_coord_quanti, inverse_coord_quali = inverse_coordinates(coord, model)
-
-    if not has_some_quanti:
-        inverse_coord_quali = coord @ (model.D_c @ model.V.T).T
-        inverse_coord_quali = np.divide(inverse_coord_quali, model.dummies_col_prop)
-
-        # dividing by proportion of each modality among individual
-        # allows to get back the complete disjunctive table
-        # X_quali is the complete disjunctive table ("tableau disjonctif complet" in FR)
-
-    inverse_quanti = (
-        inverse_transform_quanti(inverse_coord_quanti, model)
-        if has_some_quanti
-        else None
-    )
-
-    # Rescale quali
-    # FIXME: Can we avoid doing an operation on just X_quali when we have both quanti and quali?
-    if has_some_quanti and has_some_quali:
-        prop = model.prop.to_numpy()
-        inverse_coord_quali = (inverse_coord_quali * np.sqrt(prop)) + prop
-
-    inverse_quali = (
-        inverse_transform_quali(pd.DataFrame(inverse_coord_quali), model, seed)
-        if has_some_quali
-        else None
-    )
-
-    if inverse_quali is None:
-        return inverse_quanti
-    elif inverse_quanti is None:
-        return inverse_quali
-    else:
-        return pd.concat([inverse_quali, inverse_quanti], axis=1)
-
-
-def inverse_coordinates(
-    coord: NDArray[np.float_], model: Model
-) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
-    # Inverse
-    inverse_coords: NDArray[np.float_] = np.array(
-        coord @ model.V * np.sqrt(model.column_weights)
-    )
-
-    # Scale
-    inverse_coords = (
-        inverse_coords / np.sqrt(model.column_weights) * model.column_weights
-    )
-
-    nb_quanti = len(model.original_continuous)
-
-    inverse_coord_quanti = inverse_coords[:, :nb_quanti]
-    inverse_coord_quali = inverse_coords[:, nb_quanti:]
-
-    return inverse_coord_quanti, inverse_coord_quali
-
-
-def inverse_transform_quanti(
-    inverse_coords: NDArray[np.float_],
+def undummify(
+    dummy_df: pd.DataFrame,
     model: Model,
-) -> pd.DataFrame:
-    std: NDArray[np.float_] = model.std.to_numpy()
-    mean: NDArray[np.float_] = model.mean.to_numpy()
-    inverse_quanti = pd.DataFrame(
-        data=(inverse_coords * std) + mean,
-        columns=model.original_continuous,
-    )
-    # FIXME: Why are we rounding here ? Removing it makes tests fail.
-    return inverse_quanti.round(1)
-
-
-def inverse_transform_quali(
-    inverse_coords: pd.DataFrame,
-    model: Model,
+    deterministic: bool = True,
     seed: Optional[int] = None,
 ) -> pd.DataFrame:
-    """Inverse transform categorical variables by weighted random selection.
+    """Return undummified dataframe from the dummy.
 
     Args:
-        inverse_coords (pd.DataFrame): coordinates that we want to transform
-        model (pd.DataFrame): fitted model
-        seed (int): seed to fix randomness
+        dummy_df (pd.DataFrame): dummy df of categorical variable
+        model (Model): model used for projection
+        deterministic (boolean): True to set quali modality to max value
+        seed (int): seed to fix randomness if deterministic = False
 
     Returns:
-        inverse_quali: transformed categorical dataframe that is similar to `train_df`
-
+        pd.DataFrame: undummify df of categorical variable
     """
-    inverse_coords.columns = model.dummy_categorical
-
-    dummies_mapping = get_dummies_mapping(
-        model.original_categorical, model.dummy_categorical
-    )
-
-    random_gen = np.random.default_rng(seed)
+    dummies_mapping = get_dummies_mapping(model.original_categorical, model.dummy_categorical)
     inverse_quali = pd.DataFrame()
-
-    def get_suffix(string: str) -> str:
-        return string.split(DUMMIES_PREFIX_SEP)[1]
+    random_gen = np.random.default_rng(seed)
 
     for original_column, dummy_columns in dummies_mapping.items():
         # Handle a single category with all the possible modalities
-        single_category = inverse_coords[dummy_columns]
+        single_category = dummy_df[dummy_columns]
+
+        # if deterministic set max value per row to 1 and 0 for other
+        if deterministic:
+            max = np.zeros(single_category.shape)
+            max[np.arange(single_category.shape[0]), np.argmax(np.array(single_category), axis=1)] = 1
+            max=pd.DataFrame(max)
+            max.columns = single_category.columns
+            single_category = max
+        
         chosen_modalities = get_random_weighted_columns(single_category, random_gen)
         inverse_quali[original_column] = list(map(get_suffix, chosen_modalities))
 
-    return inverse_quali
+    return(inverse_quali)
 
+def get_suffix(string: str) -> str:
+    return string.split(DUMMIES_PREFIX_SEP)[1]
 
 def get_random_weighted_columns(
     df: pd.DataFrame, random_gen: np.random.Generator

@@ -55,8 +55,6 @@ def fit(
 
     coord, model = _fit(df, _nf, col_w)
 
-    model.correlations = _variable_correlation(model, df)
-
     if quanti.size == 0:
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
     else:
@@ -86,6 +84,7 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
             "Model has not been fitted. Call fit() to create a Model instance."
         )
 
+    model.correlations = _variable_correlation(model, df)
     model.variable_coord.columns = model.correlations.columns
     model.variable_coord.index = list(model.correlations.index)
 

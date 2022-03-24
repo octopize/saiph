@@ -10,10 +10,10 @@ from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
-    column_names,
     diag,
     explain_variance,
-    row_weights_uniform,
+    get_projected_column_names,
+    get_uniform_row_weights,
 )
 from saiph.reduction.utils.svd import SVD
 
@@ -22,7 +22,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-) -> Tuple[pd.DataFrame, Model]:
+) -> Model:
     """Fit a MCA model on data.
 
     Parameters
@@ -37,8 +37,6 @@ def fit(
 
     Returns
     -------
-    coord: pd.DataFrame
-        The transformed data.
     model: Model
         The model for transforming new data.
     """
@@ -53,7 +51,7 @@ def fit(
     fit_check_params(nf, _col_weights, df.shape[1])
 
     # initiate row and columns weights
-    row_w = row_weights_uniform(len(df))
+    row_weights = get_uniform_row_weights(len(df))
 
     modality_numbers = []
     for column in df.columns:
@@ -74,7 +72,7 @@ def fit(
     dummies_col_prop = len(df_dummies) / df_dummies.sum(axis=0)
 
     # apply the weights and compute the svd
-    Z = ((T * col_weights).T * row_w).T
+    Z = ((T * col_weights).T * row_weights).T
     U, s, V = SVD(Z)
 
     explained_var, explained_var_ratio = explain_variance(s, df, nf)
@@ -82,10 +80,6 @@ def fit(
     U = U[:, :nf]
     s = s[:nf]
     V = V[:nf, :]
-
-    columns = column_names(nf)[: min(df_scale.shape)]
-    coord = df_scale @ D_c @ V.T
-    coord.columns = columns
 
     model = Model(
         original_dtypes=df.dtypes,
@@ -103,11 +97,39 @@ def fit(
         is_fitted=True,
         nf=nf,
         column_weights=col_weights,
-        row_weights=row_w,
-        projected_columns=columns,
+        row_weights=row_weights,
         dummies_col_prop=dummies_col_prop,
     )
 
+    return model
+
+
+def fit_transform(
+    df: pd.DataFrame,
+    nf: Optional[int] = None,
+    col_w: Optional[NDArray[np.float_]] = None,
+) -> Tuple[pd.DataFrame, Model]:
+    """Fit a MCA model on data and return transformed data.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Data to project.
+    nf: int, default: min(df.shape)
+        Number of components to keep.
+    col_w: np.ndarrayn default: np.ones(df.shape[1])
+        Weight assigned to each variable in the projection
+        (more weight = more importance in the axes).
+
+    Returns
+    -------
+    coord: pd.DataFrame
+        The transformed data.
+    model: Model
+        The model for transforming new data.
+    """
+    model = fit(df, nf, col_w)
+    coord = transform(df, model)
     return coord, model
 
 
@@ -207,7 +229,7 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.D_c @ model.V.T
-    coord.columns = model.projected_columns
+    coord.columns = get_projected_column_names(model.nf)
     return coord
 
 

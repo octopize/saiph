@@ -28,8 +28,6 @@ class Model:
     column_weights: NDArray[np.float_]
     # Weights that were applied to each row.
     row_weights: NDArray[np.float_]
-    # Column names once data is projected.
-    projected_columns: List[str]
 
     # Explained variance.
     explained_var: NDArray[np.float_]

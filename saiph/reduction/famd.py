@@ -11,9 +11,9 @@ from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
-    column_names,
     explain_variance,
-    row_weights_uniform,
+    get_projected_column_names,
+    get_uniform_row_weights,
 )
 from saiph.reduction.utils.svd import SVD
 
@@ -22,7 +22,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-) -> Tuple[pd.DataFrame, Model]:
+) -> Model:
     """Fit a FAMD model on data.
 
     Parameters
@@ -37,8 +37,6 @@ def fit(
 
     Returns
     -------
-    coord: pd.DataFrame
-        The transformed data.
     model: Model
         The model for transforming new data.
     """
@@ -59,13 +57,13 @@ def fit(
         df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
     ).columns.to_list()
 
-    row_w = row_weights_uniform(len(df))
+    row_w = get_uniform_row_weights(len(df))
     col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
 
-    df_scale, mean, std, prop, _modalities = center(df, quanti, quali)
+    df_scaled, mean, std, prop, _modalities = center(df, quanti, quali)
 
     # apply the weights
-    Z = ((df_scale * col_weights).T * row_w).T
+    Z = ((df_scaled * col_weights).T * row_w).T
 
     # compute the svd
     _U, s, _V = SVD(Z)
@@ -77,9 +75,6 @@ def fit(
     U = U[:, :nf]
     s = s[:nf]
     V = V[:nf, :]
-    columns = column_names(nf)
-    coord = df_scale @ V.T
-    coord.columns = columns
 
     model = Model(
         original_dtypes=df.dtypes,
@@ -101,9 +96,37 @@ def fit(
         nf=nf,
         column_weights=col_weights,
         row_weights=row_w,
-        projected_columns=columns,
     )
 
+    return model
+
+
+def fit_transform(
+    df: pd.DataFrame,
+    nf: Optional[int] = None,
+    col_w: Optional[NDArray[np.float_]] = None,
+) -> Tuple[pd.DataFrame, Model]:
+    """Fit a FAMD model on data and return transformed data.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Data to project.
+    nf: int, default: min(df.shape)
+        Number of components to keep.
+    col_w: np.ndarrayn default: np.ones(df.shape[1])
+        Weight assigned to each variable in the projection
+        (more weight = more importance in the axes).
+
+    Returns
+    -------
+    coord: pd.DataFrame
+        The transformed data.
+    model: Model
+        The model for transforming new data.
+    """
+    model = fit(df, nf, col_w)
+    coord = transform(df, model)
     return coord, model
 
 
@@ -238,7 +261,7 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.V.T
-    coord.columns = model.projected_columns
+    coord.columns = get_projected_column_names(model.nf)
     return coord
 
 
@@ -316,9 +339,9 @@ def stats(model: Model, original_df: pd.DataFrame) -> Model:
     # compute eta2
     eta2: NDArray[np.float_] = np.array([])
     fi = 0
-    coord = pd.DataFrame(
-        model.U[:, :ncp0] * model.s[:ncp0], columns=model.projected_columns[:ncp0]
-    )
+
+    columns = get_projected_column_names(model.nf)[:ncp0]
+    coord = pd.DataFrame(model.U[:, :ncp0] * model.s[:ncp0], columns=columns)
     mods = []
     # for each qualitative column in the original data set
     for col in model.original_categorical:

@@ -47,11 +47,11 @@ def fit(
 
     # Specify the correct function
     if quali.size == 0:
-        _fit = pca.fit
+        _fit = pca.fit_transform
     elif quanti.size == 0:
-        _fit = mca.fit
+        _fit = mca.fit_transform
     else:
-        _fit = famd.fit
+        _fit = famd.fit_transform
 
     coord, model = _fit(df, _nf, col_w)
 

@@ -5,9 +5,9 @@ from pandas._testing.asserters import assert_series_equal
 from pandas.testing import assert_frame_equal
 
 from saiph.reduction import DUMMIES_PREFIX_SEP
-from saiph.reduction.famd import center, fit, scaler, transform
+from saiph.reduction.famd import center, fit_transform, scaler, transform
 from saiph.reduction.pca import center as center_pca
-from saiph.reduction.pca import fit as fit_pca
+from saiph.reduction.pca import fit_transform as fit_pca
 from saiph.reduction.pca import scaler as scaler_pca
 
 
@@ -20,7 +20,7 @@ def test_fit_mix() -> None:
         }
     )
 
-    result, model = fit(df)
+    result, model = fit_transform(df)
 
     expected_result = pd.DataFrame(
         {
@@ -89,7 +89,7 @@ def test_transform() -> None:
         }
     )
 
-    _, model = fit(df)
+    _, model = fit_transform(df)
 
     df_transformed = transform(df, model)
     df_expected = pd.DataFrame(
@@ -112,7 +112,7 @@ def test_transform_vs_coord() -> None:
         }
     )
 
-    coord, model = fit(df)
+    coord, model = fit_transform(df)
     df_transformed = transform(df, model)
 
     assert_frame_equal(df_transformed, coord)
@@ -126,7 +126,7 @@ def test_fit_zero() -> None:
         }
     )
 
-    result, _ = fit(df)
+    result, _ = fit_transform(df)
 
     expected = pd.DataFrame(
         {
@@ -147,7 +147,7 @@ def test_scaler_pca_famd() -> None:
         }
     )
 
-    _, model = fit(original_df)
+    _, model = fit_transform(original_df)
     df = scaler(model, original_df)
 
     _, model_pca = fit_pca(original_df[model.original_continuous])
@@ -166,7 +166,7 @@ def test_center_pca_famd() -> None:
         }
     )
 
-    _, model = fit(original_df)
+    _, model = fit_transform(original_df)
     continous = model.original_continuous
     categorical = model.original_categorical
     df, mean1, std1, _, _ = center(original_df, quali=categorical, quanti=continous)

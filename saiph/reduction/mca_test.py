@@ -4,7 +4,7 @@ from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
 from saiph.reduction import DUMMIES_PREFIX_SEP
-from saiph.reduction.mca import fit, transform
+from saiph.reduction.mca import fit_transform, transform
 
 
 def test_fit() -> None:
@@ -15,7 +15,7 @@ def test_fit() -> None:
         }
     )
 
-    result, model = fit(df)
+    result, model = fit_transform(df)
 
     expected_result = pd.DataFrame(
         {
@@ -58,7 +58,7 @@ def test_fit_zero() -> None:
         }
     )
 
-    result, model = fit(df)
+    result, model = fit_transform(df)
 
     expected_result = pd.DataFrame(
         {
@@ -101,8 +101,8 @@ def test_fit_zero_same_df() -> None:
         }
     )
 
-    result1, model1 = fit(df)
-    result2, model2 = fit(df_2)
+    result1, model1 = fit_transform(df)
+    result2, model2 = fit_transform(df_2)
 
     assert_frame_equal(result1, result2)
 
@@ -134,7 +134,7 @@ def test_transform_simple() -> None:
             "score": ["aa", "aa"],
         }
     )
-    _, model = fit(df)
+    _, model = fit_transform(df)
 
     df_transformed = transform(df, model)
 
@@ -157,7 +157,7 @@ def test_transform_vs_coord() -> None:
             "score": ["aa", "aa"],
         }
     )
-    coord, model = fit(df)
+    coord, model = fit_transform(df)
     df_transformed = transform(df, model)
 
     assert_frame_equal(coord, df_transformed)

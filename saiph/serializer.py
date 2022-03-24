@@ -1,10 +1,36 @@
 import json
+from typing import Any, Tuple
 
 import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
+
+from saiph.models import Model
 
 
-class ModelEncoder(json.JSONEncoder):
+class AbstractSerializer:
+    def decode(self) -> Tuple[NDArray[np.float_], Model]:
+        pass
+
+    def encode(coords: NDArray[np.float_], model: Model) -> Tuple[Any, Any]:
+        pass
+
+
+class ModelJSONSerializer(AbstractSerializer):
+    def encode(self, coords: NDArray[np.float_], model: Model) -> Tuple[str, str]:
+        encoded_coords = json.dumps(coords, cls=NumpyPandasEncoder)
+        encoded_model = json.dumps(model.__dict__, cls=NumpyPandasEncoder)
+        return encoded_coords, encoded_model
+
+    def decode(
+        self, raw_coords: str, raw_model: str
+    ) -> Tuple[NDArray[np.float_], Model]:
+        coords = json.loads(raw_coords, object_hook=numpy_pandas_json_obj_hook)
+        model_dict = json.loads(raw_model, object_hook=numpy_pandas_json_obj_hook)
+        return coords, Model(**model_dict)
+
+
+class NumpyPandasEncoder(json.JSONEncoder):
 
     VERSION = "1.0"
 
@@ -34,7 +60,7 @@ class ModelEncoder(json.JSONEncoder):
         super().default(obj)
 
 
-def json_model_obj_hook(json_dict):
+def numpy_pandas_json_obj_hook(json_dict):
     """Decode numpy arrays, pandas dataframes, and pandas series, or objects containing them.
 
     :param json_dict: (dict) json encoded model object

@@ -1,5 +1,4 @@
 """Project any dataframe, inverse transform and compute stats."""
-import json
 import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
@@ -9,9 +8,10 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from saiph.encoding import ModelEncoder, json_model_obj_hook
+from saiph.backend import DiskBackend
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP, famd, mca, pca
+from saiph.serializer import ModelJSONSerializer
 
 
 def fit_cached(
@@ -37,28 +37,23 @@ def fit_cached(
 
     is_cached = id and model_filename.exists() and coords_filename.exists()
 
-    # Call the fit() method, save the results to cache and return the outputs
+    cache = DiskBackend(ModelJSONSerializer(), coords_filename, model_filename)
+
     if not is_cached:
         coords, model = fit(df, **kwargs)
 
         if not id:  # We have no ID, we don't cache.
             return coords, model
 
-        with open(model_filename, "w") as file:
-            json.dump(model.__dict__, file, cls=ModelEncoder)
-
-        with open(coords_filename, "w") as file:
-            json.dump(coords, file, cls=ModelEncoder)
+        cache.save(model, coords)
 
         return coords, model
 
     # We just load the results from cache
-    with open(model_filename, "r") as file:
-        model_dict = json.load(file, object_hook=json_model_obj_hook)
-    with open(coords_filename, "r") as file:
-        coords = json.load(file, object_hook=json_model_obj_hook)
+    coords, model = cache.load()
+    print(coords)
 
-    return coords, Model(**model_dict)
+    return coords, model
 
 
 def fit(

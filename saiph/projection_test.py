@@ -378,3 +378,16 @@ def test_get_random_weighted_columns(weights: List[float], expected_index: int):
     df = pd.DataFrame(data=[weights])
     result = get_random_weighted_columns(df, np.random.default_rng(1))
     assert result.values[0] == expected_index
+
+
+# wider than len df
+def test_inverse_transform_raises_value_error_when_wider_than_df() -> None:
+    wider_df = pd.DataFrame(
+        {
+            "variable_1": ["a", "b", "c"],
+            "variable_2": ["ZZ", "ZZ", "WW"],
+        }
+    )
+    coord, model = fit(wider_df)
+    with pytest.raises(ValueError, match=r"n_dimensions"):
+        inverse_transform(coord, model)

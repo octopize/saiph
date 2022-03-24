@@ -97,11 +97,11 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
     )
 
     if not has_some_quali:
-        model.cos2 = model.correlations ** 2
+        model.cos2 = model.correlations**2
         model.contributions = model.cos2.div(model.cos2.sum(axis=0), axis=1).mul(100)
     elif not has_some_quanti:
         model = mca.stats(model, df)
-        model.cos2 = model.correlations ** 2
+        model.cos2 = model.correlations**2
 
         model.contributions = pd.DataFrame(
             model.contributions,
@@ -189,16 +189,20 @@ def _variable_correlation(
 def inverse_transform(
     coord: pd.DataFrame,
     model: Model,
-    approximate: bool = False,
-    deterministic: bool = True,
+    *,
+    use_approximate_inverse: bool = False,
+    use_max_modalities: bool = True,
 ) -> pd.DataFrame:
     """Return original format dataframe from coordinates.
 
-    Args:
+    Arguments:
         coord (pd.DataFrame): coord of individuals to reverse transform
         model (Model): model used for projection
-        approximate (boolean): True for inverse transform with more dimensions than individuals
-        deterministic (boolean): True to set quali modality to max value
+        use_approximate_inverse (boolean): matrix is not invertible when n_individuals < n_dimensions
+            an approximation with bias can be done if necessary
+        use_max_modalities (boolean): for each variable, it assign to the individual
+            the value of the highest modality (True)
+            or a random modality weighted by their proportion (False)
 
     Returns:
         pd.DataFrame: original shape, encoding and structure
@@ -207,21 +211,21 @@ def inverse_transform(
     n_dimensions = len(model.dummy_categorical) + len(model.original_continuous)
     n_records = len(coord)
 
-    if not approximate and n_records < n_dimensions:
+    if not use_approximate_inverse and n_records < n_dimensions:
         raise ValueError(
-            "Inverse transform may lead to bias. ",
-            f"n_dimensions ({n_dimensions}) is greater than the n_individuals ({n_records}). "
-            "you can reduce number of dimensions or approximate the inverse transform",
+            f"n_dimensions ({n_dimensions}) is greater than n_records ({n_records})."           
+            "A matrix approximation is needed but will intriduce bias "
+            "You can reduce number of dimensions or set approximate=True."
         )
 
     # Get back scaled_values from coord with inverse matrix operation
-    # If n_dimensions > n_records, There will be an approximation of the inverse of V.T
-    scaled_values = pd.DataFrame(np.array(coord @ np.linalg.pinv(model.V.T)))
+    # If n_records < n_dimensions, There will be an approximation of the inverse of V.T
+    scaled_values = pd.DataFrame(coord @ np.linalg.pinv(model.V.T))
 
     # get number of continuous variables
     nb_quanti = len(model.original_continuous)
 
-    # continuous variables are set first in the dummy df
+    # separate quanti from quali
     scaled_values_quanti = scaled_values.iloc[:, :nb_quanti]
     scaled_values_quanti.columns = model.original_continuous
 
@@ -233,19 +237,22 @@ def inverse_transform(
     if model.type == "famd":
         descaled_values_quanti = (scaled_values_quanti * model.std) + model.mean
         descaled_values_quali = (scaled_values_quali * np.sqrt(model.prop)) + model.prop
-        undummy = undummify(descaled_values_quali, model, deterministic=deterministic)
-        inverse = pd.concat([descaled_values_quanti, undummy], axis=1).round(1)
+        undummy = undummify(
+            descaled_values_quali, model, use_max_modalities=use_max_modalities
+        )
+        inverse = pd.concat([descaled_values_quanti, undummy], axis=1).round(12)
 
     # PCA
     elif model.type == "pca":
         descaled_values_quanti = (scaled_values_quanti * model.std) + model.mean
-        inverse = descaled_values_quanti.round(1)
+        inverse = descaled_values_quanti.round(12)
 
     # MCA
     else:
         descaled_values_quali = scaled_values_quali * scaled_values_quali.sum().sum()
-        undummy = undummify(descaled_values_quali, model, deterministic=deterministic)
-        inverse = undummy
+        inverse = undummify(
+            descaled_values_quali, model, use_max_modalities=use_max_modalities
+        )
 
     # Cast columns to same type as input
     for name, dtype in model.original_dtypes.iteritems():
@@ -258,16 +265,17 @@ def inverse_transform(
 def undummify(
     dummy_df: pd.DataFrame,
     model: Model,
-    deterministic: bool = True,
+    *,
+    use_max_modalities: bool = True,
     seed: Optional[int] = None,
 ) -> pd.DataFrame:
     """Return undummified dataframe from the dummy.
 
-    Args:
+    Arguments:
         dummy_df (pd.DataFrame): dummy df of categorical variable
         model (Model): model used for projection
-        deterministic (boolean): True to set quali modality to max value
-        seed (int): seed to fix randomness if deterministic = False
+        use_max_modalities (boolean): True to set quali modality to max value
+        seed (int): seed to fix randomness if use_max_modalities = False
 
     Returns:
         pd.DataFrame: undummify df of categorical variable
@@ -277,31 +285,22 @@ def undummify(
     )
     inverse_quali = pd.DataFrame()
     random_gen = np.random.default_rng(seed)
+    def get_suffix(string: str) -> str:
+        return string.split(DUMMIES_PREFIX_SEP)[1]
 
     for original_column, dummy_columns in dummies_mapping.items():
         # Handle a single category with all the possible modalities
         single_category = dummy_df[dummy_columns]
 
-        # if deterministic set max value per row to 1 and 0 for other
-        if deterministic:
-            max = np.zeros(single_category.shape)
-            max[
-                np.arange(single_category.shape[0]),
-                np.argmax(np.array(single_category), axis=1),
-            ] = 1
-            max = pd.DataFrame(max)
-            max.columns = single_category.columns
-            single_category = max
+        # if use_max_modalities set max value per row to 1 and 0 for other
+        if use_max_modalities:
+            chosen_modalities = single_category.idxmax(axis='columns')
+        else:
+            chosen_modalities = get_random_weighted_columns(single_category, random_gen)
 
-        chosen_modalities = get_random_weighted_columns(single_category, random_gen)
         inverse_quali[original_column] = list(map(get_suffix, chosen_modalities))
 
     return inverse_quali
-
-
-def get_suffix(string: str) -> str:
-    return string.split(DUMMIES_PREFIX_SEP)[1]
-
 
 def get_random_weighted_columns(
     df: pd.DataFrame, random_gen: np.random.Generator

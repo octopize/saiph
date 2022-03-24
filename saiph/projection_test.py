@@ -387,7 +387,7 @@ def test_get_random_weighted_columns(weights: List[float], expected_index: int):
 
 
 # wider than len df
-def test_inverse_transform_raises_value_error() -> None:
+def test_inverse_transform_raises_value_error_when_wider_than_df() -> None:
     wider_df = pd.DataFrame(
         {
             "variable_1": ["a", "b", "c"],
@@ -395,5 +395,5 @@ def test_inverse_transform_raises_value_error() -> None:
         }
     )
     coord, model = fit(wider_df)
-    with pytest.raises(ValueError, match="Inverse transform may lead to bias. "):
+    with pytest.raises(ValueError, match=r"n_dimensions"):
         inverse_transform(coord, model)

@@ -44,7 +44,7 @@ def test_transform_then_inverse_MCA_type(quali_df: pd.DataFrame) -> None:
 
 def test_transform_then_inverse_FAMD_weighted(mixed_df: pd.DataFrame) -> None:
     df = mixed_df
-    transformed, model = fit_transform(df, col_w=np.array([2, 1, 3, 2]))
+    transformed, model = fit_transform(df, col_w=np.array([2, 3]))
     un_transformed = inverse_transform(transformed, model)
 
     assert_frame_equal(un_transformed, df)
@@ -290,16 +290,14 @@ def test_var_ratio(df_input, expected_var_ratio) -> None:
 
 
 def test_get_dummies_mapping(quali_df: pd.DataFrame) -> None:
-    original_columns = ["tool", "score"]
-    dummy_columns = pd.get_dummies(
-        quali_df[original_columns], prefix_sep=DUMMIES_PREFIX_SEP
-    ).columns
-    result = get_dummies_mapping(original_columns, dummy_columns)
+    dummy_columns = pd.get_dummies(quali_df, prefix_sep=DUMMIES_PREFIX_SEP).columns
+
+    result = get_dummies_mapping(quali_df.columns, dummy_columns)
 
     sep = DUMMIES_PREFIX_SEP
     expected = {
-        "tool": {f"tool{sep}hammer", f"tool{sep}toaster"},
-        "score": {f"score{sep}aa", f"score{sep}bb", f"score{sep}ca"},
+        "tool": {f"tool{sep}hammer", f"tool{sep}wrench"},
+        "fruit": {f"fruit{sep}apple", f"fruit{sep}orange"},
     }
     assert result == expected
 

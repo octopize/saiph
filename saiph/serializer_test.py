@@ -28,7 +28,7 @@ def test_encode_decode_single_items(item: Any) -> None:
 
 def test_encode_decode_model(mixed_df: pd.DataFrame) -> None:
     """Verify that the actual fitted model can be encoded and decoded."""
-    model = fit(mixed_df, col_w=np.array([2, 1, 3, 2]))
+    model = fit(mixed_df)
 
     encoded = json.dumps(model.__dict__, cls=NumpyPandasEncoder)
     decoded_dict = json.loads(encoded, object_hook=numpy_pandas_json_obj_hook)

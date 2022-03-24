@@ -1,59 +1,12 @@
 """Project any dataframe, inverse transform and compute stats."""
-import tempfile
-from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Union
-from uuid import UUID
+from typing import Dict, List, Optional, Set, Union
 
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from saiph.backend import DiskBackend
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP, famd, mca, pca
-from saiph.serializer import ModelJSONSerializer
-
-
-def fit_cached(
-    df: pd.DataFrame, id: Optional[UUID] = None, **kwargs
-) -> Tuple[NDArray[np.float_], Model]:
-    """Fit a model to the data. Cached version of fit().
-
-    Parameters
-    ----------
-    df: Data to project
-    id : unique id to save to/retrieve from cache. If None, we do not cache.
-    kwargs: keyword arguments to fit()
-
-    Returns
-    -------
-    coord: pd.DataFrame
-        The transformed data.
-    model: Model
-        The model for transforming new data.
-    """
-    model_filename = Path(tempfile.gettempdir()) / f"model_{id}.cache"
-    coords_filename = Path(tempfile.gettempdir()) / f"coords_{id}.cache"
-
-    is_cached = id and model_filename.exists() and coords_filename.exists()
-
-    cache = DiskBackend(ModelJSONSerializer(), coords_filename, model_filename)
-
-    if not is_cached:
-        coords, model = fit(df, **kwargs)
-
-        if not id:  # We have no ID, we don't cache.
-            return coords, model
-
-        cache.save(model, coords)
-
-        return coords, model
-
-    # We just load the results from cache
-    coords, model = cache.load()
-    print(coords)
-
-    return coords, model
 
 
 def fit(

@@ -18,15 +18,15 @@ class AbstractSerializer:
 
 class ModelJSONSerializer(AbstractSerializer):
 
-    #! Make sure to update the version if you change NumpyPandasEncoder or ModelJSONSerializer
+    # !Make sure to update the version if you change NumpyPandasEncoder or ModelJSONSerializer
     VERSION = "1.0"
 
     def encode(self, coords: NDArray[np.float_], model: Model) -> Tuple[str, str]:
-        
-        coords_encoding = {"data" : coords, "__version__" : self.VERSION}
+
+        coords_encoding = {"data": coords, "__version__": self.VERSION}
         encoded_coords = json.dumps(coords_encoding, cls=NumpyPandasEncoder)
 
-        encoding = {"data" : model.__dict__, "__version__" : self.VERSION}
+        encoding = {"data": model.__dict__, "__version__": self.VERSION}
         encoded_model = json.dumps(encoding, cls=NumpyPandasEncoder)
         return encoded_coords, encoded_model
 
@@ -39,7 +39,6 @@ class ModelJSONSerializer(AbstractSerializer):
 
 
 class NumpyPandasEncoder(json.JSONEncoder):
-
     def default(self, obj):
         """Encode numpy arrays, pandas dataframes, and pandas series, or objects containing them.
 
@@ -47,11 +46,7 @@ class NumpyPandasEncoder(json.JSONEncoder):
         """
         if isinstance(obj, np.ndarray):
             data = obj.tolist()
-            return dict(
-                __ndarray__=data,
-                dtype=str(obj.dtype),
-                shape=obj.shape
-            )
+            return dict(__ndarray__=data, dtype=str(obj.dtype), shape=obj.shape)
 
         if isinstance(obj, pd.Series):
             data = obj.to_json(orient="index", default_handler=str)

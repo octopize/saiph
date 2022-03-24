@@ -6,8 +6,14 @@ import pytest
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
-from saiph import fit_transform, inverse_transform, stats, transform
-from saiph.projection import get_dummies_mapping, get_random_weighted_columns
+from saiph.projection import (
+    fit_transform,
+    get_dummies_mapping,
+    get_random_weighted_columns,
+    inverse_transform,
+    stats,
+    transform,
+)
 from saiph.reduction import DUMMIES_PREFIX_SEP
 
 

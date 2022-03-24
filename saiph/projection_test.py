@@ -6,7 +6,7 @@ import pytest
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
-from saiph import fit, inverse_transform, stats, transform
+from saiph import fit_transform, inverse_transform, stats, transform
 from saiph.projection import get_dummies_mapping, get_random_weighted_columns
 from saiph.reduction import DUMMIES_PREFIX_SEP
 
@@ -65,14 +65,14 @@ def quali_df() -> pd.DataFrame:
 
 
 def test_transform_then_inverse_FAMD(iris_df: pd.DataFrame) -> None:
-    transformed, model = fit(iris_df, nf="all")
+    transformed, model = fit_transform(iris_df, nf="all")
     un_transformed = inverse_transform(transformed, model)
 
     assert_frame_equal(un_transformed, iris_df)
 
 
 def test_transform_then_inverse_PCA(iris_quanti_df: pd.DataFrame) -> None:
-    transformed, model = fit(iris_quanti_df, nf="all")
+    transformed, model = fit_transform(iris_quanti_df, nf="all")
     un_transformed = inverse_transform(transformed, model)
     assert_frame_equal(un_transformed, iris_quanti_df)
 
@@ -80,7 +80,7 @@ def test_transform_then_inverse_PCA(iris_quanti_df: pd.DataFrame) -> None:
 def test_transform_then_inverse_MCA(quali_df: pd.DataFrame) -> None:
 
     df = quali_df
-    transformed, model = fit(df)
+    transformed, model = fit_transform(df)
     un_transformed = inverse_transform(transformed, model)
     assert_frame_equal(un_transformed, df)
 
@@ -89,7 +89,7 @@ def test_transform_then_inverse_MCA_type(quali_df: pd.DataFrame) -> None:
     df = quali_df
 
     df = df.astype("object")
-    transformed, model = fit(df)
+    transformed, model = fit_transform(df)
     un_transformed = inverse_transform(transformed, model)
 
     assert_frame_equal(un_transformed, df)
@@ -105,7 +105,7 @@ def test_transform_then_inverse_FAMD_weighted() -> None:
         }
     )
 
-    transformed, model = fit(df, col_w=np.array([2, 1, 3, 2]))
+    transformed, model = fit_transform(df, col_w=np.array([2, 1, 3, 2]))
     un_transformed = inverse_transform(transformed, model)
 
     assert_frame_equal(un_transformed, df)
@@ -113,7 +113,7 @@ def test_transform_then_inverse_FAMD_weighted() -> None:
 
 def test_transform_then_inverse_PCA_weighted(quanti_df: pd.DataFrame) -> None:
     df = quanti_df
-    coords, model = fit(df, col_w=np.array([2, 1, 3]))
+    coords, model = fit_transform(df, col_w=np.array([2, 1, 3]))
     un_transformed = inverse_transform(coords, model)
 
     assert_frame_equal(un_transformed, df)
@@ -140,7 +140,7 @@ def test_transform_then_inverse_MCA_weighted() -> None:
         }
     )
 
-    transformed, model = fit(df, col_w=np.array([2, 1, 3, 2]))
+    transformed, model = fit_transform(df, col_w=np.array([2, 1, 3, 2]))
     un_transformed = inverse_transform(transformed, model)
 
     assert_frame_equal(un_transformed, df)
@@ -148,13 +148,13 @@ def test_transform_then_inverse_MCA_weighted() -> None:
 
 def test_coords_vs_transform_with_multiple_nf(iris_df: pd.DataFrame) -> None:
     with pytest.raises(ValueError):
-        fit(iris_df, nf=10000)
+        fit_transform(iris_df, nf=10000)
 
     with pytest.raises(ValueError):
-        fit(iris_df, nf=-1)
+        fit_transform(iris_df, nf=-1)
 
     for n in range(7):
-        coord, model = fit(iris_df, nf=n)
+        coord, model = fit_transform(iris_df, nf=n)
         transformed = transform(iris_df, model)
         assert_frame_equal(coord, transformed)
 
@@ -233,7 +233,7 @@ df_mca = pd.DataFrame(
     "df_input,expected_type", [(df_pca, "pca"), (df_mca, "mca"), (df_famd, "famd")]
 )
 def test_eval(df_input, expected_type):
-    _, model = fit(df_input)
+    _, model = fit_transform(df_input)
     assert model.type == expected_type
 
 
@@ -270,7 +270,7 @@ expected_famd_contrib = [
     ],
 )
 def test_var_contrib(df_input, expected_contrib):
-    _, model = fit(df_input)
+    _, model = fit_transform(df_input)
     stats(model, df_input)
     assert_allclose(model.contributions["Dim. 1"], expected_contrib, atol=1e-07)
 
@@ -308,7 +308,7 @@ expected_famd_cor = [
     ],
 )
 def test_var_cor(df_input, expected_cor):
-    _, model = fit(df_input)
+    _, model = fit_transform(df_input)
     stats(model, df_input)
     assert_allclose(model.correlations["Dim. 1"], expected_cor, atol=1e-07)
 
@@ -345,7 +345,7 @@ expected_famd_explained_var_ratio = [
     ],
 )
 def test_var_ratio(df_input, expected_var_ratio) -> None:
-    _, model = fit(df_input)
+    _, model = fit_transform(df_input)
     stats(model, df_input)
     assert_allclose(model.explained_var_ratio[0:5], expected_var_ratio, atol=1e-07)
 

@@ -13,7 +13,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-) -> Tuple[pd.DataFrame, Model]:
+) -> Model:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
     Datetimes must be stored as numbers of seconds since epoch.
@@ -30,8 +30,6 @@ def fit(
 
     Returns
     -------
-    coord: pd.DataFrame
-        The transformed data.
     model: Model
         The model for transforming new data.
     """
@@ -47,19 +45,48 @@ def fit(
 
     # Specify the correct function
     if quali.size == 0:
-        _fit = pca.fit_transform
+        _fit = pca.fit
     elif quanti.size == 0:
-        _fit = mca.fit_transform
+        _fit = mca.fit
     else:
-        _fit = famd.fit_transform
+        _fit = famd.fit
 
-    coord, model = _fit(df, _nf, col_w)
+    model = _fit(df, _nf, col_w)
 
     if quanti.size == 0:
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
     else:
         model.variable_coord = pd.DataFrame(model.V.T)
 
+    return model
+
+
+def fit_transform(
+    df: pd.DataFrame,
+    nf: Optional[Union[int, str]] = None,
+    col_w: Optional[NDArray[np.float_]] = None,
+) -> Model:
+    """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
+
+    Datetimes must be stored as numbers of seconds since epoch.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Data to project.
+    nf: int|str, default: 'all'
+        Number of components to keep.
+    col_w: np.ndarrayn default: np.ones(df.shape[1])
+        Weight assigned to each variable in the projection
+        (more weight = more importance in the axes).
+
+    Returns
+    -------
+    model: Model
+        The model for transforming new data.
+    """
+    model = fit(df, nf, col_w)
+    coord = transform(df, model)
     return coord, model
 
 
@@ -142,12 +169,12 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
         )
 
     if len(model.original_categorical) == 0:
-        coord = pca.transform(df, model)
-    elif len(model.original_continuous) == 0:
-        coord = mca.transform(df, model)
-    else:
-        coord = famd.transform(df, model)
-    return coord
+        return pca.transform(df, model)
+
+    if len(model.original_continuous) == 0:
+        return mca.transform(df, model)
+
+    return famd.transform(df, model)
 
 
 def _variable_correlation(

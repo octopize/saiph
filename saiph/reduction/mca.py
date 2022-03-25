@@ -77,7 +77,7 @@ def fit(
 
     model = Model(
         original_dtypes=df.dtypes,
-        original_categorical=df.columns,
+        original_categorical=df.columns.to_list(),
         original_continuous=[],
         dummy_categorical=df_dummies.columns.to_list(),
         U=U,

@@ -1,9 +1,8 @@
 import json
-from typing import Tuple
+from typing import Union
 
 import numpy as np
 import pandas as pd
-from numpy.typing import NDArray
 
 from saiph.models import Model
 
@@ -13,28 +12,24 @@ class ModelJSONSerializer:
     # !Make sure to update the version if you change NumpyPandasEncoder or ModelJSONSerializer
     VERSION = "1.0"
 
-    def encode(self, coords: NDArray[np.float_], model: Model) -> Tuple[str, str]:
-
-        coords_encoding = {"data": coords, "__version__": self.VERSION}
-        encoded_coords = json.dumps(coords_encoding, cls=NumpyPandasEncoder)
-
+    @classmethod
+    def dumps(self, model: Model) -> str:
         encoding = {"data": model.__dict__, "__version__": self.VERSION}
         encoded_model = json.dumps(encoding, cls=NumpyPandasEncoder)
-        return encoded_coords, encoded_model
+        return encoded_model
 
-    def decode(
-        self, raw_coords: str, raw_model: str
-    ) -> Tuple[NDArray[np.float_], Model]:
-        coords = json.loads(raw_coords, object_hook=numpy_pandas_json_obj_hook)
+    @classmethod
+    def loads(self, raw_model: Union[str, bytes]) -> Model:
         model_dict = json.loads(raw_model, object_hook=numpy_pandas_json_obj_hook)
-        return coords["data"], Model(**model_dict["data"])
+        return Model(**model_dict["data"])
 
 
 class NumpyPandasEncoder(json.JSONEncoder):
     def default(self, obj):
         """Encode numpy arrays, pandas dataframes, and pandas series, or objects containing them.
 
-        :param obj: object to encode
+        Parameters:
+            obj: object to encode
         """
         if isinstance(obj, np.ndarray):
             data = obj.tolist()
@@ -55,7 +50,8 @@ class NumpyPandasEncoder(json.JSONEncoder):
 def numpy_pandas_json_obj_hook(json_dict):
     """Decode numpy arrays, pandas dataframes, and pandas series, or objects containing them.
 
-    :param json_dict: (dict) json encoded model object
+    Parameters:
+        json_dict: json encoded object
     """
     # Numpy arrays
     if isinstance(json_dict, dict) and "__ndarray__" in json_dict:

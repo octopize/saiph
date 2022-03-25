@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from saiph.conftest import check_equality, check_model_equality
-from saiph.projection import fit_transform
+from saiph.projection import fit
 from saiph.serializer import (
     ModelJSONSerializer,
     NumpyPandasEncoder,
@@ -31,11 +31,8 @@ def test_encode_decode_single_items(item: Any) -> None:
 
 def test_encode_decode_model(mixed_df: pd.DataFrame):
     """Verify that we can encode and decode a model."""
-    expected_coords, expected_model = fit_transform(mixed_df)
-    raw_coords, raw_model = ModelJSONSerializer().encode(
-        expected_coords, expected_model
-    )
-    decoded_coords, decoded_model = ModelJSONSerializer().decode(raw_coords, raw_model)
+    expected_model = fit(mixed_df)
+    raw_model = ModelJSONSerializer.dumps(expected_model)
+    decoded_model = ModelJSONSerializer.loads(raw_model)
 
     check_model_equality(decoded_model, expected_model)
-    check_equality(decoded_coords, expected_coords)

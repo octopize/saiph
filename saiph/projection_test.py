@@ -302,8 +302,8 @@ def test_get_dummies_mapping(quali_df: pd.DataFrame) -> None:
 
     sep = DUMMIES_PREFIX_SEP
     expected = {
-        "tool": {f"tool{sep}hammer", f"tool{sep}wrench"},
-        "fruit": {f"fruit{sep}apple", f"fruit{sep}orange"},
+        "tool": [f"tool{sep}hammer", f"tool{sep}wrench"],
+        "fruit": [f"fruit{sep}apple", f"fruit{sep}orange"],
     }
     assert result == expected
 

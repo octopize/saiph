@@ -346,7 +346,7 @@ def get_dummies_mapping(
 ) -> Dict[str, Set[str]]:
     """Get mapping between original column and all dummy columns."""
     return {
-        col: set(
+        col: list(
             filter(lambda c: c.startswith(f"{col}{DUMMIES_PREFIX_SEP}"), dummy_columns)
         )
         for col in columns

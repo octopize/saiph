@@ -10,10 +10,10 @@ from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
-    column_names,
     diag,
     explain_variance,
-    row_weights_uniform,
+    get_projected_column_names,
+    get_uniform_row_weights,
 )
 from saiph.reduction.utils.svd import SVD
 
@@ -22,25 +22,17 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-) -> Tuple[pd.DataFrame, Model]:
+) -> Model:
     """Fit a MCA model on data.
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-        Data to project.
-    nf: int, default: min(df.shape)
-        Number of components to keep.
-    col_w: np.ndarrayn default: np.ones(df.shape[1])
-        Weight assigned to each variable in the projection
-        (more weight = more importance in the axes).
+    Parameters:
+        df: Data to project.
+        nf: Number of components to keep. default: min(df.shape)
+        col_w: Weight assigned to each variable in the projection
+            (more weight = more importance in the axes). default: np.ones(df.shape[1])
 
-    Returns
-    -------
-    coord: pd.DataFrame
-        The transformed data.
-    model: Model
-        The model for transforming new data.
+    Returns:
+        model: The model for transforming new data.
     """
     nf = nf or min(df.shape)
     if col_w is not None:
@@ -53,7 +45,7 @@ def fit(
     fit_check_params(nf, _col_weights, df.shape[1])
 
     # initiate row and columns weights
-    row_w = row_weights_uniform(len(df))
+    row_weights = get_uniform_row_weights(len(df))
 
     modality_numbers = []
     for column in df.columns:
@@ -74,7 +66,7 @@ def fit(
     dummies_col_prop = len(df_dummies) / df_dummies.sum(axis=0)
 
     # apply the weights and compute the svd
-    Z = ((T * col_weights).T * row_w).T
+    Z = ((T * col_weights).T * row_weights).T
     U, s, V = SVD(Z)
 
     explained_var, explained_var_ratio = explain_variance(s, df, nf)
@@ -82,10 +74,6 @@ def fit(
     U = U[:, :nf]
     s = s[:nf]
     V = V[:nf, :]
-
-    columns = column_names(nf)[: min(df_scale.shape)]
-    coord = df_scale @ D_c @ V.T
-    coord.columns = columns
 
     model = Model(
         original_dtypes=df.dtypes,
@@ -103,11 +91,32 @@ def fit(
         is_fitted=True,
         nf=nf,
         column_weights=col_weights,
-        row_weights=row_w,
-        projected_columns=columns,
+        row_weights=row_weights,
         dummies_col_prop=dummies_col_prop,
     )
 
+    return model
+
+
+def fit_transform(
+    df: pd.DataFrame,
+    nf: Optional[int] = None,
+    col_w: Optional[NDArray[np.float_]] = None,
+) -> Tuple[pd.DataFrame, Model]:
+    """Fit a MCA model on data and return transformed data.
+
+    Parameters:
+        df: Data to project.
+        nf: Number of components to keep. default: min(df.shape)
+        col_w: Weight assigned to each variable in the projection
+            (more weight = more importance in the axes). default: np.ones(df.shape[1])
+
+    Returns:
+        model: The model for transforming new data.
+        coord: The transformed data.
+    """
+    model = fit(df, nf, col_w)
+    coord = transform(df, model)
     return coord, model
 
 
@@ -120,21 +129,14 @@ def center(
 
     **NB**: saiph.reduction.mca.scaler is better suited when a Model is already fitted.
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-        DataFrame to center.
+    Parameters:
+        df: DataFrame to center.
 
-    Returns
-    -------
-    df_centered: pd.DataFrame
-        The centered DataFrame.
-    _modalities: np.ndarray
-        Modalities for the MCA
-    r: np.ndarray
-        Sums line by line
-    c: np.ndarray
-        Sums column by column
+    Returns:
+        df_centered: The centered DataFrame.
+        _modalities: Modalities for the MCA
+        row_sum: Sums line by line
+        column_sum: Sums column by column
     """
     df_scale = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
     _modalities = df_scale.columns.values
@@ -142,25 +144,20 @@ def center(
     # scale data
     df_scale /= df_scale.sum().sum()
 
-    c = np.sum(df_scale, axis=0)
-    r = np.sum(df_scale, axis=1)
-    return df_scale, _modalities, r, c
+    row_sum = np.sum(df_scale, axis=1)
+    column_sum = np.sum(df_scale, axis=0)
+    return df_scale, _modalities, row_sum, column_sum
 
 
 def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     """Scale data using modalities from model.
 
-    Parameters
-    ----------
-    model: Model
-        Model computed by fit.
-    df: pd.DataFrame
-        DataFrame to scale.
+    Parameters:
+        model: Model computed by fit.
+        df: DataFrame to scale.
 
-    Returns
-    -------
-    df_scaled: pd.DataFrame
-        The scaled DataFrame.
+    Returns:
+        df_scaled: The scaled DataFrame.
     """
     df_scaled = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
     if model._modalities is not None:
@@ -193,38 +190,28 @@ def _diag_compute(
 def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-        DataFrame to transform.
-    model: Model
-        Model computed by fit.
+    Parameters:
+        df: DataFrame to transform.
+        model: Model computed by fit.
 
-    Returns
-    -------
-    coord: pd.DataFrame
-        Coordinates of the dataframe in the fitted space.
+    Returns:
+        coord: Coordinates of the dataframe in the fitted space.
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.D_c @ model.V.T
-    coord.columns = model.projected_columns
+    coord.columns = get_projected_column_names(model.nf)
     return coord
 
 
 def stats(model: Model, df: pd.DataFrame) -> Model:
     """Compute the contributions.
 
-    Parameters
-    ----------
-    model: Model
-        Model computed by fit.
-    df : pd.Dataframe
-        original dataframe
+    Parameters:
+        model: Model computed by fit.
+        df : original dataframe
 
-    Returns
-    -------
-    model: Model
-        model populated with contriubtion.
+    Returns:
+        model: model populated with contriubtion.
     """
     V = np.dot(model.D_c, model.V.T)  # type: ignore
     df = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)

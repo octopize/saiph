@@ -11,9 +11,9 @@ from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
-    column_names,
     explain_variance,
-    row_weights_uniform,
+    get_projected_column_names,
+    get_uniform_row_weights,
 )
 from saiph.reduction.utils.svd import SVD
 
@@ -22,25 +22,17 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-) -> Tuple[pd.DataFrame, Model]:
+) -> Model:
     """Fit a FAMD model on data.
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-        Data to project.
-    nf: int, default: min(df.shape)
-        Number of components to keep.
-    col_w: np.ndarrayn default: np.ones(df.shape[1])
-        Weight assigned to each variable in the projection
-        (more weight = more importance in the axes).
+    Parameters:
+        df: Data to project.
+        nf: Number of components to keep. default: min(df.shape)
+        col_w: Weight assigned to each variable in the projection
+            (more weight = more importance in the axes). default: np.ones(df.shape[1])
 
-    Returns
-    -------
-    coord: pd.DataFrame
-        The transformed data.
-    model: Model
-        The model for transforming new data.
+    Returns:
+        model: The model for transforming new data.
     """
     nf = nf or min(df.shape)
     if col_w is not None:
@@ -59,13 +51,13 @@ def fit(
         df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
     ).columns.to_list()
 
-    row_w = row_weights_uniform(len(df))
+    row_w = get_uniform_row_weights(len(df))
     col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
 
-    df_scale, mean, std, prop, _modalities = center(df, quanti, quali)
+    df_scaled, mean, std, prop, _modalities = center(df, quanti, quali)
 
     # apply the weights
-    Z = ((df_scale * col_weights).T * row_w).T
+    Z = ((df_scaled * col_weights).T * row_w).T
 
     # compute the svd
     _U, s, _V = SVD(Z)
@@ -77,9 +69,6 @@ def fit(
     U = U[:, :nf]
     s = s[:nf]
     V = V[:nf, :]
-    columns = column_names(nf)
-    coord = df_scale @ V.T
-    coord.columns = columns
 
     model = Model(
         original_dtypes=df.dtypes,
@@ -101,9 +90,30 @@ def fit(
         nf=nf,
         column_weights=col_weights,
         row_weights=row_w,
-        projected_columns=columns,
     )
 
+    return model
+
+
+def fit_transform(
+    df: pd.DataFrame,
+    nf: Optional[int] = None,
+    col_w: Optional[NDArray[np.float_]] = None,
+) -> Tuple[pd.DataFrame, Model]:
+    """Fit a FAMD model on data and return transformed data.
+
+    Parameters:
+        df: Data to project.
+        nf: Number of components to keep. default: min(df.shape)
+        col_w: Weight assigned to each variable in the projection
+            (more weight = more importance in the axes). default: np.ones(df.shape[1])
+
+    Returns:
+        coord: The transformed data.
+        model: The model for transforming new data.
+    """
+    model = fit(df, nf, col_w)
+    coord = transform(df, model)
     return coord, model
 
 
@@ -144,27 +154,17 @@ def center(
 
     **NB**: saiph.reduction.famd.scaler is better suited when a Model is already fitted.
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-        DataFrame to center.
-    quanti: np.ndarray
-        Indexes of continous variables.
-    quali: np.ndarray
-        Indexes of categorical variables.
+    Parameters:
+        df: DataFrame to center.
+        quanti: Indices of continous variables.
+        quali: Indices of categorical variables.
 
-    Returns
-    -------
-    df_scale: pd.DataFrame
-        The scaled DataFrame.
-    mean: pd.Series
-        Mean of the input dataframe.
-    std: pd.Series
-        Standard deviation of the input dataframe. Returns nan as std if no std was asked.
-    prop: pd.Series
-        Proportion of each categorical.
-    _modalities: np.ndarray
-        Modalities for the MCA.
+    Returns:
+        df_scale: The scaled DataFrame.
+        mean: Mean of the input dataframe.
+        std: Standard deviation of the input dataframe.
+        prop: Proportion of each categorical.
+        _modalities: Modalities for the MCA.
     """
     # Scale the continuous data
     df_quanti = df[quanti]
@@ -191,17 +191,12 @@ def center(
 def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     """Scale data using mean, std, modalities and proportions of each categorical from model.
 
-    Parameters
-    ----------
-    model: Model
-        Model computed by fit.
-    df: pd.DataFrame
-        DataFrame to scale.
+    Parameters:
+        model: Model computed by fit.
+        df: DataFrame to scale.
 
-    Returns
-    -------
-    df_scaled: pd.DataFrame
-        The scaled DataFrame.
+    Returns:
+        df_scaled: The scaled DataFrame.
     """
     df_quanti = df[model.original_continuous]
     df_quanti = (df_quanti - model.mean) / model.std
@@ -224,36 +219,27 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
 def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-        DataFrame to transform.
-    model: Model
-        Model computed by fit.
+    Parameters:
+        df: DataFrame to transform.
+        model: Model computed by fit.
 
-    Returns
-    -------
-    coord: pd.DataFrame
-        Coordinates of the dataframe in the fitted space.
+    Returns:
+        coord: Coordinates of the dataframe in the fitted space.
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.V.T
-    coord.columns = model.projected_columns
+    coord.columns = get_projected_column_names(model.nf)
     return coord
 
 
 def stats(model: Model, original_df: pd.DataFrame) -> Model:
     """Compute contributions and cos2.
 
-    Parameters
-    ----------
-    model: Model
-        Model computed by fit.
+    Parameters:
+        model: Model computed by fit.
 
-    Returns
-    -------
-    model: Model
-        model populated with contriubtion ans cos2.
+    Returns:
+        model: model populated with contriubtion and cos2.
     """
     if not model.is_fitted:
         raise ValueError(
@@ -316,9 +302,9 @@ def stats(model: Model, original_df: pd.DataFrame) -> Model:
     # compute eta2
     eta2: NDArray[np.float_] = np.array([])
     fi = 0
-    coord = pd.DataFrame(
-        model.U[:, :ncp0] * model.s[:ncp0], columns=model.projected_columns[:ncp0]
-    )
+
+    columns = get_projected_column_names(model.nf)[:ncp0]
+    coord = pd.DataFrame(model.U[:, :ncp0] * model.s[:ncp0], columns=columns)
     mods = []
     # for each qualitative column in the original data set
     for col in model.original_categorical:

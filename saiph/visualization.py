@@ -21,16 +21,11 @@ def plot_circle(
 ) -> None:
     """Plot correlation circle.
 
-    Parameters
-    ----------
-    model: Model
-        The model for transforming new data.
-    dimensions: Optional[List[int]]
-        Dimensions to help by each axis
-    min_cor: float
-        Minimuim correlation threshold to display arrow
-    max_var: int
-        Number of variables to display (in descending order)
+    Parameters:
+        model: The model for transforming new data.
+        dimensions: Dimensions to help by each axis
+        min_cor: Minimuim correlation threshold to display arrow. default: 0.1
+        max_var: Number of variables to display (in descending order). default: 7
     """
     # make sure stats have been computed prior to visualization
     if not model.is_fitted:
@@ -128,12 +123,9 @@ def plot_explained_var(
 ) -> None:
     """Plot explained variance per dimension.
 
-    Parameters
-    ----------
-    model: Model
-        Model computed by fit.
-    max_dims: int
-        Maximum number of dimensions to plot
+    Parameters:
+        model: Model computed by fit.
+        max_dims: Maximum number of dimensions to plot
     """
     # explained_percentage
 
@@ -169,14 +161,10 @@ def plot_projections(
 ) -> None:
     """Plot projections in reduced space for input data.
 
-    Parameters
-    ----------
-    model
-        Model computed by fit.
-    data
-        Data to plot in the reduced space
-    dim
-        Axes to use for the 2D plot (default (0,1))
+    Parameters:
+        model: Model computed by fit.
+        data : Data to plot in the reduced space
+        dim : Axes to use for the 2D plot (default (0,1))
     """
     dim_x, dim_y = dim
 

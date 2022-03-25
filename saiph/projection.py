@@ -198,6 +198,7 @@ def inverse_transform(
     *,
     use_approximate_inverse: bool = False,
     use_max_modalities: bool = True,
+    seed: Optional[int] = None,
 ) -> pd.DataFrame:
     """Return original format dataframe from coordinates.
 
@@ -209,6 +210,7 @@ def inverse_transform(
         use_max_modalities: for each variable, it assigns to the individual
             the modality with the highest proportion (True)
             or a random modality weighted by their proportion (False). default: True
+        seed: seed to fix randomness if use_max_modalities = False. default: None
 
     Returns:
         inverse: coordinates transformed into original space.
@@ -245,7 +247,10 @@ def inverse_transform(
         descaled_values_quanti = (scaled_values_quanti * model.std) + model.mean
         descaled_values_quali = (scaled_values_quali * np.sqrt(model.prop)) + model.prop
         undummy = undummify(
-            descaled_values_quali, model, use_max_modalities=use_max_modalities
+            descaled_values_quali,
+            model,
+            use_max_modalities=use_max_modalities,
+            seed=seed,
         )
         inverse = pd.concat([descaled_values_quanti, undummy], axis=1).round(12)
 
@@ -258,7 +263,10 @@ def inverse_transform(
     else:
         descaled_values_quali = scaled_values_quali * scaled_values_quali.sum().sum()
         inverse = undummify(
-            descaled_values_quali, model, use_max_modalities=use_max_modalities
+            descaled_values_quali,
+            model,
+            use_max_modalities=use_max_modalities,
+            seed=seed,
         )
 
     # Cast columns to same type as input

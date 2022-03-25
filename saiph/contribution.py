@@ -13,20 +13,15 @@ def get_variable_contribution(
 ) -> pd.Series:
     """Get sorted and filtered variable contributions for a given dimension.
 
-    Parameters
-    ----------
-    contributions
-        Variable contributions of the model, per dimension.
-    dim
-        Dimension to plot
-    max_var
-        Maximum number of variables to plot
-    min_contrib
-        Minimum contribution threshold for the variable contributions to be displayed
+    Parameters:
+        contributions: Variable contributions of the model, per dimension.
+        dim: Dimension to plot. default: 1
+        max_var : Maximum number of variables to plot. default: 10
+        min_contrib : Minimum contribution threshold for the variable
+                    contributions to be displayed. default: 0.1
 
     Returns:
-        selected:
-            Contributions of the specified dimension, sorted by descending importance
+        selected: Contributions of the specified dimension, sorted by descending importance
             and filtered by the given values of `max_var` and `min_contrib`.
     """
     nb_variables = max_var or len(contributions)

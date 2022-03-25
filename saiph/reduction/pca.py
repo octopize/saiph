@@ -23,22 +23,14 @@ def fit(
 ) -> Model:
     """Fit a PCA model on data.
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-        Data to project.
-    nf: int, default: min(df.shape)
-        Number of components to keep.
-    col_w: np.ndarrayn default: np.ones(df.shape[1])
-        Weight assigned to each variable in the projection
-        (more weight = more importance in the axes).
+    Parameters:
+        df: Data to project.
+        nf: Number of components to keep. default: min(df.shape)
+        col_w: Weight assigned to each variable in the projection
+            (more weight = more importance in the axes). default: np.ones(df.shape[1])
 
-    Returns
-    -------
-    coord: pd.DataFrame
-        The transformed data.
-    model: Model
-        The model for transforming new data.
+    Returns:
+        model: The model for transforming new data.
     """
     nf = nf or min(df.shape)
     if col_w is not None:
@@ -98,48 +90,35 @@ def fit_transform(
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a PCA model on data and return transformed data.
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-        Data to project.
-    nf: int, default: min(df.shape)
-        Number of components to keep.
-    col_w: np.ndarrayn default: np.ones(df.shape[1])
-        Weight assigned to each variable in the projection
-        (more weight = more importance in the axes).
+    Parameters:
+        df: Data to project.
+        nf: Number of components to keep. default: min(df.shape)
+        col_w: Weight assigned to each variable in the projection
+            (more weight = more importance in the axes). default: np.ones(df.shape[1])
 
-    Returns
-    -------
-    coord: pd.DataFrame
-        The transformed data.
-    model: Model
-        The model for transforming new data.
+    Returns:
+        model: The model for transforming new data.
+        coord: The transformed data.
     """
     model = fit(df, nf, col_w)
     coord = transform(df, model)
     return coord, model
 
 
-def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, float, float]:
+def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
     """Center data and standardize it if scale. Compute mean and std values.
 
     Used as internal function during fit.
 
     **NB**: saiph.reduction.pca.scaler is better suited when a Model is already fitted.
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-        DataFrame to center.
+    Parameters:
+        df: DataFrame to center.
 
-    Returns
-    -------
-    df: pd.DataFrame
-        The centered DataFrame.
-    mean: pd.Series
-        Mean of the input dataframe.
-    std: pd.Series
-        Standard deviation of the input dataframe. Returns nan as std if no std was asked.
+    Returns:
+        df: The centered DataFrame.
+        mean: Mean of the input dataframe.
+        std: Standard deviation of the input dataframe.
     """
     df = df.copy()
     mean = np.mean(df, axis=0)
@@ -155,17 +134,12 @@ def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, float, float]:
 def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     """Scale data using mean and std from model.
 
-    Parameters
-    ----------
-    model: Model
-        Model computed by fit.
-    df: pd.DataFrame
-        DataFrame to scale.
+    Parameters:
+        model: Model computed by fit.
+        df: DataFrame to scale.
 
-    Returns
-    -------
-    df: pd.DataFrame
-        The scaled DataFrame.
+    Returns:
+        df: The scaled DataFrame.
     """
     df_scaled = df.copy()
 
@@ -177,17 +151,12 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
 def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-        DataFrame to transform.
-    model: Model
-        Model computed by fit.
+    Parameters:
+        df: DataFrame to transform.
+        model: Model computed by fit.
 
-    Returns
-    -------
-    coord: pd.DataFrame
-        Coordinates of the dataframe in the fitted space.
+    Returns:
+        coord: Coordinates of the dataframe in the fitted space.
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.V.T

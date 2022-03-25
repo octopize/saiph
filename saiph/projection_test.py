@@ -388,6 +388,6 @@ def test_inverse_transform_raises_value_error_when_wider_than_df() -> None:
             "variable_2": ["ZZ", "ZZ", "WW"],
         }
     )
-    coord, model = fit(wider_df)
+    coord, model = fit_transform(wider_df)
     with pytest.raises(ValueError, match=r"n_dimensions"):
         inverse_transform(coord, model)

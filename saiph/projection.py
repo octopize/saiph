@@ -1,5 +1,5 @@
 """Project any dataframe, inverse transform and compute stats."""
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Union
 
 import numpy as np
 import pandas as pd
@@ -18,20 +18,15 @@ def fit(
 
     Datetimes must be stored as numbers of seconds since epoch.
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-        Data to project.
-    nf: int|str, default: 'all'
-        Number of components to keep.
-    col_w: np.ndarrayn default: np.ones(df.shape[1])
-        Weight assigned to each variable in the projection
-        (more weight = more importance in the axes).
+    Parameters:
+        df: Data to project.
+        nf: Number of components to keep. default: 'all'
+        col_w: Weight assigned to each variable in the projection
+            (more weight = more importance in the axes).
+            default: np.ones(df.shape[1])
 
-    Returns
-    -------
-    model: Model
-        The model for transforming new data.
+    Returns:
+        model: The model for transforming new data.
     """
     # Check column types
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
@@ -70,20 +65,15 @@ def fit_transform(
 
     Datetimes must be stored as numbers of seconds since epoch.
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-        Data to project.
-    nf: int|str, default: 'all'
-        Number of components to keep.
-    col_w: np.ndarrayn default: np.ones(df.shape[1])
-        Weight assigned to each variable in the projection
-        (more weight = more importance in the axes).
+    Parameters:
+        df: Data to project.
+        nf: Number of components to keep. default: 'all'
+        col_w: Weight assigned to each variable in the projection
+            (more weight = more importance in the axes).
+            default: np.ones(df.shape[1])
 
-    Returns
-    -------
-    model: Model
-        The model for transforming new data.
+    Returns:
+        model: The model for transforming new data.
     """
     model = fit(df, nf, col_w)
     coord = transform(df, model)
@@ -93,17 +83,12 @@ def fit_transform(
 def stats(model: Model, df: pd.DataFrame) -> Model:
     """Compute the contributions and cos2.
 
-    Parameters
-    ----------
-    model: Model
-        Model computed by fit.
-    df : pd.DataFrame
-        original dataframe
+    Parameters:
+        model: Model computed by fit.
+        df: original dataframe
 
-    Returns
-    -------
-    model: Model
-        model populated with contriubtion.
+    Returns:
+        model: model populated with contriubtion.
     """
     # Check attributes type
     if not model.is_fitted:
@@ -150,17 +135,12 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
 def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 
-    Parameters
-    ----------
-    df: pd.DataFrame
-        DataFrame to transform.
-    model: Model
-        Model computed by fit.
+    Parameters:
+        df: DataFrame to transform.
+        model: Model computed by fit.
 
-    Returns
-    -------
-    coord: pd.DataFrame
-        Coordinates of the dataframe in the fitted space.
+    Returns:
+        coord: Coordinates of the dataframe in the fitted space.
     """
     if not model.is_fitted:
         raise ValueError(
@@ -183,12 +163,12 @@ def _variable_correlation(
 ) -> pd.DataFrame:
     """Compute the correlation between the axis and the variables.
 
-    Args:
-        model (Model): the model
-        df (pd.DataFrame): dataframe
+    Parameters:
+        model: the model
+        df: dataframe
 
     Returns:
-        pd.DataFrame: correlations between the axis and the variables
+        cor: correlations between the axis and the variables
     """
     # select columns and project data
     has_some_quali = (
@@ -221,17 +201,18 @@ def inverse_transform(
 ) -> pd.DataFrame:
     """Return original format dataframe from coordinates.
 
-    Arguments:
-        coord (pd.DataFrame): coord of individuals to reverse transform
-        model (Model): model used for projection
-        use_approximate_inverse (boolean): matrix is not invertible when n_individuals < n_dimensions
-            an approximation with bias can be done if necessary
-        use_max_modalities (boolean): for each variable, it assign to the individual
-            the value of the highest modality (True)
-            or a random modality weighted by their proportion (False)
+    Parameters:
+        coord: coord of individuals to reverse transform
+        model: model used for projection
+        use_approximate_inverse: matrix is not invertible when n_individuals < n_dimensions
+            an approximation with bias can be done by setting to ``True``. default: ``False``
+        use_max_modalities: for each variable, it assigns to the individual
+            the modality with the highest proportion (True)
+            or a random modality weighted by their proportion (False). default: True
 
     Returns:
-        pd.DataFrame: original shape, encoding and structure
+        inverse: coordinates transformed into original space.
+            Retains shape, encoding and structure.
     """
     # Check dimension size regarding N
     n_dimensions = len(model.dummy_categorical) + len(model.original_continuous)
@@ -239,7 +220,7 @@ def inverse_transform(
 
     if not use_approximate_inverse and n_records < n_dimensions:
         raise ValueError(
-            f"n_dimensions ({n_dimensions}) is greater than n_records ({n_records})."           
+            f"n_dimensions ({n_dimensions}) is greater than n_records ({n_records})."
             "A matrix approximation is needed but will intriduce bias "
             "You can reduce number of dimensions or set approximate=True."
         )
@@ -297,20 +278,22 @@ def undummify(
 ) -> pd.DataFrame:
     """Return undummified dataframe from the dummy.
 
-    Arguments:
-        dummy_df (pd.DataFrame): dummy df of categorical variable
-        model (Model): model used for projection
-        use_max_modalities (boolean): True to set quali modality to max value
-        seed (int): seed to fix randomness if use_max_modalities = False
+    Parameters:
+        dummy_df: dummy df of categorical variables
+        model: model used for projection
+        use_max_modalities: True to select the modality with the highest probability.
+                            False for a weighted random selection. default: True
+        seed: seed to fix randomness if use_max_modalities = False. default: None
 
     Returns:
-        pd.DataFrame: undummify df of categorical variable
+        inverse_quali: undummify df of categorical variable
     """
     dummies_mapping = get_dummies_mapping(
         model.original_categorical, model.dummy_categorical
     )
     inverse_quali = pd.DataFrame()
     random_gen = np.random.default_rng(seed)
+
     def get_suffix(string: str) -> str:
         return string.split(DUMMIES_PREFIX_SEP)[1]
 
@@ -318,9 +301,9 @@ def undummify(
         # Handle a single category with all the possible modalities
         single_category = dummy_df[dummy_columns]
 
-        # if use_max_modalities set max value per row to 1 and 0 for other
         if use_max_modalities:
-            chosen_modalities = single_category.idxmax(axis='columns')
+            # select modalities with highest probability
+            chosen_modalities = single_category.idxmax(axis="columns")
         else:
             chosen_modalities = get_random_weighted_columns(single_category, random_gen)
 
@@ -328,17 +311,18 @@ def undummify(
 
     return inverse_quali
 
+
 def get_random_weighted_columns(
     df: pd.DataFrame, random_gen: np.random.Generator
 ) -> pd.Series:
     """Randomly select column labels weighted by proportions.
 
-    Args:
+    Parameters:
         df : dataframe containing proportions
-        random_gen (np.random.Generator): random generator
+        random_gen: random generator
 
     Returns:
-        selected column labels
+        column_labels: selected column labels
     """
     # Example for 1 row:  [0.1, 0.3, 0.6] --> [0.1, 0.4, 1.0]
     cum_probability = df.cumsum(axis=1)

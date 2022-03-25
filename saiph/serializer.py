@@ -1,5 +1,5 @@
 import json
-from typing import Any, Tuple
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -8,15 +8,7 @@ from numpy.typing import NDArray
 from saiph.models import Model
 
 
-class AbstractSerializer:
-    def decode(self) -> Tuple[NDArray[np.float_], Model]:
-        pass
-
-    def encode(coords: NDArray[np.float_], model: Model) -> Tuple[Any, Any]:
-        pass
-
-
-class ModelJSONSerializer(AbstractSerializer):
+class ModelJSONSerializer:
 
     # !Make sure to update the version if you change NumpyPandasEncoder or ModelJSONSerializer
     VERSION = "1.0"

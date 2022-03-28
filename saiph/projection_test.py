@@ -1,4 +1,5 @@
 from typing import List
+from unittest import result
 
 import numpy as np
 import pandas as pd
@@ -13,6 +14,7 @@ from saiph.projection import (
     inverse_transform,
     stats,
     transform,
+    inverse_transform
 )
 from saiph.reduction import DUMMIES_PREFIX_SEP
 
@@ -334,3 +336,34 @@ def test_inverse_transform_raises_value_error_when_wider_than_df() -> None:
     coord, model = fit_transform(wider_df)
     with pytest.raises(ValueError, match=r"n_dimensions"):
         inverse_transform(coord, model)
+
+# using df with more dimension than N and high weight
+# allow more balanced probability inmodality assignment during inverse transform
+
+def test_inverse_transform_with_ponderation() -> None:
+    df = pd.DataFrame(
+        zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 3], [2, 2, 10]),
+        columns=["cat1", "cat2", "cont1", "cont2"],
+    )
+    inverse_expected = pd.DataFrame(
+        zip(["c", "b", "a"], ["ZZ", "ZZ", "WW"], [1, 2, 2], [4, 4, 4]),
+        columns=["cat1", "cat2", "cont1", "cont2"],
+    )
+    coord, model = fit_transform(df, col_w=[1, 2000,1,1])
+    result = inverse_transform(coord, model, use_approximate_inverse=True, use_max_modalities=False, seed=46)
+    assert_frame_equal(result, inverse_expected)
+
+def test_inverse_transform_deterministic() -> None:
+    df = pd.DataFrame(
+        zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 3], [2, 2, 10]),
+        columns=["cat1", "cat2", "cont1", "cont2"],
+    )
+    inverse_expected = pd.DataFrame(
+        zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 2], [4, 4, 4]),
+        columns=["cat1", "cat2", "cont1", "cont2"],
+    )
+    coord, model = fit_transform(df, col_w=[1, 2000,1,1])
+    result = inverse_transform(coord, model, use_approximate_inverse=True, use_max_modalities=True, seed=46)
+    assert_frame_equal(result, inverse_expected)
+
+

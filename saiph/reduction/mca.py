@@ -203,16 +203,21 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     return coord
 
 
-def stats(model: Model, df: pd.DataFrame) -> Model:
-    """Compute the contributions.
+def get_variable_contributions(model: Model, df: pd.DataFrame) -> NDArray[np.float_]:
+    """Compute the contributions of the variables in `df` in the fitted space.
 
     Parameters:
         model: Model computed by fit.
-        df : original dataframe
+        df : dataframe to compute contributions from in the original space
 
     Returns:
-        model: model populated with contriubtion.
+        contributions.
     """
+    if not model.is_fitted:
+        raise ValueError(
+            "Model has not been fitted. Call fit() to create a Model instance."
+        )
+
     V = np.dot(model.D_c, model.V.T)  # type: ignore
     df = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
     F = df / df.sum().sum()
@@ -283,8 +288,21 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
     for i in range(len(coord_col[0])):
         coord_col[:, i] = (coord_col[:, i] * marge_col) / eig[i]
 
-    model.contributions = coord_col * 100
+    return coord_col * 100
 
+
+def stats(model: Model, df: pd.DataFrame) -> Model:
+    """Compute the contributions.
+
+    Parameters:
+        model: Model computed by fit.
+        df : dataframe to compute contributions from in the original space
+
+    Returns:
+        model.
+    """
+    contributions = get_variable_contributions(model, df)
+    model.contributions = contributions
     return model
 
 

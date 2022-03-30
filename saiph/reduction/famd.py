@@ -232,7 +232,7 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     return coord
 
 
-def stats(model: Model, original_df: pd.DataFrame) -> Model:
+def stats(model: Model, df: pd.DataFrame) -> Model:
     """Compute contributions and cos2.
 
     Parameters:
@@ -246,12 +246,30 @@ def stats(model: Model, original_df: pd.DataFrame) -> Model:
             "Model has not been fitted. Call fit() to create a Model instance."
         )
 
-    df = pd.DataFrame(scaler(model, original_df))
-    df2: NDArray[np.float_] = np.array(df) ** 2
+    contributions, cos2 = get_variable_contributions(model, df)
+    model.contributions = contributions
+    model.cos2 = cos2
+    return model
+
+
+def get_variable_contributions(
+    model: Model, df: pd.DataFrame
+) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
+    """Compute contributions and cos2.
+
+    Parameters:
+        model: Model computed by fit.
+        df: dataframe to compute contributions in the original space
+
+    Returns:
+        tuple of contributions and cos2.
+    """
+    scaled_df = pd.DataFrame(scaler(model, df))
+    df2: NDArray[np.float_] = np.array(scaled_df) ** 2
 
     # svd of x with row_w and col_w
     weightedTc = _rmultiplication(
-        _rmultiplication(df.T, np.sqrt(model.column_weights)).T,
+        _rmultiplication(scaled_df.T, np.sqrt(model.column_weights)).T,
         np.sqrt(model.row_weights),
     )
     U, s, V = SVD(weightedTc.T, svd_flip=False)
@@ -309,7 +327,7 @@ def stats(model: Model, original_df: pd.DataFrame) -> Model:
     # for each qualitative column in the original data set
     for col in model.original_categorical:
         dummy = pd.get_dummies(
-            original_df[col].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+            df[col].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
         )
         mods += [len(dummy.columns) - 1]
         # for each dimension
@@ -336,9 +354,8 @@ def stats(model: Model, original_df: pd.DataFrame) -> Model:
     eta2 = ((eta2).T / mods).T
 
     cos2 = np.concatenate([cos2, [eta2]], axis=0)
-    model.contributions = contrib_var
-    model.cos2 = cos2
-    return model
+
+    return contrib_var, cos2
 
 
 def _rmultiplication(F: pd.DataFrame, marge: NDArray[Any]) -> pd.DataFrame:

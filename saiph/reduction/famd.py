@@ -255,11 +255,11 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
 def get_variable_contributions(
     model: Model, df: pd.DataFrame
 ) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
-    """Compute contributions and cos2.
+    """Compute the contributions of the `df` variables within the fitted space.
 
     Parameters:
         model: Model computed by fit.
-        df: dataframe to compute contributions in the original space
+        df: dataframe to compute contributions from
 
     Returns:
         tuple of contributions and cos2.

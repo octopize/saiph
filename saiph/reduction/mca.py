@@ -204,14 +204,14 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
 
 
 def get_variable_contributions(model: Model, df: pd.DataFrame) -> NDArray[np.float_]:
-    """Compute the contributions of the variables in `df` in the fitted space.
+    """Compute the contributions of the `df` variables within the fitted space.
 
     Parameters:
         model: Model computed by fit.
-        df : dataframe to compute contributions from in the original space
+        df: dataframe to compute contributions from
 
     Returns:
-        contributions.
+        contributions
     """
     if not model.is_fitted:
         raise ValueError(

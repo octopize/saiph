@@ -132,14 +132,14 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
 
 
 def get_variable_contributions(model: Model, df: pd.DataFrame) -> pd.DataFrame:
-    """Compute the contributions of the variables in `df` in the fitted space.
+    """Compute the contributions of the `df` variables within the fitted space.
 
     Parameters:
         model: Model computed by fit.
-        df:  dataframe
+        df: dataframe to compute contributions from
 
     Returns:
-        contributions.
+        contributions
     """
     if not model.is_fitted:
         raise ValueError(

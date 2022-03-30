@@ -90,7 +90,6 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
     Returns:
         model: model populated with contriubtion.
     """
-    # Check attributes type
     if not model.is_fitted:
         raise ValueError(
             "Model has not been fitted. Call fit() to create a Model instance."
@@ -130,6 +129,50 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
             index=list(model.correlations.index),
         )
     return model
+
+
+def get_variable_contributions(model: Model, df: pd.DataFrame) -> pd.DataFrame:
+    """Compute the contributions of the `df` variables within the fitted space.
+
+    Parameters:
+        model: Model computed by fit.
+        df: dataframe to compute contributions from
+
+    Returns:
+        contributions
+    """
+    if not model.is_fitted:
+        raise ValueError(
+            "Model has not been fitted. Call fit() to create a Model instance."
+        )
+
+    has_some_quanti = (
+        model.original_continuous is not None and len(model.original_continuous) != 0
+    )
+    has_some_quali = (
+        model.original_categorical is not None and len(model.original_categorical) != 0
+    )
+
+    if not has_some_quali:
+        cos2 = model.correlations**2
+        contributions = cos2.div(cos2.sum(axis=0), axis=1).mul(100)
+        return contributions
+
+    if not has_some_quanti:
+        contributions = mca.get_variable_contributions(model, df)
+
+        return pd.DataFrame(
+            contributions,
+            columns=model.correlations.columns,
+            index=list(model.correlations.index),
+        )
+
+    contributions, _ = famd.get_variable_contributions(model, df)
+    return pd.DataFrame(
+        contributions,
+        columns=model.correlations.columns,
+        index=list(model.correlations.index),
+    )
 
 
 def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:

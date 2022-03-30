@@ -4,7 +4,7 @@ from typing import Optional
 import pandas as pd
 
 
-def get_variable_contribution(
+def filter_variable_contribution(
     contributions: pd.DataFrame,
     dim: int = 1,
     *,

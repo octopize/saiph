@@ -95,7 +95,7 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
             "Model has not been fitted. Call fit() to create a Model instance."
         )
 
-    model.correlations = _variable_correlation(model, df)
+    model.correlations = variable_correlation(model, df)
     model.variable_coord.columns = model.correlations.columns
     model.variable_coord.index = list(model.correlations.index)
 
@@ -145,6 +145,8 @@ def get_variable_contributions(model: Model, df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(
             "Model has not been fitted. Call fit() to create a Model instance."
         )
+
+    model.correlations = variable_correlation(model, df)
 
     has_some_quanti = (
         model.original_continuous is not None and len(model.original_continuous) != 0
@@ -200,7 +202,7 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     return famd.transform(df, model)
 
 
-def _variable_correlation(
+def variable_correlation(
     model: Model,
     df: pd.DataFrame,
 ) -> pd.DataFrame:

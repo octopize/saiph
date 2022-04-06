@@ -51,7 +51,7 @@ def fit(
     dummy_categorical = pd.get_dummies(
         df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
     ).columns.to_list()
-    modalities_types =get_modalities_types(df[quali])
+    modalities_types = get_modalities_types(df[quali])
 
     row_w = get_uniform_row_weights(len(df))
     col_weights = _col_weights_compute(df, _col_weights, quanti, quali)

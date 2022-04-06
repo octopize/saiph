@@ -11,8 +11,8 @@ from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
     diag,
-    get_modalities_types,
     explain_variance,
+    get_modalities_types,
     get_projected_column_names,
     get_uniform_row_weights,
 )

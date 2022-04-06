@@ -35,8 +35,9 @@ def explain_variance(
 
 
 def get_modalities_types(df: pd.DataFrame) -> dict:
-    modalities_types = {col: get_type_as_string(df.loc[0,col]) for col in df.columns}
+    modalities_types = {col: get_type_as_string(df.loc[0, col]) for col in df.columns}
     return modalities_types
+
 
 def get_type_as_string(type):
     """Returns value type as string."""
@@ -46,5 +47,5 @@ def get_type_as_string(type):
         return "float"
     elif isinstance(type, str):
         return "string"
-    else: 
-        raise(f"type {type} not included.")
+    else:
+        raise (f"type {type} not included.")

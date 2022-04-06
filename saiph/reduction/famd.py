@@ -50,6 +50,7 @@ def fit(
     dummy_categorical = pd.get_dummies(
         df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
     ).columns.to_list()
+    modalities_types = {col: type(df.loc[0, col]) for col in quali}
 
     row_w = get_uniform_row_weights(len(df))
     col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
@@ -90,6 +91,7 @@ def fit(
         nf=nf,
         column_weights=col_weights,
         row_weights=row_w,
+        modalities_types=modalities_types,
     )
 
     return model

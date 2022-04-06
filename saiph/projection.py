@@ -316,6 +316,11 @@ def inverse_transform(
 
     # Cast columns to same type as input
     for name, dtype in model.original_dtypes.iteritems():
+        # Can create a bug if a columns is object but contains int and float value
+        # here we force the value type of the first one of the original df
+        if dtype in ["object", "category"]:
+            inverse[name] = inverse[name].astype(model.modalities_types[name])
+
         inverse[name] = inverse[name].astype(dtype)
 
     # reorder columns
@@ -350,6 +355,7 @@ def undummify(
     def get_suffix(string: str) -> str:
         return string.split(DUMMIES_PREFIX_SEP)[1]
 
+    print(get_suffix("babla___11"))
     for original_column, dummy_columns in dummies_mapping.items():
         # Handle a single category with all the possible modalities
         single_category = dummy_df[dummy_columns]
@@ -359,8 +365,10 @@ def undummify(
             chosen_modalities = single_category.idxmax(axis="columns")
         else:
             chosen_modalities = get_random_weighted_columns(single_category, random_gen)
-
+        print(chosen_modalities)
         inverse_quali[original_column] = list(map(get_suffix, chosen_modalities))
+        print(inverse_quali)
+        print("2: ", type(inverse_quali.iloc[0, 0]))
 
     return inverse_quali
 

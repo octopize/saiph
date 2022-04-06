@@ -367,3 +367,18 @@ def test_inverse_transform_deterministic() -> None:
     assert_frame_equal(result, inverse_expected)
 
 
+def test_transform_then_inverse_int_as_object() -> None:
+    df = pd.DataFrame(
+        {
+            "variable_1": [1, 1, 2, 2],
+            "variable_2": [1, 2, 2, 2],
+        }
+    )
+    df = df.astype('object')
+
+    coord, model = fit_transform(df)
+    result = inverse_transform(coord, model, seed=46)
+    
+    print(type(df.iloc[0, 0]))
+    print(type(result.iloc[0, 0]))
+    assert_frame_equal(df, result)

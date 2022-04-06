@@ -268,7 +268,7 @@ def inverse_transform(
     if not use_approximate_inverse and n_records < n_dimensions:
         raise ValueError(
             f"n_dimensions ({n_dimensions}) is greater than n_records ({n_records})."
-            "A matrix approximation is needed but will intriduce bias "
+            "A matrix approximation is needed but will introduce bias "
             "You can reduce number of dimensions or set approximate=True."
         )
 

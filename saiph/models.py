@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -67,4 +67,4 @@ class Model:
     # Proportion of individuals taking each modality.
     dummies_col_prop: Optional[NDArray[np.float_]] = None
     # Modality type of the first individuals
-    modalities_types: Optional[Dict[str, str]] = None
+    modalities_types: Optional[dict[str, str]] = None

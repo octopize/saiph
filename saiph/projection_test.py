@@ -385,6 +385,4 @@ def test_transform_then_inverse_int_as_object() -> None:
     coord, model = fit_transform(df)
     result = inverse_transform(coord, model, seed=46)
 
-    # print(type(df.iloc[0, 0]))
-    # print(type(result.iloc[0, 0]))
     assert_frame_equal(df, result)

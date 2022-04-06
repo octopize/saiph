@@ -32,3 +32,19 @@ def explain_variance(
     else:
         explained_var_ratio = explained_var / explained_var.sum()
     return explained_var, explained_var_ratio
+
+
+def get_modalities_types(df: pd.DataFrame) -> dict:
+    modalities_types = {col: get_type_as_string(df.loc[0,col]) for col in df.columns}
+    return modalities_types
+
+def get_type_as_string(type):
+    """Returns value type as string."""
+    if isinstance(type, int):
+        return "int"
+    elif isinstance(type, float):
+        return "float"
+    elif isinstance(type, str):
+        return "string"
+    else: 
+        raise(f"type {type} not included.")

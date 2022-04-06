@@ -11,6 +11,7 @@ from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
     diag,
+    get_modalities_types,
     explain_variance,
     get_projected_column_names,
     get_uniform_row_weights,
@@ -44,7 +45,7 @@ def fit(
         df = pd.DataFrame(df)
     fit_check_params(nf, _col_weights, df.shape[1])
 
-    modalities_types = {col: type(df.loc[0, col]) for col in df.columns}
+    modalities_types = get_modalities_types(df)
 
     # initiate row and columns weights
     row_weights = get_uniform_row_weights(len(df))

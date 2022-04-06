@@ -39,7 +39,7 @@ def get_modalities_types(df: pd.DataFrame) -> dict:
     return modalities_types
 
 
-def get_type_as_string(type):
+def get_type_as_string(type: type) -> str:
     """Returns value type as string."""
     if isinstance(type, int):
         return "int"

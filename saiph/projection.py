@@ -316,8 +316,8 @@ def inverse_transform(
 
     # Cast columns to same type as input
     for name, dtype in model.original_dtypes.iteritems():
-        # Can create a bug if a columns is object but contains int and float value
-        # here we force the value type of the first one of the original df
+        # Can create a bug if a column is object but contains int and float values,
+        # here we force the value type of the first value of the original df
         if dtype in ["object", "category"]:
             print(model.modalities_types[name])
             inverse[name] = inverse[name].astype(model.modalities_types[name])

@@ -268,7 +268,7 @@ def inverse_transform(
     if not use_approximate_inverse and n_records < n_dimensions:
         raise ValueError(
             f"n_dimensions ({n_dimensions}) is greater than n_records ({n_records})."
-            "A matrix approximation is needed but will intriduce bias "
+            "A matrix approximation is needed but will introduce bias "
             "You can reduce number of dimensions or set approximate=True."
         )
 
@@ -313,9 +313,16 @@ def inverse_transform(
             use_max_modalities=use_max_modalities,
             seed=seed,
         )
-
     # Cast columns to same type as input
     for name, dtype in model.original_dtypes.iteritems():
+        # Can create a bug if a column is object but contains int and float values,
+        # first, we force the value type of the first value of the original df
+        if dtype in ["object", "category"]:
+            if model.modalities_types[name] == "bool":
+                inverse[name] = [eval(ele) for ele in inverse[name]]
+            else:
+                inverse[name] = inverse[name].astype(model.modalities_types[name])
+
         inverse[name] = inverse[name].astype(dtype)
 
     # reorder columns
@@ -359,7 +366,6 @@ def undummify(
             chosen_modalities = single_category.idxmax(axis="columns")
         else:
             chosen_modalities = get_random_weighted_columns(single_category, random_gen)
-
         inverse_quali[original_column] = list(map(get_suffix, chosen_modalities))
 
     return inverse_quali

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -37,6 +37,8 @@ class Model:
     variable_coord: pd.DataFrame
     # Orthogonal matrix with right singular vectors as rows.
     V: NDArray[np.float_]
+    # Modality type of the first individuals
+    modalities_types: Dict[type, str]
     # Orthogonal matrix with left singular vectors as columns.
     U: Optional[NDArray[np.float_]] = None
     # Singular values

@@ -12,6 +12,7 @@ from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
     diag,
     explain_variance,
+    get_modalities_types,
     get_projected_column_names,
     get_uniform_row_weights,
 )
@@ -43,6 +44,8 @@ def fit(
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
     fit_check_params(nf, _col_weights, df.shape[1])
+
+    modalities_types = get_modalities_types(df)
 
     # initiate row and columns weights
     row_weights = get_uniform_row_weights(len(df))
@@ -93,6 +96,7 @@ def fit(
         column_weights=col_weights,
         row_weights=row_weights,
         dummies_col_prop=dummies_col_prop,
+        modalities_types=modalities_types,
     )
 
     return model

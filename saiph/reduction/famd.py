@@ -12,6 +12,7 @@ from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
     explain_variance,
+    get_modalities_types,
     get_projected_column_names,
     get_uniform_row_weights,
 )
@@ -50,6 +51,7 @@ def fit(
     dummy_categorical = pd.get_dummies(
         df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
     ).columns.to_list()
+    modalities_types = get_modalities_types(df[quali])
 
     row_w = get_uniform_row_weights(len(df))
     col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
@@ -90,6 +92,7 @@ def fit(
         nf=nf,
         column_weights=col_weights,
         row_weights=row_w,
+        modalities_types=modalities_types,
     )
 
     return model

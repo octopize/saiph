@@ -1,5 +1,5 @@
 from itertools import repeat
-from typing import Any, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -32,3 +32,23 @@ def explain_variance(
     else:
         explained_var_ratio = explained_var / explained_var.sum()
     return explained_var, explained_var_ratio
+
+
+def get_modalities_types(df: pd.DataFrame) -> Dict[str, str]:
+    modalities_types = {col: get_type_as_string(df.loc[0, col]) for col in df.columns}
+    return modalities_types
+
+
+TYPES = {
+    int: "int",
+    float: "float",
+    str: "string",
+    bool: "bool",
+    np.int_: "int",
+    np.float_: "float",
+}
+
+
+def get_type_as_string(val):
+    """Returns string of type."""
+    return TYPES[type(val)]

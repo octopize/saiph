@@ -319,7 +319,7 @@ def inverse_transform(
         # first, we force the value type of the first value of the original df
         if dtype in ["object", "category"]:
             if model.modalities_types[name] == "bool":
-                inverse[name] = [ele == "True" for ele in inverse[name]]
+                inverse[name] = [eval(ele) for ele in inverse[name]]
             else:
                 inverse[name] = inverse[name].astype(model.modalities_types[name])
 

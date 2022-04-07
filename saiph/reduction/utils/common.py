@@ -50,4 +50,5 @@ TYPES = {
 
 
 def get_type_as_string(val):
+    """Returns string of type."""
     return TYPES[type(val)]

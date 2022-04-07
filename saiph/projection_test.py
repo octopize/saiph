@@ -378,9 +378,19 @@ def test_transform_then_inverse_value_type(dtypes: str) -> None:
     """Test the type of the value of each variable."""
     df = pd.DataFrame(
         {
-            "variable_1": [1, 1, 2, 2, 1, 1],
-            "variable_2": ["1", "2", "2", "2", "1", "2"],
-            "variable_3": [True, True, False, True, True, False],
+            "variable_1": [1, 1, 2, 2, 1, 1, 2, 1],
+            "variable_2": ["1", "2", "2", "2", "1", "2", "1", "2"],
+            "variable_3": [True, True, False, True, True, False, True, False],
+            "variable_4": [
+                "True",
+                "True",
+                "False",
+                "True",
+                "True",
+                "False",
+                "True",
+                "False",
+            ],
         }
     )
     df = df.astype(dtypes)

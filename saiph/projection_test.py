@@ -373,14 +373,17 @@ def test_inverse_transform_deterministic() -> None:
     assert_frame_equal(result, inverse_expected)
 
 
-def test_transform_then_inverse_int_as_object() -> None:
+@pytest.mark.parametrize("dtypes", ["object", "category"])
+def test_transform_then_inverse_value_type(dtypes: str) -> None:
+    """Test the type of the value of each variable."""
     df = pd.DataFrame(
         {
-            "variable_1": [1, 1, 2, 2],
-            "variable_2": [1, 2, 2, 2],
+            "variable_1": [1, 1, 2, 2, 1, 1],
+            "variable_2": ["1", "2", "2", "2", "1", "2"],
+            "variable_3": [True, True, False, True, True, False],
         }
     )
-    df = df.astype("object")
+    df = df.astype(dtypes)
 
     coord, model = fit_transform(df)
     result = inverse_transform(coord, model, seed=46)

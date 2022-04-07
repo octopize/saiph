@@ -78,6 +78,7 @@ def fit(
         nf=nf,
         column_weights=_col_weights,
         row_weights=row_w,
+        modalities_types={},
     )
 
     return model

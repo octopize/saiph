@@ -344,7 +344,7 @@ def test_inverse_transform_raises_value_error_when_wider_than_df() -> None:
 
 def test_inverse_transform_with_ponderation() -> None:
     df = pd.DataFrame(
-        zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 3], [2, 2, 10]),
+        zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [2, 2, 3], [2, 2, 10]),
         columns=["cat1", "cat2", "cont1", "cont2"],
     )
     inverse_expected = pd.DataFrame(

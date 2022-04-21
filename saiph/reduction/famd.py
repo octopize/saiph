@@ -213,9 +213,6 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
             if mod not in df_quali:
                 df_quali[mod] = 0
     df_quali = df_quali[model._modalities]
-
-    print(type(df_quali))
-    print((np.sqrt(model.prop)))
     df_quali = (df_quali - model.prop) / np.sqrt(model.prop)
 
     df_scaled = pd.concat([df_quanti, df_quali], axis=1)
@@ -234,6 +231,9 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.V.T
+    print("coord shape", coord.shape)   
+    print("nf ", (model.nf))
+
     coord.columns = get_projected_column_names(model.nf)
     return coord
 

@@ -7,6 +7,7 @@ from typing import Any, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 import scipy
+from scipy.sparse import csr_matrix
 from numpy.typing import NDArray
 
 from saiph.models import Model
@@ -60,7 +61,7 @@ def fit(
     col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
     
     df_scaled, mean, std, prop, _modalities = center(df, quanti, quali, sparse=sparse)
-
+    print("df scale type", type(df_scaled))
     # apply the weights
     Z = df_scaled.multiply(col_weights).T.multiply(row_w).T
 
@@ -185,12 +186,11 @@ def center(
         df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
     )
     _modalities = df_quali.columns
-    df_quali = scipy.sparse.csr_matrix(df_quali)
-    prop =df_quali.mean(axis=0)
-    print(type(prop))
-    print(prop)
-    df_quali /= df_quali.sqrt()
+    df_quali = csr_matrix(df_quali)
+    print("df quali type", type(df_quali))
 
+    prop = np.mean(df_quali, axis=0).tolist()[0]
+    df_quali /= np.sqrt(prop)
     df_scale = scipy.sparse.hstack([df_quanti, df_quali], format = 'csr')
     return df_scale, mean, std, prop, _modalities
 
@@ -207,6 +207,7 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     """
     df_quanti = df[model.original_continuous]
     df_quanti = (df_quanti - model.mean) / model.std
+    df_quanti = scipy.sparse.csr_matrix(df_quanti)
 
     # scale
     df_quali = pd.get_dummies(
@@ -217,12 +218,10 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
             if mod not in df_quali:
                 df_quali[mod] = 0
     df_quali = df_quali[model._modalities]
+    df_quali = csr_matrix(df_quali)
+    df_quali /= np.sqrt(model.prop)
 
-    print(type(df_quali))
-    print((np.sqrt(model.prop)))
-    df_quali = (df_quali) / np.sqrt(model.prop)
-
-    df_scaled = pd.concat([df_quanti, df_quali], axis=1)
+    df_scaled = scipy.sparse.hstack([df_quanti, df_quali], format = 'csr')
     return df_scaled
 
 
@@ -237,7 +236,9 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
         coord: Coordinates of the dataframe in the fitted space.
     """
     df_scaled = scaler(model, df)
-    coord = df_scaled @ model.V.T
+    coord = pd.DataFrame(df_scaled * model.V.T)
+    print("coord shape", coord.shape)
+    print("nf ", (model.nf))
     coord.columns = get_projected_column_names(model.nf)
     return coord
 

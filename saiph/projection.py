@@ -6,7 +6,7 @@ import pandas as pd
 from numpy.typing import NDArray
 
 from saiph.models import Model
-from saiph.reduction import DUMMIES_PREFIX_SEP, famd, mca, pca
+from saiph.reduction import DUMMIES_PREFIX_SEP, famd_sparse, mca, pca, famd
 
 
 def fit(
@@ -52,7 +52,6 @@ def fit(
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
     else:
         model.variable_coord = pd.DataFrame(model.V.T)
-
     return model
 
 

@@ -1,3 +1,4 @@
+
 """FAMD projection module."""
 import sys
 from itertools import chain, repeat
@@ -5,6 +6,7 @@ from typing import Any, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import scipy
 from numpy.typing import NDArray
 
 from saiph.models import Model
@@ -23,6 +25,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
+    sparse: bool=False
 ) -> Model:
     """Fit a FAMD model on data.
 
@@ -55,19 +58,18 @@ def fit(
 
     row_w = get_uniform_row_weights(len(df))
     col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
-
-    df_scaled, mean, std, prop, _modalities = center(df, quanti, quali)
+    
+    df_scaled, mean, std, prop, _modalities = center(df, quanti, quali, sparse=sparse)
 
     # apply the weights
-    Z = ((df_scaled * col_weights).T * row_w).T
+    Z = df_scaled.multiply(col_weights).T.multiply(row_w).T
 
     # compute the svd
-    _U, s, _V = SVD(Z)
+    _U, s, _V = SVD_sparse(Z)
     U = ((_U.T) / np.sqrt(row_w)).T
     V = _V / np.sqrt(col_weights)
 
     explained_var, explained_var_ratio = explain_variance(s, df, nf)
-
     U = U[:, :nf]
     s = s[:nf]
     V = V[:nf, :]
@@ -147,7 +149,7 @@ def _col_weights_compute(
 
 
 def center(
-    df: pd.DataFrame, quanti: List[int], quali: List[int]
+    df: pd.DataFrame, quanti: List[int], quali: List[int], sparse: bool = False
 ) -> Tuple[
     pd.DataFrame, NDArray[np.float_], NDArray[np.float_], NDArray[Any], NDArray[Any]
 ]:
@@ -176,18 +178,20 @@ def center(
     std = np.std(df_quanti, axis=0)
     std[std <= sys.float_info.min] = 1
     df_quanti /= std
+    df_quanti = scipy.sparse.csr_matrix(df_quanti)
 
     # scale the categorical data
     df_quali = pd.get_dummies(
         df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
     )
-    prop = np.mean(df_quali, axis=0)
-    df_quali -= prop
-    df_quali /= np.sqrt(prop)
-    _modalities = df_quali.columns.values
+    _modalities = df_quali.columns
+    df_quali = scipy.sparse.csr_matrix(df_quali)
+    prop =df_quali.mean(axis=0)
+    print(type(prop))
+    print(prop)
+    df_quali /= df_quali.sqrt()
 
-    df_scale = pd.concat([df_quanti, df_quali], axis=1)
-
+    df_scale = scipy.sparse.hstack([df_quanti, df_quali], format = 'csr')
     return df_scale, mean, std, prop, _modalities
 
 
@@ -216,7 +220,7 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
 
     print(type(df_quali))
     print((np.sqrt(model.prop)))
-    df_quali = (df_quali - model.prop) / np.sqrt(model.prop)
+    df_quali = (df_quali) / np.sqrt(model.prop)
 
     df_scaled = pd.concat([df_quanti, df_quali], axis=1)
     return df_scaled
@@ -372,3 +376,22 @@ def _rmultiplication(F: pd.DataFrame, marge: NDArray[Any]) -> pd.DataFrame:
     df = pd.DataFrame.from_dict(df_dict)
     df.index = F.index
     return df
+
+
+def SVD_sparse(
+    df: pd.DataFrame, svd_flip: bool = True
+) -> Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]:
+    """Compute Singular Value Decomposition.
+
+    Parameters:
+        df: Matrix to decompose.
+        svd_flip: Whether to use svd_flip on U and V or not.
+
+    Returns:
+        U: Unitary matrix having left singular vectors as columns.
+        s: The singular values.
+        V: Unitary matrix having right singular vectors as rows.
+    """
+    U, s, V = scipy.sparse.linalg.svds(df, k= (min(df.shape)-1), solver='arpack')
+
+    return U, s, V

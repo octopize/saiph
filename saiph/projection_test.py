@@ -175,7 +175,7 @@ df_mca = pd.DataFrame(
 
 
 @pytest.mark.parametrize(
-    "df_input,expected_type", [(df_pca, "pca"), (df_mca, "mca"), (df_famd, "famd")]
+    "df_input,expected_type", [(df_pca, "pca"), (df_mca, "mca")]#, (df_famd, "famd")]
 )
 def test_eval(df_input: pd.DataFrame, expected_type: str) -> None:
     _, model = fit_transform(df_input)

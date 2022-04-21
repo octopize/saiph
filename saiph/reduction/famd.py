@@ -225,6 +225,9 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
             if mod not in df_quali:
                 df_quali[mod] = 0
     df_quali = df_quali[model._modalities]
+
+    print(type(df_quali))
+    print((np.sqrt(model.prop)))
     df_quali = (df_quali - model.prop) / np.sqrt(model.prop)
 
     df_scaled = pd.concat([df_quanti, df_quali], axis=1)

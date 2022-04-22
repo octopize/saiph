@@ -231,7 +231,7 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.V.T
-    print("coord shape", coord.shape)   
+    print("coord shape", coord.shape)
     print("nf ", (model.nf))
 
     coord.columns = get_projected_column_names(model.nf)
@@ -328,7 +328,8 @@ def get_variable_contributions(
     fi = 0
 
     columns = get_projected_column_names(model.nf)[:ncp0]
-    coord = pd.DataFrame(model.U[:, :ncp0] * model.s[:ncp0], columns=columns)
+    if model.U is not None and model.s is not None:
+        coord = pd.DataFrame(model.U[:, :ncp0] * model.s[:ncp0], columns=columns)
     mods = []
     # for each qualitative column in the original data set
     for col in model.original_categorical:

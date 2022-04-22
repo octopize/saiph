@@ -38,7 +38,7 @@ class Model:
     # Orthogonal matrix with right singular vectors as rows.
     V: NDArray[np.float_]
     # Modality type of the first individuals
-    modalities_types: Dict[type, str]
+    modalities_types: Dict[str, str]
     # Orthogonal matrix with left singular vectors as columns.
     U: Optional[NDArray[np.float_]] = None
     # Singular values

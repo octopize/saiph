@@ -41,7 +41,7 @@ def quali_df() -> pd.DataFrame:
 
 
 @pytest.fixture
-def mixed_df():
+def mixed_df() -> pd.DataFrame:
     return pd.DataFrame(
         {
             "variable_1": [4, 5, 6, 7],

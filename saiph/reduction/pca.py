@@ -126,7 +126,7 @@ def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
     df -= mean
 
     std = np.std(df, axis=0)
-    std[std <= sys.float_info.min] = 1  # type: ignore
+    std[std <= sys.float_info.min] = 1
     df /= std
 
     return df, mean, std

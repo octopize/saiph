@@ -6,13 +6,14 @@ import pandas as pd
 from numpy.typing import NDArray
 
 from saiph.models import Model
-from saiph.reduction import DUMMIES_PREFIX_SEP, famd_sparse, mca, pca, famd
+from saiph.reduction import DUMMIES_PREFIX_SEP, famd, famd_sparse, mca, pca
 
 
 def fit(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
     col_w: Optional[NDArray[np.float_]] = None,
+    sparse: bool = None,
 ) -> Model:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
@@ -43,6 +44,8 @@ def fit(
         _fit = pca.fit
     elif quanti.size == 0:
         _fit = mca.fit
+    elif sparse:
+        _fit = famd_sparse.fit
     else:
         _fit = famd.fit
 
@@ -59,7 +62,7 @@ def fit_transform(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-) -> Model:
+) -> tuple[pd.DataFrame, Model]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
     Datetimes must be stored as numbers of seconds since epoch.
@@ -112,11 +115,12 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
         model = mca.stats(model, df)
         model.cos2 = model.correlations**2
 
-        model.contributions = pd.DataFrame(
-            model.contributions,
-            columns=model.correlations.columns,
-            index=list(model.correlations.index),
-        )
+        if model.contributions is not None:
+            model.contributions = pd.DataFrame(
+                model.contributions,
+                columns=model.correlations.columns,
+                index=list(model.correlations.index),
+            )
     else:
         model = famd.stats(model, df)
         model.cos2 = pd.DataFrame(
@@ -176,7 +180,7 @@ def get_variable_contributions(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
+def transform(df: pd.DataFrame, model: Model, sparse: bool = False) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 
     Parameters:
@@ -197,6 +201,9 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
 
     if len(model.original_continuous) == 0:
         return mca.transform(df, model)
+
+    if sparse:
+        return famd_sparse.transform(df, model)
 
     return famd.transform(df, model)
 

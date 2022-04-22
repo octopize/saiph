@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from numpy.testing import assert_allclose
+from numpy.typinb import NDArray
 from pandas.testing import assert_frame_equal
 
 from saiph.reduction import DUMMIES_PREFIX_SEP
@@ -23,9 +24,11 @@ def test_fit() -> None:
             "Dim. 2": [-0.7, -0.7],
         }
     )
-    expected_v = np.array([[-0.707107, 0.707107, -0.0], [-0.707107, -0.707107, 0.0]])
-    expected_explained_var = np.array([1.25000e-01, 3.85186e-34])
-    expected_explained_var_ratio = np.array([1.0, 0.0])
+    expected_v: NDArray[float] = np.array(
+        [[-0.707107, 0.707107, -0.0], [-0.707107, -0.707107, 0.0]]
+    )
+    expected_explained_var: NDArray[float] = np.array([1.25000e-01, 3.85186e-34])
+    expected_explained_var_ratio: NDArray[float] = np.array([1.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
 
@@ -65,8 +68,8 @@ def test_fit_zero() -> None:
             "Dim. 2": [0.7, 0.7],
         }
     )
-    expected_v = np.array([[1.0, 0.0], [0.0, 1.0]])
-    expected_explained_var = np.array([0.0, 0.0])
+    expected_v: NDArray[float] = np.array([[1.0, 0.0], [0.0, 1.0]])
+    expected_explained_var: NDArray[float] = np.array([0.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
     assert_allclose(model.V, expected_v, atol=0.01)

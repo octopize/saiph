@@ -6,7 +6,7 @@ from saiph.contribution import filter_variable_contribution
 
 
 @pytest.fixture
-def contributions():
+def contributions() -> pd.DataFrame:
     df = pd.DataFrame(
         data=[[1, 0.01], [2, 1]],
         index=["Var. 1", "Var. 2"],

@@ -1,4 +1,3 @@
-
 """FAMD projection module."""
 import sys
 from itertools import chain, repeat
@@ -7,8 +6,8 @@ from typing import Any, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 import scipy
-from scipy.sparse import csr_matrix
 from numpy.typing import NDArray
+from scipy.sparse import csr_matrix
 
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
@@ -19,14 +18,12 @@ from saiph.reduction.utils.common import (
     get_projected_column_names,
     get_uniform_row_weights,
 )
-from saiph.reduction.utils.svd import SVD
 
 
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-    sparse: bool=False
 ) -> Model:
     """Fit a FAMD model on data.
 
@@ -40,6 +37,7 @@ def fit(
         model: The model for transforming new data.
     """
     nf = nf or min(df.shape)
+    print(nf)
     if col_w is not None:
         _col_weights = col_w
     else:
@@ -59,8 +57,8 @@ def fit(
 
     row_w = get_uniform_row_weights(len(df))
     col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
-    
-    df_scaled, mean, std, prop, _modalities = center(df, quanti, quali, sparse=sparse)
+
+    df_scaled, mean, std, prop, _modalities = center(df, quanti, quali)
     print("df scale type", type(df_scaled))
     # apply the weights
     Z = df_scaled.multiply(col_weights).T.multiply(row_w).T
@@ -69,6 +67,8 @@ def fit(
     _U, s, _V = SVD_sparse(Z)
     U = ((_U.T) / np.sqrt(row_w)).T
     V = _V / np.sqrt(col_weights)
+    print("fit _V", _V.shape)
+    print("fit V", V.shape)
 
     explained_var, explained_var_ratio = explain_variance(s, df, nf)
     U = U[:, :nf]
@@ -90,7 +90,7 @@ def fit(
         std=std,
         prop=prop,
         _modalities=_modalities,
-        type="famd",
+        type="famd_sparse",
         is_fitted=True,
         nf=nf,
         column_weights=col_weights,
@@ -150,7 +150,7 @@ def _col_weights_compute(
 
 
 def center(
-    df: pd.DataFrame, quanti: List[int], quali: List[int], sparse: bool = False
+    df: pd.DataFrame, quanti: List[str], quali: List[str]
 ) -> Tuple[
     pd.DataFrame, NDArray[np.float_], NDArray[np.float_], NDArray[Any], NDArray[Any]
 ]:
@@ -191,7 +191,7 @@ def center(
 
     prop = np.mean(df_quali, axis=0).tolist()[0]
     df_quali /= np.sqrt(prop)
-    df_scale = scipy.sparse.hstack([df_quanti, df_quali], format = 'csr')
+    df_scale = scipy.sparse.hstack([df_quanti, df_quali], format="csr")
     return df_scale, mean, std, prop, _modalities
 
 
@@ -221,7 +221,7 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     df_quali = csr_matrix(df_quali)
     df_quali /= np.sqrt(model.prop)
 
-    df_scaled = scipy.sparse.hstack([df_quanti, df_quali], format = 'csr')
+    df_scaled = scipy.sparse.hstack([df_quanti, df_quali], format="csr")
     return df_scaled
 
 
@@ -236,147 +236,14 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
         coord: Coordinates of the dataframe in the fitted space.
     """
     df_scaled = scaler(model, df)
+    print("transform df scaled", df_scaled.shape)
+    print("transform V", model.V.shape)
+
     coord = pd.DataFrame(df_scaled * model.V.T)
     print("coord shape", coord.shape)
     print("nf ", (model.nf))
-    coord.columns = get_projected_column_names(model.nf)
+    coord.columns = get_projected_column_names(model.nf - 1)
     return coord
-
-
-def stats(model: Model, df: pd.DataFrame) -> Model:
-    """Compute contributions and cos2.
-
-    Parameters:
-        model: Model computed by fit.
-
-    Returns:
-        model: model populated with contriubtion and cos2.
-    """
-    if not model.is_fitted:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
-
-    contributions, cos2 = get_variable_contributions(model, df)
-    model.contributions = contributions
-    model.cos2 = cos2
-    return model
-
-
-def get_variable_contributions(
-    model: Model, df: pd.DataFrame
-) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
-    """Compute the contributions of the `df` variables within the fitted space.
-
-    Parameters:
-        model: Model computed by fit.
-        df: dataframe to compute contributions from
-
-    Returns:
-        tuple of contributions and cos2.
-    """
-    scaled_df = pd.DataFrame(scaler(model, df))
-    df2: NDArray[np.float_] = np.array(scaled_df) ** 2
-
-    # svd of x with row_w and col_w
-    weightedTc = _rmultiplication(
-        _rmultiplication(scaled_df.T, np.sqrt(model.column_weights)).T,
-        np.sqrt(model.row_weights),
-    )
-    U, s, V = SVD(weightedTc.T, svd_flip=False)
-    ncp0 = min(len(weightedTc.iloc[0]), len(weightedTc), model.nf)
-    U = U[:, :ncp0]
-    V = V.T[:, :ncp0]
-    s = s[:ncp0]
-    tmp = V
-    V = U
-    U = tmp
-    mult = np.sign(np.sum(V, axis=0))
-
-    # final V
-    mult1 = pd.DataFrame(
-        np.array(pd.DataFrame(np.array(_rmultiplication(pd.DataFrame(V.T), mult)))).T
-    )
-    V = pd.DataFrame()
-    for i in range(len(mult1)):
-        V[i] = mult1.iloc[i] / np.sqrt(model.column_weights[i])
-    V = np.array(V).T
-    # final U
-    mult1 = pd.DataFrame(
-        np.array(pd.DataFrame(np.array(_rmultiplication(pd.DataFrame(U.T), mult)))).T
-    )
-    U = pd.DataFrame()
-    for i in range(len(mult1)):
-        U[i] = mult1.iloc[i] / np.sqrt(model.row_weights[i])
-    U = np.array(U).T
-    eig: Any = s**2
-    # end of the svd
-
-    # compute the contribution
-    coord_var: NDArray[np.float_] = np.array(V[0] * s)
-    for i in range(1, len(V[:, 0])):
-        coord_var = np.vstack((coord_var, V[i] * s))
-    contrib_var = (((((coord_var**2) / eig).T) * model.column_weights).T) * 100
-    # compute cos2
-    dfrow_w: NDArray[np.float_] = np.array(pd.DataFrame((df2.T) * model.row_weights).T)
-    dist2 = []
-    for i in range(len(dfrow_w[0])):
-        dist2 += [np.sum(dfrow_w[:, i])]
-        if abs(abs(dist2[i]) - 1) < 0.001:
-            dist2[i] = 1
-
-    cor = ((coord_var.T) / np.sqrt(dist2)).T
-    cos2 = cor**2
-
-    # compute eta2
-    eta2: NDArray[np.float_] = np.array([])
-    fi = 0
-
-    columns = get_projected_column_names(model.nf)[:ncp0]
-    coord = pd.DataFrame(model.U[:, :ncp0] * model.s[:ncp0], columns=columns)
-    mods = []
-    # for each qualitative column in the original data set
-    for col in model.original_categorical:
-        dummy = pd.get_dummies(
-            df[col].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
-        )
-        mods += [len(dummy.columns) - 1]
-        # for each dimension
-        dim = []
-        for j, coordcol in enumerate(coord.columns):
-            # for each modality of the qualitative column
-            p = 0
-            for i in range(len(dummy.columns)):
-                p += (
-                    np.array(dummy.T)[i] * coord[coordcol] * model.row_weights
-                ).sum() ** 2 / model.prop[fi + i]
-            dim += [p]
-        eta1 = (
-            np.array(dim)
-            / np.array((coord**2).T * model.row_weights).sum(axis=1).tolist()
-        )
-        eta2 = np.append(eta2, eta1)
-        fi += len(dummy.columns)
-
-        cos2 = cos2[: len(model.original_continuous)]
-
-    cos2 = cos2**2
-    eta2 = eta2**2
-    eta2 = ((eta2).T / mods).T
-
-    cos2 = np.concatenate([cos2, [eta2]], axis=0)
-
-    return contrib_var, cos2
-
-
-def _rmultiplication(F: pd.DataFrame, marge: NDArray[Any]) -> pd.DataFrame:
-    """Multiply each column with the same vector."""
-    df_dict = F.to_dict("list")
-    for col in df_dict.keys():
-        df_dict[col] = df_dict[col] * marge
-    df = pd.DataFrame.from_dict(df_dict)
-    df.index = F.index
-    return df
 
 
 def SVD_sparse(
@@ -393,6 +260,6 @@ def SVD_sparse(
         s: The singular values.
         V: Unitary matrix having right singular vectors as rows.
     """
-    U, s, V = scipy.sparse.linalg.svds(df, k= (min(df.shape)-1), solver='arpack')
+    U, s, V = scipy.sparse.linalg.svds(df, k=(min(df.shape) - 1), solver="arpack")
 
     return U, s, V

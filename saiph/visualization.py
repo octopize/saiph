@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 import matplotlib
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt  # type: ignore
+from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 
 from saiph import transform
@@ -46,7 +46,8 @@ def plot_circle(
     fig.gca().add_artist(circle1)
 
     # Order dataframe
-    cor = model.correlations.copy()
+    if model.correlations is not None:
+        cor = model.correlations.copy()
     cor["sum"] = cor.apply(
         lambda x: abs(x[dimensions[0] - 1]) + abs(x[dimensions[1] - 1]), axis=1
     )
@@ -86,15 +87,11 @@ def plot_circle(
     plt.title("Correlation Circle", fontsize=figure_axis_size * 3)
 
     plt.xlabel(
-        "Dim "
-        + str(dimensions[0])
-        + " (%s%%)" % str(explained_var_ratio[dimensions[0] - 1] * 100)[:4],
+        f"Dim {str(dimensions[0])} {str(explained_var_ratio[dimensions[0] - 1] * 100)[:4]} %",
         fontsize=figure_axis_size * 2,
     )
     plt.ylabel(
-        "Dim "
-        + str(dimensions[1])
-        + " (%s%%)" % str(explained_var_ratio[dimensions[1] - 1] * 100)[:4],
+        f"Dim {str(dimensions[1])} {str(explained_var_ratio[dimensions[1] - 1] * 100)[:4]} %",
         fontsize=figure_axis_size * 2,
     )
 

@@ -5,7 +5,6 @@ from typing import Any, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 import scipy
-from scipy.sparse import csr_matrix
 from numpy.typing import NDArray
 from scipy.sparse import csr_matrix
 

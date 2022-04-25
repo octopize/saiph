@@ -1,5 +1,5 @@
 """Project any dataframe, inverse transform and compute stats."""
-from typing import Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-    sparse: bool = None,
+    sparse: bool = False,
 ) -> Model:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
@@ -113,9 +113,10 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
         model.contributions = model.cos2.div(model.cos2.sum(axis=0), axis=1).mul(100)
     elif not has_some_quanti:
         model = mca.stats(model, df)
-        model.cos2 = model.correlations**2
+        if model.correlations is not None:
+            model.cos2 = model.correlations**2
 
-        if model.contributions is not None:
+        if model.contributions is not None and model.correlations is not None:
             model.contributions = pd.DataFrame(
                 model.contributions,
                 columns=model.correlations.columns,
@@ -126,11 +127,12 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
         model.cos2 = pd.DataFrame(
             model.cos2, index=model.original_continuous + model.original_categorical
         )
-        model.contributions = pd.DataFrame(
-            model.contributions,
-            columns=model.correlations.columns,
-            index=list(model.correlations.index),
-        )
+        if model.contributions is not None and model.correlations is not None:
+            model.contributions = pd.DataFrame(
+                model.contributions,
+                columns=model.correlations.columns,
+                index=list(model.correlations.index),
+            )
     return model
 
 
@@ -400,7 +402,7 @@ def get_random_weighted_columns(
 
 def get_dummies_mapping(
     columns: List[str], dummy_columns: List[str]
-) -> Dict[str, Set[str]]:
+) -> Dict[str, List[str]]:
     """Get mapping between original column and all dummy columns."""
     return {
         col: list(

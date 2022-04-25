@@ -52,9 +52,9 @@ class Model:
     # Modality proportions of categorical variables.
     prop: Any = None  # FAMD only
     # Modalities for the MCA/FAMD.
-    _modalities: Optional[NDArray[Any]] = None
+    _modalities: Optional[NDArray[np.string_]] = None
     # Diagonal matrix containing sums along columns of the scaled data as diagonals.
-    D_c: Optional[NDArray[Any]] = None
+    D_c: Optional[NDArray[np.float_]] = None
     # Type of dimension reduction that was performed.
     type: Optional[str] = None
 

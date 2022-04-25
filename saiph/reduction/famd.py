@@ -147,7 +147,7 @@ def _col_weights_compute(
 
 
 def center(
-    df: pd.DataFrame, quanti: List[int], quali: List[int]
+    df: pd.DataFrame, quanti: List[str], quali: List[str]
 ) -> Tuple[
     pd.DataFrame, NDArray[np.float_], NDArray[np.float_], NDArray[Any], NDArray[Any]
 ]:
@@ -231,8 +231,6 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.V.T
-    print("coord shape", coord.shape)
-    print("nf ", (model.nf))
 
     coord.columns = get_projected_column_names(model.nf)
     return coord
@@ -270,8 +268,8 @@ def get_variable_contributions(
     Returns:
         tuple of contributions and cos2.
     """
-    scaled_df = pd.DataFrame(scaler(model, df))
-    df2: NDArray[np.float_] = np.array(scaled_df) ** 2
+    scaled_df = scaler(model, df)
+    df2: NDArray[Any] = np.array(scaler(model, df)) ** 2
 
     # svd of x with row_w and col_w
     weightedTc = _rmultiplication(

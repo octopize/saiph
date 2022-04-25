@@ -28,15 +28,15 @@ def test_fit_mix() -> None:
             "Dim. 1": [-1.73, 1.73],
         }
     )
-    expected_v: NDArray[float] = np.array(
+    expected_v: NDArray[np.float_] = np.array(
         [
             [0.57735, 0.408248, -0.408248, -0.408248, 0.408248],
         ]
     )
-    expected_s: NDArray[float] = np.array([1.224745e00])
-    expected_u: NDArray[float] = np.array([[-1.0], [1.0]])
-    expected_explained_var: NDArray[float] = np.array([1.5])
-    expected_explained_var_ratio: NDArray[float] = np.array([1.0])
+    expected_s: NDArray[np.float_] = np.array([1.224745e00])
+    expected_u: NDArray[np.float_] = np.array([[-1.0], [1.0]])
+    expected_explained_var: NDArray[np.float_] = np.array([1.5])
+    expected_explained_var_ratio: NDArray[np.float_] = np.array([1.0])
     print(result, expected_result)
 
     print(result.iloc[0, 0], expected_result.iloc[0, 0])
@@ -48,7 +48,7 @@ def test_fit_mix() -> None:
     assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),
     assert_allclose(model.variable_coord, model.V.T)
     assert np.array_equal(
-        model._modalities,
+        model._modalities,  # type: ignore
         [
             f"tool{DUMMIES_PREFIX_SEP}hammer",
             f"tool{DUMMIES_PREFIX_SEP}toaster",
@@ -67,7 +67,7 @@ def test_fit_mix() -> None:
         atol=0.01,
     )
     assert np.array_equal(
-        model._modalities,
+        model._modalities,  # type: ignore
         [
             f"tool{DUMMIES_PREFIX_SEP}hammer",
             f"tool{DUMMIES_PREFIX_SEP}toaster",

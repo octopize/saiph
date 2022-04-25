@@ -288,9 +288,10 @@ def get_variable_contributions(model: Model, df: pd.DataFrame) -> NDArray[np.flo
         U[:, i] = U[:, i] * np.sqrt(eig[i])
 
     for i in range(len(coord_col[0])):
-        coord_col[:, i] = (coord_col[:, i] * marge_col) / eig[i] * 100
+        coord_col[:, i] = (coord_col[:, i] * marge_col) / eig[i]
 
-    return coord_col
+    coordinates: NDArray[np.float_] = coord_col * 100
+    return coordinates
 
 
 def stats(model: Model, df: pd.DataFrame) -> Model:

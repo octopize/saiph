@@ -49,8 +49,8 @@ def test_fit_zero() -> None:
 
     expected_result = pd.DataFrame(
         {
-            "Dim. 1": [0, 0],
-            "Dim. 2": [0, 0],
+            "Dim. 1": [0.0, 0.0],
+            "Dim. 2": [0.0, 0.0],
         }
     )
     expected_v: NDArray[np.float_] = np.array([[1.0, 0.0], [0.0, 1.0]])

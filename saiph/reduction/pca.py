@@ -41,7 +41,7 @@ def fit(
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
 
-    fit_check_params(nf, _col_weights, df.shape[1])
+    fit_check_params(nf, _col_weights, df)
 
     # set row weights
     row_w = get_uniform_row_weights(len(df))

@@ -5,7 +5,6 @@ from typing import Any, Callable, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from matplotlib.pyplot import sca
 from numpy.typing import NDArray
 
 from saiph.models import Model
@@ -68,9 +67,20 @@ def center(
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float_]] = None,
-    center: Callable = center,
-    SVD: Callable = SVD,
+    col_w: Optional[NDArray[np.float_]] = None,
+    center: Callable[
+        [pd.DataFrame, List[str], List[str]],
+        Tuple[
+            pd.DataFrame,
+            NDArray[np.float_],
+            NDArray[np.float_],
+            NDArray[Any],
+            NDArray[Any],
+        ],
+    ] = center,
+    SVD: Callable[
+        [pd.DataFrame], Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]
+    ] = SVD,
 ) -> Model:
     """Fit a FAMD model on data.
 
@@ -85,11 +95,11 @@ def fit(
     """
     nf = nf or min(pd.get_dummies(df).shape)
     print(nf)
-    _col_weights = np.ones(df.shape[1]) if col_weights is None else col_weights
+    _col_weights = np.ones(df.shape[1]) if col_w is None else col_w
 
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
-    fit_check_params(nf, _col_weights, df.shape[1])
+    fit_check_params(nf, _col_weights, df)
 
     # select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
@@ -224,7 +234,7 @@ def transform(
     df: pd.DataFrame,
     model: Model,
     *,
-    scaler: Callable = scaler,
+    scaler: Callable[[Model, pd.DataFrame], pd.DataFrame] = scaler,
 ) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 

@@ -35,7 +35,7 @@ def fit(
     Returns:
         model: The model for transforming new data.
     """
-    nf = nf or min(df.shape)
+    nf = nf or min(pd.get_dummies(df).shape)
     if col_w is not None:
         _col_weights = col_w
     else:
@@ -43,7 +43,7 @@ def fit(
 
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
-    fit_check_params(nf, _col_weights, df.shape[1])
+    fit_check_params(nf, _col_weights, df)
 
     modalities_types = get_modalities_types(df)
 

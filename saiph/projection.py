@@ -12,7 +12,7 @@ from saiph.reduction import DUMMIES_PREFIX_SEP, famd, famd_sparse, mca, pca
 def fit(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
-    col_w: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float_]] = None,
     sparse: bool = False,
 ) -> Model:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
@@ -33,7 +33,7 @@ def fit(
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
 
-    _nf: int 
+    _nf: int
     if not nf or isinstance(nf, str):
         _nf = min(pd.get_dummies(df, prefix_sep=DUMMIES_PREFIX_SEP).shape)
     else:
@@ -49,7 +49,7 @@ def fit(
     else:
         _fit = famd.fit
 
-    model = _fit(df, _nf, col_w)
+    model = _fit(df, _nf, col_weights)
 
     if quanti.size == 0:
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)

@@ -11,16 +11,14 @@ from scipy.sparse import csr_matrix
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.famd import fit as fit_famd
-from saiph.reduction.famd import scaler
 from saiph.reduction.famd import transform as transform_famd
-from saiph.reduction.utils.common import get_projected_column_names
 from saiph.reduction.utils.svd import svd_sparse
 
 
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float_]] = None,
+    col_w: Optional[NDArray[np.float_]] = None,
 ) -> Model:
     """Fit a FAMD model on sparse data.
 
@@ -33,7 +31,7 @@ def fit(
     Returns:
         model: The model for transforming new data.
     """
-    return fit_famd(df, nf, col_weights, center=center_sparse, SVD=svd_sparse)
+    return fit_famd(df, nf, col_w, center=center_sparse, SVD=svd_sparse)
 
 
 def fit_transform(

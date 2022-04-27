@@ -5,6 +5,7 @@ from typing import Any, Callable, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+from matplotlib.pyplot import sca
 from numpy.typing import NDArray
 
 from saiph.models import Model
@@ -218,7 +219,12 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     return df_scaled
 
 
-def transform(df: pd.DataFrame, model: Model, scaler: Callable = scaler) -> pd.DataFrame:
+def transform(
+    df: pd.DataFrame,
+    model: Model,
+    *,
+    scaler: Callable = scaler,
+) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 
     Parameters:
@@ -229,9 +235,9 @@ def transform(df: pd.DataFrame, model: Model, scaler: Callable = scaler) -> pd.D
         coord: Coordinates of the dataframe in the fitted space.
     """
     df_scaled = scaler(model, df)
-    coord = df_scaled @ model.V.T
+    coord = pd.DataFrame(df_scaled @ model.V.T)
 
-    coord.columns = get_projected_column_names(model.nf)
+    coord.columns = get_projected_column_names(len(coord.columns))
     return coord
 
 

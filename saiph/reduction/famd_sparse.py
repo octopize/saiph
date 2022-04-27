@@ -10,7 +10,9 @@ from scipy.sparse import csr_matrix
 
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
-from saiph.reduction.famd import fit as fit_famd, transform as transform_famd
+from saiph.reduction.famd import fit as fit_famd
+from saiph.reduction.famd import scaler
+from saiph.reduction.famd import transform as transform_famd
 from saiph.reduction.utils.common import get_projected_column_names
 from saiph.reduction.utils.svd import svd_sparse
 
@@ -141,8 +143,4 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     Returns:
         coord: Coordinates of the dataframe in the fitted space.
     """
-    df_scaled = scaler_sparse(model, df)
-
-    coord = pd.DataFrame(df_scaled * model.V.T)
-    coord.columns = get_projected_column_names(model.nf - 1)
-    return transform_famd(df, model)
+    return transform_famd(df, model, scaler=scaler_sparse)

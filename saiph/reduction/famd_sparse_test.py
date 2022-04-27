@@ -6,7 +6,13 @@ from pandas._testing.asserters import assert_series_equal
 from pandas.testing import assert_frame_equal
 
 from saiph.reduction import DUMMIES_PREFIX_SEP
-from saiph.reduction.famd_sparse import center_sparse, fit, fit_transform, scaler_sparse, transform
+from saiph.reduction.famd_sparse import (
+    center_sparse,
+    fit,
+    fit_transform,
+    scaler_sparse,
+    transform,
+)
 from saiph.reduction.pca import center as center_pca
 from saiph.reduction.pca import fit_transform as fit_pca
 from saiph.reduction.pca import scaler as scaler_pca

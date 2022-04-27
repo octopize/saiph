@@ -1,6 +1,5 @@
 """FAMD projection module."""
 import sys
-from itertools import chain, repeat
 from typing import Any, List, Optional, Tuple
 
 import numpy as np
@@ -10,12 +9,10 @@ from numpy.typing import NDArray
 from scipy.sparse import csr_matrix
 
 from saiph.models import Model
-from saiph.reduction.utils.svd import svd_sparse
-from saiph.reduction.famd import fit as fit_famd
 from saiph.reduction import DUMMIES_PREFIX_SEP
-from saiph.reduction.utils.common import (
-    get_projected_column_names,
-)
+from saiph.reduction.famd import fit as fit_famd, transform as transform_famd
+from saiph.reduction.utils.common import get_projected_column_names
+from saiph.reduction.utils.svd import svd_sparse
 
 
 def fit(
@@ -148,5 +145,4 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
 
     coord = pd.DataFrame(df_scaled * model.V.T)
     coord.columns = get_projected_column_names(model.nf - 1)
-    return coord
-
+    return transform_famd(df, model)

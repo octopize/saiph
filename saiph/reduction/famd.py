@@ -18,6 +18,7 @@ from saiph.reduction.utils.common import (
 )
 from saiph.reduction.utils.svd import SVD
 
+
 def center(
     df: pd.DataFrame, quanti: List[str], quali: List[str]
 ) -> Tuple[
@@ -62,12 +63,13 @@ def center(
 
     return df_scale, mean, std, prop, _modalities
 
+
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
-    center: Callable = center, 
-    SVD: Callable = SVD
+    center: Callable = center,
+    SVD: Callable = SVD,
 ) -> Model:
     """Fit a FAMD model on data.
 
@@ -82,7 +84,6 @@ def fit(
     """
     nf = nf or min(df.shape)
     _col_weights = np.ones(df.shape[1]) if col_weights is None else col_weights
-
 
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
@@ -189,9 +190,6 @@ def _col_weights_compute(
     return _col_w
 
 
-
-
-
 def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     """Scale data using mean, std, modalities and proportions of each categorical from model.
 
@@ -220,7 +218,7 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     return df_scaled
 
 
-def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
+def transform(df: pd.DataFrame, model: Model, scaler: Callable = scaler) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 
     Parameters:

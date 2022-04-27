@@ -2,8 +2,7 @@ from typing import Any, Tuple
 
 import pandas as pd
 from numpy.typing import NDArray
-from scipy import linalg
-from scipy import sparse
+from scipy import linalg, sparse
 from sklearn.utils import extmath
 
 

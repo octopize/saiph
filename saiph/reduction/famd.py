@@ -19,6 +19,7 @@ from saiph.reduction.utils.common import (
 )
 from saiph.reduction.utils.svd import SVD
 
+
 def center(
     df: pd.DataFrame, quanti: List[str], quali: List[str]
 ) -> Tuple[

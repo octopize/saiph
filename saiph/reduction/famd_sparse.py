@@ -9,8 +9,6 @@ from numpy.typing import NDArray
 from scipy.sparse import csr_matrix
 
 from saiph.models import Model
-from saiph.reduction.utils.svd import svd_sparse
-from saiph.reduction.famd import fit as fit_famd
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.famd import fit as fit_famd
 from saiph.reduction.famd import transform as transform_famd

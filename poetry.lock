@@ -280,6 +280,27 @@ python-versions = "*"
 devel = ["colorama", "jsonschema", "json-spec", "pylint", "pytest", "pytest-benchmark", "pytest-cache", "validictory"]
 
 [[package]]
+name = "filprofiler"
+version = "2022.3.1.dev10+g01726cb"
+description = "A memory profiler for data batch processing applications."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+develop = false
+
+[package.dependencies]
+threadpoolctl = "*"
+
+[package.extras]
+dev = ["pytest", "pampy", "numpy", "cython", "black", "towncrier", "wheel", "auditwheel", "twine", "ipython", "ipykernel", "nbconvert", "jinja2 (<3.1)", "numexpr", "blosc", "psutil", "flake8"]
+
+[package.source]
+type = "git"
+url = "https://github.com/pythonspeed/filprofiler.git"
+reference = "master"
+resolved_reference = "01726cbdbec1deaf3de378c56ea8f669f104f27c"
+
+[[package]]
 name = "flake8"
 version = "4.0.1"
 description = "the modular source code checker: pep8 pyflakes and co"
@@ -1749,7 +1770,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.10"
-content-hash = "4a14af28bd31b69c267da0811fa06ce4ef86d99dccb33d219cffa3fdd93da5c8"
+content-hash = "eefa5a244609388e3147f34f01b0d6384410a390c65fcc936286abace6d0a7ae"
 
 [metadata.files]
 alabaster = [
@@ -1960,6 +1981,7 @@ fastjsonschema = [
     {file = "fastjsonschema-2.15.3-py3-none-any.whl", hash = "sha256:ddb0b1d8243e6e3abb822bd14e447a89f4ab7439342912d590444831fa00b6a0"},
     {file = "fastjsonschema-2.15.3.tar.gz", hash = "sha256:0a572f0836962d844c1fc435e200b2e4f4677e4e6611a2e3bdd01ba697c275ec"},
 ]
+filprofiler = []
 flake8 = [
     {file = "flake8-4.0.1-py2.py3-none-any.whl", hash = "sha256:479b1304f72536a55948cb40a32dce8bb0ffe3501e26eaf292c7e60eb5e0428d"},
     {file = "flake8-4.0.1.tar.gz", hash = "sha256:806e034dda44114815e23c16ef92f95c91e4c71100ff52813adf7132a6ad870d"},

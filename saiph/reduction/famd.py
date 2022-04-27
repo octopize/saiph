@@ -83,7 +83,8 @@ def fit(
     Returns:
         model: The model for transforming new data.
     """
-    nf = nf or min(df.shape)
+    nf = nf or min(pd.get_dummies(df).shape)
+    print(nf)
     _col_weights = np.ones(df.shape[1]) if col_weights is None else col_weights
 
     if not isinstance(df, pd.DataFrame):

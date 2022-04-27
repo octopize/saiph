@@ -6,7 +6,7 @@ from pandas._testing.asserters import assert_series_equal
 from pandas.testing import assert_frame_equal
 
 from saiph.reduction import DUMMIES_PREFIX_SEP
-from saiph.reduction.famd_sparse import center, fit, fit_transform, scaler, transform
+from saiph.reduction.famd_sparse import center_sparse, fit, fit_transform, scaler_sparse, transform
 from saiph.reduction.pca import center as center_pca
 from saiph.reduction.pca import fit_transform as fit_pca
 from saiph.reduction.pca import scaler as scaler_pca
@@ -37,9 +37,7 @@ def test_fit_mix() -> None:
     expected_u: NDArray[np.float_] = np.array([[-1.0], [1.0]])
     expected_explained_var: NDArray[np.float_] = np.array([1.5])
     expected_explained_var_ratio: NDArray[np.float_] = np.array([1.0])
-    print(result, expected_result)
 
-    print(result.iloc[0, 0], expected_result.iloc[0, 0])
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.s, expected_s, atol=0.01)
@@ -124,24 +122,24 @@ def test_fit_zero() -> None:
 
 
 def test_scaler_pca_famd() -> None:
+    """Compare FAMD and PCA numeric scaler results."""
     filename = "df_mixed"
     fixture_file = f"fixtures/{filename}.csv"
     original_df = pd.read_csv(fixture_file)
 
     _, model = fit_transform(original_df)
-    df = scaler(model, original_df)
+    df_famd = scaler_sparse(model, original_df)
 
     _, model_pca = fit_pca(original_df[model.original_continuous])
     df_pca = scaler_pca(model_pca, original_df)
 
-    print(df.todense()[:, [0, 1]])
-    print(df_pca)
     assert_array_equal(
-        df.todense()[:, [0, 1]], df_pca[model.original_continuous].to_numpy()
+        df_famd.todense()[:, [0, 1]], df_pca[model.original_continuous].to_numpy()
     )
 
 
 def test_center_pca_famd() -> None:
+    """Compare FAMD and PCA numeric center results."""
     filename = "df_mixed"
     fixture_file = f"fixtures/{filename}.csv"
     original_df = pd.read_csv(fixture_file)
@@ -149,11 +147,13 @@ def test_center_pca_famd() -> None:
     _, model = fit_transform(original_df)
     continuous = model.original_continuous
     categorical = model.original_categorical
-    df, mean1, std1, _, _ = center(original_df, quali=categorical, quanti=continuous)
+    df_famd, mean1, std1, _, _ = center_sparse(
+        original_df, quali=categorical, quanti=continuous
+    )
 
     df_pca, mean2, std2 = center_pca(original_df[continuous])
 
-    assert_array_equal(df.todense()[:, [0, 1]], df_pca.to_numpy())
+    assert_array_equal(df_famd.todense()[:, [0, 1]], df_pca.to_numpy())
 
     assert_series_equal(mean1, mean2)
     assert_series_equal(std1, std2)

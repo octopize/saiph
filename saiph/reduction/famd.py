@@ -1,7 +1,7 @@
 """FAMD projection module."""
 import sys
 from itertools import chain, repeat
-from typing import Any, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -18,11 +18,56 @@ from saiph.reduction.utils.common import (
 )
 from saiph.reduction.utils.svd import SVD
 
+def center(
+    df: pd.DataFrame, quanti: List[str], quali: List[str]
+) -> Tuple[
+    pd.DataFrame, NDArray[np.float_], NDArray[np.float_], NDArray[Any], NDArray[Any]
+]:
+    """Center data, scale it, compute modalities and proportions of each categorical.
+
+    Used as internal function during fit.
+
+    **NB**: saiph.reduction.famd.scaler is better suited when a Model is already fitted.
+
+    Parameters:
+        df: DataFrame to center.
+        quanti: Indices of continous variables.
+        quali: Indices of categorical variables.
+
+    Returns:
+        df_scale: The scaled DataFrame.
+        mean: Mean of the input dataframe.
+        std: Standard deviation of the input dataframe.
+        prop: Proportion of each categorical.
+        _modalities: Modalities for the MCA.
+    """
+    # Scale the continuous data
+    df_quanti = df[quanti]
+    mean = np.mean(df_quanti, axis=0)
+    df_quanti -= mean
+    std = np.std(df_quanti, axis=0)
+    std[std <= sys.float_info.min] = 1
+    df_quanti /= std
+
+    # scale the categorical data
+    df_quali = pd.get_dummies(
+        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+    )
+    prop = np.mean(df_quali, axis=0)
+    df_quali -= prop
+    df_quali /= np.sqrt(prop)
+    _modalities = df_quali.columns.values
+
+    df_scale = pd.concat([df_quanti, df_quali], axis=1)
+
+    return df_scale, mean, std, prop, _modalities
 
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_w: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float_]] = None,
+    center: Callable = center, 
+    SVD: Callable = SVD
 ) -> Model:
     """Fit a FAMD model on data.
 
@@ -36,10 +81,8 @@ def fit(
         model: The model for transforming new data.
     """
     nf = nf or min(df.shape)
-    if col_w is not None:
-        _col_weights = col_w
-    else:
-        _col_weights = np.ones(df.shape[1])
+    _col_weights = np.ones(df.shape[1]) if col_weights is None else col_weights
+
 
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
@@ -59,7 +102,7 @@ def fit(
     df_scaled, mean, std, prop, _modalities = center(df, quanti, quali)
 
     # apply the weights
-    Z = ((df_scaled * col_weights).T * row_w).T
+    Z = df_scaled.multiply(col_weights).T.multiply(row_w).T
 
     # compute the svd
     _U, s, _V = SVD(Z)
@@ -146,49 +189,7 @@ def _col_weights_compute(
     return _col_w
 
 
-def center(
-    df: pd.DataFrame, quanti: List[str], quali: List[str]
-) -> Tuple[
-    pd.DataFrame, NDArray[np.float_], NDArray[np.float_], NDArray[Any], NDArray[Any]
-]:
-    """Center data, scale it, compute modalities and proportions of each categorical.
 
-    Used as internal function during fit.
-
-    **NB**: saiph.reduction.famd.scaler is better suited when a Model is already fitted.
-
-    Parameters:
-        df: DataFrame to center.
-        quanti: Indices of continous variables.
-        quali: Indices of categorical variables.
-
-    Returns:
-        df_scale: The scaled DataFrame.
-        mean: Mean of the input dataframe.
-        std: Standard deviation of the input dataframe.
-        prop: Proportion of each categorical.
-        _modalities: Modalities for the MCA.
-    """
-    # Scale the continuous data
-    df_quanti = df[quanti]
-    mean = np.mean(df_quanti, axis=0)
-    df_quanti -= mean
-    std = np.std(df_quanti, axis=0)
-    std[std <= sys.float_info.min] = 1
-    df_quanti /= std
-
-    # scale the categorical data
-    df_quali = pd.get_dummies(
-        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
-    )
-    prop = np.mean(df_quali, axis=0)
-    df_quali -= prop
-    df_quali /= np.sqrt(prop)
-    _modalities = df_quali.columns.values
-
-    df_scale = pd.concat([df_quanti, df_quali], axis=1)
-
-    return df_scale, mean, std, prop, _modalities
 
 
 def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:

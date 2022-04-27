@@ -269,7 +269,7 @@ def get_variable_contributions(
         tuple of contributions and cos2.
     """
     scaled_df = scaler(model, df)
-    df2: NDArray[Any] = np.array(scaler(model, df)) ** 2
+    df2: NDArray[Any] = np.array(scaled_df) ** 2
 
     # svd of x with row_w and col_w
     weightedTc = _rmultiplication(

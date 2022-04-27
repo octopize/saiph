@@ -6,7 +6,7 @@ from pandas._testing.asserters import assert_series_equal
 from pandas.testing import assert_frame_equal
 
 from saiph.reduction import DUMMIES_PREFIX_SEP
-from saiph.reduction.famd_sparse import center, fit_transform, scaler, transform
+from saiph.reduction.famd_sparse import center, fit, fit_transform, scaler, transform
 from saiph.reduction.pca import center as center_pca
 from saiph.reduction.pca import fit_transform as fit_pca
 from saiph.reduction.pca import scaler as scaler_pca
@@ -78,16 +78,11 @@ def test_fit_mix() -> None:
 
 
 def test_transform() -> None:
-    df = pd.DataFrame(
-        {
-            "tool": ["toaster", "hammer"],
-            "score": ["aa", "ab"],
-            "size": [1.0, 4.0],
-            "age": [55, 62],
-        }
-    )
+    filename = "df_mixed"
+    fixture_file = f"fixtures/{filename}.csv"
+    df = pd.read_csv(fixture_file)
 
-    _, model = fit_transform(df)
+    model = fit(df)
 
     df_transformed = transform(df, model)
     df_expected = pd.DataFrame(

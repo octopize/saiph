@@ -1,5 +1,5 @@
 """Project any dataframe, inverse transform and compute stats."""
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -62,7 +62,7 @@ def fit_transform(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
     col_w: Optional[NDArray[np.float_]] = None,
-) -> tuple[pd.DataFrame, Model]:
+) -> Tuple[pd.DataFrame, Model]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
     Datetimes must be stored as numbers of seconds since epoch.
@@ -182,7 +182,7 @@ def get_variable_contributions(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def transform(df: pd.DataFrame, model: Model, sparse: bool = False) -> pd.DataFrame:
+def transform(df: pd.DataFrame, model: Model, *, sparse: bool = False) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 
     Parameters:

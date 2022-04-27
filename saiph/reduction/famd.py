@@ -19,6 +19,49 @@ from saiph.reduction.utils.common import (
 )
 from saiph.reduction.utils.svd import SVD
 
+def center(
+    df: pd.DataFrame, quanti: List[str], quali: List[str]
+) -> Tuple[
+    pd.DataFrame, NDArray[np.float_], NDArray[np.float_], NDArray[Any], NDArray[Any]
+]:
+    """Center data, scale it, compute modalities and proportions of each categorical.
+
+    Used as internal function during fit.
+
+    **NB**: saiph.reduction.famd.scaler is better suited when a Model is already fitted.
+
+    Parameters:
+        df: DataFrame to center.
+        quanti: Indices of continous variables.
+        quali: Indices of categorical variables.
+
+    Returns:
+        df_scale: The scaled DataFrame.
+        mean: Mean of the input dataframe.
+        std: Standard deviation of the input dataframe.
+        prop: Proportion of each categorical.
+        _modalities: Modalities for the MCA.
+    """
+    # Scale the continuous data
+    df_quanti = df[quanti]
+    mean = np.mean(df_quanti, axis=0)
+    df_quanti -= mean
+    std = np.std(df_quanti, axis=0)
+    std[std <= sys.float_info.min] = 1
+    df_quanti /= std
+
+    # scale the categorical data
+    df_quali = pd.get_dummies(
+        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+    )
+    prop = np.mean(df_quali, axis=0)
+    df_quali -= prop
+    df_quali /= np.sqrt(prop)
+    _modalities = df_quali.columns.values
+
+    df_scale = pd.concat([df_quanti, df_quali], axis=1)
+
+    return df_scale, mean, std, prop, _modalities
 
 def center(
     df: pd.DataFrame, quanti: List[str], quali: List[str]

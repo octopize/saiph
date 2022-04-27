@@ -95,14 +95,9 @@ def test_transform() -> None:
 
 
 def test_transform_vs_coord() -> None:
-    df = pd.DataFrame(
-        {
-            "tool": ["toaster", "hammer"],
-            "score": ["aa", "ab"],
-            "size": [1.0, 4.0],
-            "age": [55, 62],
-        }
-    )
+    filename = "df_mixed"
+    fixture_file = f"fixtures/{filename}.csv"
+    df = pd.read_csv(fixture_file)
 
     coord, model = fit_transform(df)
     df_transformed = transform(df, model)
@@ -129,14 +124,9 @@ def test_fit_zero() -> None:
 
 
 def test_scaler_pca_famd() -> None:
-    original_df = pd.DataFrame(
-        {
-            "tool": ["toaster", "hammer"],
-            "score": ["aa", "ab"],
-            "size": [1.0, 4.0],
-            "age": [55, 62],
-        }
-    )
+    filename = "df_mixed"
+    fixture_file = f"fixtures/{filename}.csv"
+    original_df = pd.read_csv(fixture_file)
 
     _, model = fit_transform(original_df)
     df = scaler(model, original_df)
@@ -152,14 +142,9 @@ def test_scaler_pca_famd() -> None:
 
 
 def test_center_pca_famd() -> None:
-    original_df = pd.DataFrame(
-        {
-            "tool": ["toaster", "hammer"],
-            "score": ["aa", "ab"],
-            "size": [1.0, 4.0],
-            "age": [55, 62],
-        }
-    )
+    filename = "df_mixed"
+    fixture_file = f"fixtures/{filename}.csv"
+    original_df = pd.read_csv(fixture_file)
 
     _, model = fit_transform(original_df)
     continuous = model.original_continuous

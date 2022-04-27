@@ -17,7 +17,7 @@ from saiph.reduction.famd import transform as transform_famd
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float_]] = None,
+    col_w: Optional[NDArray[np.float_]] = None,
 ) -> Model:
     """Fit a FAMD model on sparse data.
 

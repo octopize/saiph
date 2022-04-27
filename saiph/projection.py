@@ -33,7 +33,7 @@ def fit(
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
 
-    _nf: int 
+    _nf: int
     if not nf or isinstance(nf, str):
         _nf = min(pd.get_dummies(df, prefix_sep=DUMMIES_PREFIX_SEP).shape)
     else:

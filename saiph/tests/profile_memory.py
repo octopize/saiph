@@ -1,3 +1,4 @@
+# type: ignore
 import time
 import webbrowser
 from pathlib import Path
@@ -16,20 +17,18 @@ N_ROWS = 10000
 # Run with:
 # poetry run fil-profile python saiph/tests/profile_memory.py
 
-BASE_PATH = (Path(__file__).parent / "../../").resolve()
+BASE_PATH = (Path(__file__).parent / "../").resolve()
 
 
 def main() -> None:
-    quali = np.random.randint(0, 1000, size=N_ROWS).astype(object)
-    quanti = np.random.randint(0, 1000, size=N_ROWS, dtype=np.int32)
+    df = pd.read_csv(str(BASE_PATH) + "/tmp/fake_1000000.csv")
 
-    df = pd.DataFrame({"quali": quali, "quanti": quanti})
     print(f"using {get_readable_size(df.memory_usage(index=True).sum())}")
 
     print("before fit")
     start = time.perf_counter()
     # fit(df, nf=5)
-    filename = f"fil-result/{time.time()}"
+    filename = f"/tmp/{time.time()}"
     full_path = BASE_PATH / filename / "index.html"
     print(full_path)
     profile(lambda: fit(df, nf=5), filename)
@@ -42,7 +41,7 @@ def main() -> None:
     print("before fit 2")
     start = time.perf_counter()
     # fit(df, nf=5)
-    filename = f"fil-result/{time.time()}"
+    filename = f"/tmp/{time.time()}"
     full_path = BASE_PATH / filename / "index.html"
     print(full_path)
     profile(lambda: fit(df, nf=5, sparse=True), filename)

@@ -12,6 +12,7 @@ from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
+    column_multiplication,
     explain_variance,
     get_modalities_types,
     get_projected_column_names,
@@ -286,16 +287,11 @@ def get_variable_contributions(
     Returns:
         tuple of contributions and cos2.
     """
-    scaled_df = scaler(model, df)
-    df2: NDArray[Any] = np.array(scaled_df) ** 2
+    scaled_df = pd.DataFrame(scaler(model, df))
+    weighted = _apply_weights(model, scaled_df)
 
-    # svd of x with row_w and col_w
-    weightedTc = row_multiplication(
-        row_multiplication(scaled_df.T, np.sqrt(model.column_weights)).T,
-        np.sqrt(model.row_weights),
-    )
-    U, s, V = SVD(weightedTc.T, svd_flip=False)
-    ncp0 = min(len(weightedTc.iloc[0]), len(weightedTc), model.nf)
+    U, s, V = SVD(weighted.T, svd_flip=False)
+    ncp0 = min(len(weighted.iloc[0]), len(weighted), model.nf)
     U = U[:, :ncp0]
     V = V.T[:, :ncp0]
     s = s[:ncp0]
@@ -328,8 +324,12 @@ def get_variable_contributions(
     for i in range(1, len(V[:, 0])):
         coord_var = np.vstack((coord_var, V[i] * s))
     contrib_var = (((((coord_var**2) / eig).T) * model.column_weights).T) * 100
+
     # compute cos2
-    dfrow_w: NDArray[np.float_] = np.array(pd.DataFrame((df2.T) * model.row_weights).T)
+    squared_values: NDArray[np.float_] = scaled_df.to_numpy() ** 2
+    dfrow_w: NDArray[np.float_] = np.array(
+        pd.DataFrame((squared_values.T) * model.row_weights).T
+    )
     dist2 = []
     for i in range(len(dfrow_w[0])):
         dist2 += [np.sum(dfrow_w[:, i])]
@@ -379,3 +379,11 @@ def get_variable_contributions(
     cos2 = np.concatenate([cos2, [eta2]], axis=0)
 
     return contrib_var, cos2
+
+
+def _apply_weights(model: Model, df: pd.DataFrame) -> pd.DataFrame:
+    # svd of x with row_w and col_w
+    working = df.copy()
+    working = column_multiplication(working, np.sqrt(model.column_weights))
+    working = row_multiplication(working, np.sqrt(model.row_weights))
+    return working

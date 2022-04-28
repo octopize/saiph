@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from numpy.testing import assert_allclose
@@ -6,7 +8,13 @@ from pandas._testing.asserters import assert_series_equal
 from pandas.testing import assert_frame_equal
 
 from saiph.reduction import DUMMIES_PREFIX_SEP
-from saiph.reduction.famd import center, fit_transform, scaler, transform
+from saiph.reduction.famd import (
+    center,
+    fit_transform,
+    get_variable_contributions,
+    scaler,
+    transform,
+)
 from saiph.reduction.pca import center as center_pca
 from saiph.reduction.pca import fit_transform as fit_pca
 from saiph.reduction.pca import scaler as scaler_pca
@@ -143,3 +151,19 @@ def test_center_pca_famd(mixed_df2: pd.DataFrame) -> None:
 
     assert_series_equal(mean1, mean2)
     assert_series_equal(std1, std2)
+
+
+def test_get_variable_contributions(iris_df: pd.DataFrame) -> None:
+    df = iris_df
+    _, model = fit_transform(df)
+
+    contributions, cos2 = get_variable_contributions(model, df)
+
+    contributions_path = Path("fixtures/famd_contributions.csv")
+    cos2_path = Path("fixtures/famd_cos2.csv")
+
+    expected_contributions = pd.read_csv(contributions_path)
+    expected_cos2 = pd.read_csv(cos2_path)
+
+    np.testing.assert_array_almost_equal(contributions, expected_contributions)
+    np.testing.assert_array_almost_equal(cos2, expected_cos2)

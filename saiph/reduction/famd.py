@@ -290,39 +290,13 @@ def get_variable_contributions(
     scaled_df = pd.DataFrame(scaler(model, df))
     weighted = _apply_weights(model, scaled_df)
 
-    U, s, V = SVD(weighted.T, svd_flip=False)
-    ncp0 = min(len(weighted.iloc[0]), len(weighted), model.nf)
-    U = U[:, :ncp0]
-    V = V.T[:, :ncp0]
-    s = s[:ncp0]
-    tmp = V
-    V = U
-    U = tmp
-    mult = np.sign(np.sum(V, axis=0))
-
-    # final V
-    mult1 = pd.DataFrame(
-        np.array(pd.DataFrame(np.array(row_multiplication(pd.DataFrame(V.T), mult)))).T
-    )
-    V = pd.DataFrame()
-    for i in range(len(mult1)):
-        V[i] = mult1.iloc[i] / np.sqrt(model.column_weights[i])
-    V = np.array(V).T
-    # final U
-    mult1 = pd.DataFrame(
-        np.array(pd.DataFrame(np.array(row_multiplication(pd.DataFrame(U.T), mult)))).T
-    )
-    U = pd.DataFrame()
-    for i in range(len(mult1)):
-        U[i] = mult1.iloc[i] / np.sqrt(model.row_weights[i])
-    U = np.array(U).T
-    eig: Any = s**2
-    # end of the svd
+    min_nf = min(weighted.shape[0], weighted.shape[1], model.nf)
+    s, U, eig = _compute_svd(model, weighted, min_nf=min_nf)
 
     # compute the contribution
-    coord_var: NDArray[np.float_] = np.array(V[0] * s)
-    for i in range(1, len(V[:, 0])):
-        coord_var = np.vstack((coord_var, V[i] * s))
+    coord_var: NDArray[np.float_] = np.array(U[0] * s)
+    for i in range(1, len(U[:, 0])):
+        coord_var = np.vstack((coord_var, U[i] * s))
     contrib_var = (((((coord_var**2) / eig).T) * model.column_weights).T) * 100
 
     # compute cos2
@@ -343,9 +317,9 @@ def get_variable_contributions(
     eta2: NDArray[np.float_] = np.array([])
     fi = 0
 
-    columns = get_projected_column_names(model.nf)[:ncp0]
+    columns = get_projected_column_names(model.nf)[:min_nf]
     if model.U is not None and model.s is not None:
-        coord = pd.DataFrame(model.U[:, :ncp0] * model.s[:ncp0], columns=columns)
+        coord = pd.DataFrame(model.U[:, :min_nf] * model.s[:min_nf], columns=columns)
     mods = []
     # for each qualitative column in the original data set
     for col in model.original_categorical:
@@ -379,6 +353,32 @@ def get_variable_contributions(
     cos2 = np.concatenate([cos2, [eta2]], axis=0)
 
     return contrib_var, cos2
+
+
+def _compute_svd(model, weighted, min_nf):
+    U, s, V = SVD(weighted.T, svd_flip=False)
+
+    # Only keep first nf components
+    U = U[:, :min_nf]
+    V = V.T[:, :min_nf]
+    s = s[:min_nf]
+    weights = model.column_weights[:min_nf]
+
+    # FIXME: kept this here for legacy, don't know why we were doing it
+    # U, V = V, U # switch U and V
+
+    sign = np.sign(np.sum(U, axis=0))
+    signed_U = column_multiplication(pd.DataFrame(U), sign).values
+
+    # Divide diagonal values by weights
+    # FIXME: strange that the df is not square
+    min_shape = min(signed_U.shape)
+    diagonal = np.diag_indices_from(signed_U[:min_shape, :min_shape])
+    weighted_U = signed_U
+    weighted_U[diagonal] = np.true_divide(signed_U[diagonal], weights)
+
+    eigenvalues = s**2
+    return s, weighted_U, eigenvalues
 
 
 def _apply_weights(model: Model, df: pd.DataFrame) -> pd.DataFrame:

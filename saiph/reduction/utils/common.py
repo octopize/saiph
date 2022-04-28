@@ -15,6 +15,16 @@ def get_uniform_row_weights(n: int) -> NDArray[np.float64]:
     return np.array([k for k in repeat(1 / n, n)])
 
 
+def row_multiplication(df: pd.DataFrame, arr: NDArray[Any]):
+    """Multiply each row of `df` with the corresponding value in `arr`."""
+    return df.apply(lambda x: x * arr, axis="rows")
+
+
+def row_division(df: pd.DataFrame, arr: NDArray[Any]):
+    """Divide each row of `df` with the corresponding value in `arr`."""
+    return df.apply(lambda x: x / arr, axis="rows")
+
+
 def diag(arr: NDArray[Any], use_scipy: bool = False) -> NDArray[Any]:
     if use_scipy:
         return scipy.sparse.diags(arr)  # type: ignore

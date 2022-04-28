@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from numpy.testing import assert_allclose
+from numpy.typing import NDArray
 from pandas.testing import assert_frame_equal
 
 from saiph.reduction.pca import center, fit_transform, scaler, transform
@@ -22,13 +23,13 @@ def test_fit_scale() -> None:
             "Dim. 2": [0.0, 0.0],
         }
     )
-    expected_v = np.array([[0.71, 0.71], [-0.71, 0.71]])
-    expected_explained_var = np.array([1.0, 0.0])
-    expected_explained_var_ratio = np.array([1.0, 0.0])
+    expected_v: NDArray[np.float_] = np.array([[0.71, 0.71], [-0.71, 0.71]])
+    expected_explained_var: NDArray[np.float_] = np.array([1.0, 0.0])
+    expected_explained_var_ratio: NDArray[np.float_] = np.array([1.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
 
-    assert_allclose(model.V, expected_v, atol=0.01)
+    assert_allclose(np.absolute(model.V), np.absolute(expected_v), atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01)
     assert_allclose(model.variable_coord, model.V.T, atol=0.01)
@@ -52,8 +53,8 @@ def test_fit_zero() -> None:
             "Dim. 2": [0.0, 0.0],
         }
     )
-    expected_v = np.array([[1.0, 0.0], [0.0, 1.0]])
-    expected_explained_var = np.array([0.0, 0.0])
+    expected_v: NDArray[np.float_] = np.array([[1.0, 0.0], [0.0, 1.0]])
+    expected_explained_var: NDArray[np.float_] = np.array([0.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
 

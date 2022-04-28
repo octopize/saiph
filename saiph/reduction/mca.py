@@ -35,7 +35,7 @@ def fit(
     Returns:
         model: The model for transforming new data.
     """
-    nf = nf or min(df.shape)
+    nf = nf or min(pd.get_dummies(df).shape)
     if col_w is not None:
         _col_weights = col_w
     else:
@@ -43,7 +43,7 @@ def fit(
 
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
-    fit_check_params(nf, _col_weights, df.shape[1])
+    fit_check_params(nf, _col_weights, df)
 
     modalities_types = get_modalities_types(df)
 
@@ -282,17 +282,16 @@ def get_variable_contributions(model: Model, df: pd.DataFrame) -> NDArray[np.flo
 
     for i in range(len(V[0])):
         V[:, i] = V[:, i] * np.sqrt(eig[i])
-    coord_col = V
+    coord_col = V**2
 
     for i in range(len(U[0])):
         U[:, i] = U[:, i] * np.sqrt(eig[i])
 
-    coord_col = coord_col**2
-
     for i in range(len(coord_col[0])):
         coord_col[:, i] = (coord_col[:, i] * marge_col) / eig[i]
 
-    return coord_col * 100
+    coordinates: NDArray[np.float_] = coord_col * 100
+    return coordinates
 
 
 def stats(model: Model, df: pd.DataFrame) -> Model:

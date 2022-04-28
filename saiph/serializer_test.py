@@ -1,3 +1,4 @@
+# type: ignore
 import json
 from typing import Any
 
@@ -29,7 +30,7 @@ def test_encode_decode_single_items(item: Any) -> None:
     check_equality(item, decoded)
 
 
-def test_encode_decode_model(mixed_df: pd.DataFrame):
+def test_encode_decode_model(mixed_df: pd.DataFrame) -> None:
     """Verify that we can encode and decode a model."""
     expected_model = fit(mixed_df)
     raw_model = ModelJSONSerializer.dumps(expected_model)

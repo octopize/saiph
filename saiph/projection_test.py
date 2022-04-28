@@ -1,5 +1,4 @@
 from typing import List
-from unittest import result
 
 import numpy as np
 import pandas as pd
@@ -178,7 +177,7 @@ df_mca = pd.DataFrame(
 @pytest.mark.parametrize(
     "df_input,expected_type", [(df_pca, "pca"), (df_mca, "mca"), (df_famd, "famd")]
 )
-def test_eval(df_input, expected_type):
+def test_eval(df_input: pd.DataFrame, expected_type: str) -> None:
     _, model = fit_transform(df_input)
     assert model.type == expected_type
 
@@ -215,10 +214,11 @@ expected_famd_contrib = [
         (df_famd, expected_famd_contrib),
     ],
 )
-def test_var_contrib(df_input, expected_contrib):
+def test_var_contrib(df_input: pd.DataFrame, expected_contrib: List[float]) -> None:
     _, model = fit_transform(df_input)
     stats(model, df_input)
-    assert_allclose(model.contributions["Dim. 1"], expected_contrib, atol=1e-07)
+    if model.contributions is not None:
+        assert_allclose(model.contributions["Dim. 1"], expected_contrib, atol=1e-07)
 
 
 # check cor of variables to dim (if cor is ok so is cos2)
@@ -253,10 +253,11 @@ expected_famd_cor = [
         (df_famd, expected_famd_cor),
     ],
 )
-def test_var_cor(df_input, expected_cor):
+def test_var_cor(df_input: pd.DataFrame, expected_cor: List[float]) -> None:
     _, model = fit_transform(df_input)
     stats(model, df_input)
-    assert_allclose(model.correlations["Dim. 1"], expected_cor, atol=1e-07)
+    if model.correlations is not None:
+        assert_allclose(model.correlations["Dim. 1"], expected_cor, atol=1e-07)
 
 
 # Check percentage of explained variance
@@ -290,7 +291,7 @@ expected_famd_explained_var_ratio = [
         (df_famd, expected_famd_explained_var_ratio),
     ],
 )
-def test_var_ratio(df_input, expected_var_ratio) -> None:
+def test_var_ratio(df_input: pd.DataFrame, expected_var_ratio: List[float]) -> None:
     _, model = fit_transform(df_input)
     stats(model, df_input)
     assert_allclose(model.explained_var_ratio[0:5], expected_var_ratio, atol=1e-07)
@@ -303,8 +304,8 @@ def test_get_dummies_mapping(quali_df: pd.DataFrame) -> None:
 
     sep = DUMMIES_PREFIX_SEP
     expected = {
-        "tool": [f"tool{sep}hammer", f"tool{sep}wrench"],
-        "fruit": [f"fruit{sep}apple", f"fruit{sep}orange"],
+        "tool": ([f"tool{sep}hammer", f"tool{sep}wrench"]),
+        "fruit": ([f"fruit{sep}apple", f"fruit{sep}orange"]),
     }
     assert result == expected
 
@@ -318,7 +319,7 @@ def test_get_dummies_mapping(quali_df: pd.DataFrame) -> None:
         ([0.01, 0.3, 0.7], 2),
     ],
 )
-def test_get_random_weighted_columns(weights: List[float], expected_index: int):
+def test_get_random_weighted_columns(weights: List[float], expected_index: int) -> None:
     df = pd.DataFrame(data=[weights])
     result = get_random_weighted_columns(df, np.random.default_rng(1))
     assert result.values[0] == expected_index
@@ -350,7 +351,7 @@ def test_inverse_transform_with_ponderation() -> None:
         zip(["c", "b", "a"], ["ZZ", "ZZ", "WW"], [1, 2, 2], [4, 4, 4]),
         columns=["cat1", "cat2", "cont1", "cont2"],
     )
-    coord, model = fit_transform(df, col_w=[1, 2000, 1, 1])
+    coord, model = fit_transform(df, col_w=np.array([1, 2000, 1, 1]))
     result = inverse_transform(
         coord, model, use_approximate_inverse=True, use_max_modalities=False, seed=46
     )
@@ -366,7 +367,7 @@ def test_inverse_transform_deterministic() -> None:
         zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 2], [4, 4, 4]),
         columns=["cat1", "cat2", "cont1", "cont2"],
     )
-    coord, model = fit_transform(df, col_w=[1, 2000, 1, 1])
+    coord, model = fit_transform(df, col_w=np.array([1, 2000, 1, 1]))
     result = inverse_transform(
         coord, model, use_approximate_inverse=True, use_max_modalities=True, seed=46
     )

@@ -41,7 +41,7 @@ def fit(
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
 
-    fit_check_params(nf, _col_weights, df.shape[1])
+    fit_check_params(nf, _col_weights, df)
 
     # set row weights
     row_w = get_uniform_row_weights(len(df))
@@ -126,7 +126,7 @@ def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
     df -= mean
 
     std = np.std(df, axis=0)
-    std[std <= sys.float_info.min] = 1  # type: ignore
+    std[std <= sys.float_info.min] = 1
     df /= std
 
     return df, mean, std

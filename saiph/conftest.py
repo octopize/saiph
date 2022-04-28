@@ -41,11 +41,23 @@ def quali_df() -> pd.DataFrame:
 
 
 @pytest.fixture
-def mixed_df():
+def mixed_df() -> pd.DataFrame:
     return pd.DataFrame(
         {
             "variable_1": [4, 5, 6, 7],
             "tool": ["wrench", "wrench", "hammer", "hammer"],
+        }
+    )
+
+
+@pytest.fixture
+def mixed_df2() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "tool": ["toaster", "hammer"],
+            "score": ["aa", "ab"],
+            "size": [1.0, 4.0],
+            "age": [55, 62],
         }
     )
 

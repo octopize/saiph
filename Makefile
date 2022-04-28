@@ -24,28 +24,29 @@ docs-open:  ## Open docs
 
 ##@ Tests
 
-ci: lint test  ## Run all checks
+ci: lint typecheck docs test  ## Run all checks
 .PHONY: ci
 
-lci: lint-fix ci docs ## Autofix then run CI
+lci: lint-fix ci ## Autofix then run CI
 .PHONY: lci
-
-test:  ## Run tests
-	poetry run pytest saiph
-.PHONY: test
 
 lint:  ## Run linting
 	poetry run black --check .
-	poetry run isort -c .
 	poetry run flake8 .
-	poetry run pydocstyle .
-	poetry run mypy .
 .PHONY: lint
 
 lint-fix:  ## Run autoformatters
 	poetry run black .
 	poetry run isort .
 .PHONY: lint-fix
+
+typecheck:  ## Run typechecking
+	poetry run mypy --show-error-codes --pretty .
+.PHONY: typecheck
+
+test:  ## Run tests
+	poetry run pytest saiph
+.PHONY: test
 
 .DEFAULT_GOAL := help
 help: Makefile

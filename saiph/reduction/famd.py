@@ -1,10 +1,11 @@
 """FAMD projection module."""
 import sys
 from itertools import chain, repeat
-from typing import Any, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import scipy
 from numpy.typing import NDArray
 
 from saiph.models import Model
@@ -19,10 +20,65 @@ from saiph.reduction.utils.common import (
 from saiph.reduction.utils.svd import SVD
 
 
+def center(
+    df: pd.DataFrame, quanti: List[str], quali: List[str]
+) -> Tuple[
+    pd.DataFrame, NDArray[np.float_], NDArray[np.float_], NDArray[Any], NDArray[Any]
+]:
+    """Center data, scale it, compute modalities and proportions of each categorical.
+
+    Used as internal function during fit.
+
+    **NB**: saiph.reduction.famd.scaler is better suited when a Model is already fitted.
+
+    Parameters:
+        df: DataFrame to center.
+        quanti: Indices of continous variables.
+        quali: Indices of categorical variables.
+
+    Returns:
+        df_scale: The scaled DataFrame.
+        mean: Mean of the input dataframe.
+        std: Standard deviation of the input dataframe.
+        prop: Proportion of each categorical.
+        _modalities: Modalities for the MCA.
+    """
+    # Scale the continuous data
+    df_quanti = df[quanti]
+    mean = np.mean(df_quanti, axis=0)
+    df_quanti -= mean
+    std = np.std(df_quanti, axis=0)
+    std[std <= sys.float_info.min] = 1
+    df_quanti /= std
+
+    # scale the categorical data
+    df_quali = pd.get_dummies(
+        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+    )
+    prop = np.mean(df_quali, axis=0)
+    df_quali -= prop
+    df_quali /= np.sqrt(prop)
+    _modalities = df_quali.columns.values
+
+    df_scale = pd.concat([df_quanti, df_quali], axis=1)
+
+    return df_scale, mean, std, prop, _modalities
+
+
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_w: Optional[NDArray[np.float_]] = None,
+    center: Callable[
+        [pd.DataFrame, List[str], List[str]],
+        Tuple[
+            pd.DataFrame,
+            NDArray[np.float_],
+            NDArray[np.float_],
+            NDArray[Any],
+            NDArray[Any],
+        ],
+    ] = center,
 ) -> Model:
     """Fit a FAMD model on data.
 
@@ -35,15 +91,12 @@ def fit(
     Returns:
         model: The model for transforming new data.
     """
-    nf = nf or min(df.shape)
-    if col_w is not None:
-        _col_weights = col_w
-    else:
-        _col_weights = np.ones(df.shape[1])
+    nf = nf or min(pd.get_dummies(df).shape)
+    _col_weights = np.ones(df.shape[1]) if col_w is None else col_w
 
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
-    fit_check_params(nf, _col_weights, df.shape[1])
+    fit_check_params(nf, _col_weights, df)
 
     # select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
@@ -59,10 +112,14 @@ def fit(
     df_scaled, mean, std, prop, _modalities = center(df, quanti, quali)
 
     # apply the weights
-    Z = ((df_scaled * col_weights).T * row_w).T
+    Z = df_scaled.multiply(col_weights).T.multiply(row_w).T
 
     # compute the svd
-    _U, s, _V = SVD(Z)
+    if isinstance(Z, scipy.sparse.base.spmatrix):
+        _U, s, _V = SVD(Z.todense())
+    else:
+        _U, s, _V = SVD(Z)
+
     U = ((_U.T) / np.sqrt(row_w)).T
     V = _V / np.sqrt(col_weights)
 
@@ -146,51 +203,6 @@ def _col_weights_compute(
     return _col_w
 
 
-def center(
-    df: pd.DataFrame, quanti: List[int], quali: List[int]
-) -> Tuple[
-    pd.DataFrame, NDArray[np.float_], NDArray[np.float_], NDArray[Any], NDArray[Any]
-]:
-    """Center data, scale it, compute modalities and proportions of each categorical.
-
-    Used as internal function during fit.
-
-    **NB**: saiph.reduction.famd.scaler is better suited when a Model is already fitted.
-
-    Parameters:
-        df: DataFrame to center.
-        quanti: Indices of continous variables.
-        quali: Indices of categorical variables.
-
-    Returns:
-        df_scale: The scaled DataFrame.
-        mean: Mean of the input dataframe.
-        std: Standard deviation of the input dataframe.
-        prop: Proportion of each categorical.
-        _modalities: Modalities for the MCA.
-    """
-    # Scale the continuous data
-    df_quanti = df[quanti]
-    mean = np.mean(df_quanti, axis=0)
-    df_quanti -= mean
-    std = np.std(df_quanti, axis=0)
-    std[std <= sys.float_info.min] = 1
-    df_quanti /= std
-
-    # scale the categorical data
-    df_quali = pd.get_dummies(
-        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
-    )
-    prop = np.mean(df_quali, axis=0)
-    df_quali -= prop
-    df_quali /= np.sqrt(prop)
-    _modalities = df_quali.columns.values
-
-    df_scale = pd.concat([df_quanti, df_quali], axis=1)
-
-    return df_scale, mean, std, prop, _modalities
-
-
 def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     """Scale data using mean, std, modalities and proportions of each categorical from model.
 
@@ -219,7 +231,12 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     return df_scaled
 
 
-def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
+def transform(
+    df: pd.DataFrame,
+    model: Model,
+    *,
+    scaler: Callable[[Model, pd.DataFrame], pd.DataFrame] = scaler,
+) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 
     Parameters:
@@ -230,8 +247,9 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
         coord: Coordinates of the dataframe in the fitted space.
     """
     df_scaled = scaler(model, df)
-    coord = df_scaled @ model.V.T
-    coord.columns = get_projected_column_names(model.nf)
+    coord = pd.DataFrame(df_scaled @ model.V.T)
+
+    coord.columns = get_projected_column_names(len(coord.columns))
     return coord
 
 
@@ -267,8 +285,8 @@ def get_variable_contributions(
     Returns:
         tuple of contributions and cos2.
     """
-    scaled_df = pd.DataFrame(scaler(model, df))
-    df2: NDArray[np.float_] = np.array(scaled_df) ** 2
+    scaled_df = scaler(model, df)
+    df2: NDArray[Any] = np.array(scaled_df) ** 2
 
     # svd of x with row_w and col_w
     weightedTc = _rmultiplication(
@@ -325,7 +343,8 @@ def get_variable_contributions(
     fi = 0
 
     columns = get_projected_column_names(model.nf)[:ncp0]
-    coord = pd.DataFrame(model.U[:, :ncp0] * model.s[:ncp0], columns=columns)
+    if model.U is not None and model.s is not None:
+        coord = pd.DataFrame(model.U[:, :ncp0] * model.s[:ncp0], columns=columns)
     mods = []
     # for each qualitative column in the original data set
     for col in model.original_categorical:

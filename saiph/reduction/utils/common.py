@@ -20,6 +20,11 @@ def row_multiplication(df: pd.DataFrame, arr: NDArray[Any]):
     return df.apply(lambda x: x * arr, axis="rows")
 
 
+def column_multiplication(df: pd.DataFrame, arr: NDArray[Any]):
+    """Multiply each column of `df` with the corresponding value in `arr`."""
+    return df.apply(lambda x: x * arr, axis="columns")
+
+
 def row_division(df: pd.DataFrame, arr: NDArray[Any]):
     """Divide each row of `df` with the corresponding value in `arr`."""
     return df.apply(lambda x: x / arr, axis="rows")

@@ -32,19 +32,21 @@ def test_fit_mix() -> None:
     expected_result = pd.DataFrame(
         {
             "Dim. 1": [-1.73, 1.73],
+            "Dim. 2": [1.41, 1.41],
         }
     )
     expected_v: NDArray[np.float_] = np.array(
         [
-            [0.57735, 0.408248, -0.408248, -0.408248, 0.408248],
+            [-5.773503e-01, -4.082483e-01, 4.082483e-01, 4.082483e-01, -4.082483e-01],
+            [5.384773e-16, 5.000000e-01, 5.000000e-01, 5.000000e-01, 5.000000e-01],
         ]
     )
-    expected_s: NDArray[np.float_] = np.array([1.224745e00])
-    expected_u: NDArray[np.float_] = np.array([[-1.0], [1.0]])
-    expected_explained_var: NDArray[np.float_] = np.array([1.5])
-    expected_explained_var_ratio: NDArray[np.float_] = np.array([1.0])
+    expected_s: NDArray[np.float_] = np.array([1.224745e00, 1])
+    expected_u: NDArray[np.float_] = np.array([[1.0, 1.0], [-1.0, 1.0]])
+    expected_explained_var: NDArray[np.float_] = np.array([1.5, 1.0])
+    expected_explained_var_ratio: NDArray[np.float_] = np.array([0.6, 0.4])
 
-    assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
+    assert_frame_equal(abs(result), abs(expected_result), check_exact=False, atol=0.01)
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.s, expected_s, atol=0.01)
     assert_allclose(model.U, expected_u, atol=0.01)
@@ -92,9 +94,9 @@ def test_transform() -> None:
     df_expected = pd.DataFrame(
         {
             "Dim. 1": [2.0, -2],
+            "Dim. 2": [1.414214, 1.414214],
         }
     )
-
     assert_frame_equal(df_transformed, df_expected)
 
 
@@ -121,9 +123,11 @@ def test_fit_zero() -> None:
 
     expected = pd.DataFrame(
         {
-            "Dim. 1": [-1.414213562373095, -1.414213562373095],
+            "Dim. 1": [1.414213562373095, 1.414213562373095],
+            "Dim. 2": [-1.110223e-16, -1.110223e-16],
         }
     )
+    print(result)
     assert_frame_equal(result, expected, check_exact=False, atol=0.01)
 
 

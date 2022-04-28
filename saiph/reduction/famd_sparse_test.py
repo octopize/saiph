@@ -127,7 +127,6 @@ def test_fit_zero() -> None:
             "Dim. 2": [-1.110223e-16, -1.110223e-16],
         }
     )
-    print(result)
     assert_frame_equal(result, expected, check_exact=False, atol=0.01)
 
 

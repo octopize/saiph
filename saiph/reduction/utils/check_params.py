@@ -9,7 +9,7 @@ def fit_check_params(nf: int, col_w: NDArray[Any], df: pd.DataFrame) -> None:
         raise ValueError("nf", "The number of components must be positive.")
 
     if nf > min(pd.get_dummies(df).shape):
-        raise ValueError("nf", "The number of components is to large.")
+        raise ValueError(f"Expected number of components <= {min(pd.get_dummies(df).shape)}, got {nf} instead.")
 
     if len(col_w) != df.shape[1]:
         raise ValueError(

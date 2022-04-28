@@ -12,7 +12,6 @@ from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.famd import fit as fit_famd
 from saiph.reduction.famd import transform as transform_famd
-from saiph.reduction.utils.svd import svd_sparse
 
 
 def fit(
@@ -31,7 +30,7 @@ def fit(
     Returns:
         model: The model for transforming new data.
     """
-    return fit_famd(df, nf, col_w, center=center_sparse, SVD=svd_sparse)
+    return fit_famd(df, nf, col_w, center=center_sparse)
 
 
 def fit_transform(

@@ -5,6 +5,7 @@ from typing import Any, Callable, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import scipy
 from numpy.typing import NDArray
 
 from saiph.models import Model
@@ -78,9 +79,6 @@ def fit(
             NDArray[Any],
         ],
     ] = center,
-    SVD: Callable[
-        [pd.DataFrame], Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]
-    ] = SVD,
 ) -> Model:
     """Fit a FAMD model on data.
 
@@ -118,7 +116,11 @@ def fit(
     Z = df_scaled.multiply(col_weights).T.multiply(row_w).T
 
     # compute the svd
-    _U, s, _V = SVD(Z)
+    if isinstance(Z, scipy.sparse.base.spmatrix):
+        _U, s, _V = SVD(Z.todense())
+    else:
+        _U, s, _V = SVD(Z)
+
     U = ((_U.T) / np.sqrt(row_w)).T
     V = _V / np.sqrt(col_weights)
 

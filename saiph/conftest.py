@@ -50,6 +50,18 @@ def mixed_df() -> pd.DataFrame:
     )
 
 
+@pytest.fixture
+def mixed_df2() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "tool": ["toaster", "hammer"],
+            "score": ["aa", "ab"],
+            "size": [1.0, 4.0],
+            "age": [55, 62],
+        }
+    )
+
+
 def check_model_equality(
     test: Model,
     expected: Model,

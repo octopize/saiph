@@ -12,14 +12,8 @@ from saiph.reduction.pca import fit_transform as fit_pca
 from saiph.reduction.pca import scaler as scaler_pca
 
 
-def test_fit_mix() -> None:
-    df = pd.DataFrame(
-        {
-            "tool": ["toaster", "hammer"],
-            "score": ["aa", "ab"],
-            "size": [1.0, 4.0],
-        }
-    )
+def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
+    df = mixed_df2.iloc[:, 0:3]
 
     result, model = fit_transform(df)
 
@@ -80,10 +74,8 @@ def test_fit_mix() -> None:
     )
 
 
-def test_transform() -> None:
-    filename = "df_mixed"
-    fixture_file = f"fixtures/{filename}.csv"
-    df = pd.read_csv(fixture_file)
+def test_transform(mixed_df2: pd.DataFrame) -> None:
+    df = mixed_df2
 
     _, model = fit_transform(df)
 
@@ -98,10 +90,8 @@ def test_transform() -> None:
     assert_frame_equal(df_transformed.abs(), df_expected.abs())
 
 
-def test_transform_vs_coord() -> None:
-    filename = "df_mixed"
-    fixture_file = f"fixtures/{filename}.csv"
-    df = pd.read_csv(fixture_file)
+def test_transform_vs_coord(mixed_df2: pd.DataFrame) -> None:
+    df = mixed_df2
 
     coord, model = fit_transform(df)
     df_transformed = transform(df, model)
@@ -116,7 +106,6 @@ def test_fit_zero() -> None:
             "score": ["aa", "aa"],
         }
     )
-
     result, _ = fit_transform(df)
 
     expected = pd.DataFrame(
@@ -128,10 +117,8 @@ def test_fit_zero() -> None:
     assert_frame_equal(result, expected, check_exact=False, atol=0.01)
 
 
-def test_scaler_pca_famd() -> None:
-    filename = "df_mixed"
-    fixture_file = f"fixtures/{filename}.csv"
-    original_df = pd.read_csv(fixture_file)
+def test_scaler_pca_famd(mixed_df2: pd.DataFrame) -> None:
+    original_df = mixed_df2
 
     _, model = fit_transform(original_df)
     df = scaler(model, original_df)
@@ -142,10 +129,8 @@ def test_scaler_pca_famd() -> None:
     assert_frame_equal(df[model.original_continuous], df_pca[model.original_continuous])
 
 
-def test_center_pca_famd() -> None:
-    filename = "df_mixed"
-    fixture_file = f"fixtures/{filename}.csv"
-    original_df = pd.read_csv(fixture_file)
+def test_center_pca_famd(mixed_df2: pd.DataFrame) -> None:
+    original_df = mixed_df2
 
     _, model = fit_transform(original_df)
     continous = model.original_continuous

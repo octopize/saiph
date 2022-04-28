@@ -16,6 +16,7 @@ from saiph.reduction.utils.common import (
     get_modalities_types,
     get_projected_column_names,
     get_uniform_row_weights,
+    row_multiplication,
 )
 from saiph.reduction.utils.svd import SVD
 
@@ -289,8 +290,8 @@ def get_variable_contributions(
     df2: NDArray[Any] = np.array(scaled_df) ** 2
 
     # svd of x with row_w and col_w
-    weightedTc = _rmultiplication(
-        _rmultiplication(scaled_df.T, np.sqrt(model.column_weights)).T,
+    weightedTc = row_multiplication(
+        row_multiplication(scaled_df.T, np.sqrt(model.column_weights)).T,
         np.sqrt(model.row_weights),
     )
     U, s, V = SVD(weightedTc.T, svd_flip=False)
@@ -305,7 +306,7 @@ def get_variable_contributions(
 
     # final V
     mult1 = pd.DataFrame(
-        np.array(pd.DataFrame(np.array(_rmultiplication(pd.DataFrame(V.T), mult)))).T
+        np.array(pd.DataFrame(np.array(row_multiplication(pd.DataFrame(V.T), mult)))).T
     )
     V = pd.DataFrame()
     for i in range(len(mult1)):
@@ -313,7 +314,7 @@ def get_variable_contributions(
     V = np.array(V).T
     # final U
     mult1 = pd.DataFrame(
-        np.array(pd.DataFrame(np.array(_rmultiplication(pd.DataFrame(U.T), mult)))).T
+        np.array(pd.DataFrame(np.array(row_multiplication(pd.DataFrame(U.T), mult)))).T
     )
     U = pd.DataFrame()
     for i in range(len(mult1)):
@@ -378,13 +379,3 @@ def get_variable_contributions(
     cos2 = np.concatenate([cos2, [eta2]], axis=0)
 
     return contrib_var, cos2
-
-
-def _rmultiplication(F: pd.DataFrame, marge: NDArray[Any]) -> pd.DataFrame:
-    """Multiply each column with the same vector."""
-    df_dict = F.to_dict("list")
-    for col in df_dict.keys():
-        df_dict[col] = df_dict[col] * marge
-    df = pd.DataFrame.from_dict(df_dict)
-    df.index = F.index
-    return df

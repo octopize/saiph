@@ -15,6 +15,8 @@ from saiph.reduction.utils.common import (
     get_modalities_types,
     get_projected_column_names,
     get_uniform_row_weights,
+    row_division,
+    row_multiplication,
 )
 from saiph.reduction.utils.svd import SVD
 
@@ -229,13 +231,13 @@ def get_variable_contributions(model: Model, df: pd.DataFrame) -> NDArray[np.flo
     # Column and row weights
     marge_col = F.sum(axis=0)
     marge_row = F.sum(axis=1)
-    fsurmargerow = _rdivision(F, marge_row)
+    fsurmargerow = row_division(F, marge_row)
     fmargerowT = pd.DataFrame(
         np.array(fsurmargerow).T,
         columns=list(fsurmargerow.index),
         index=list(fsurmargerow.columns),
     )
-    fmargecol = _rdivision(fmargerowT, marge_col)
+    fmargecol = row_division(fmargerowT, marge_col)
     Tc = (
         pd.DataFrame(
             np.array(fmargecol).T,
@@ -246,8 +248,8 @@ def get_variable_contributions(model: Model, df: pd.DataFrame) -> NDArray[np.flo
     )
 
     # Weights and svd of Tc
-    weightedTc = _rmultiplication(
-        _rmultiplication(Tc.T, np.sqrt(marge_col)).T, np.sqrt(marge_row)
+    weightedTc = row_multiplication(
+        row_multiplication(Tc.T, np.sqrt(marge_col)).T, np.sqrt(marge_row)
     )
     U, s, V = SVD(weightedTc.T, svd_flip=False)
     ncp0 = min(len(weightedTc.iloc[0]), len(weightedTc), model.nf)
@@ -261,7 +263,7 @@ def get_variable_contributions(model: Model, df: pd.DataFrame) -> NDArray[np.flo
 
     # final V
     mult1 = pd.DataFrame(
-        np.array(pd.DataFrame(np.array(_rmultiplication(pd.DataFrame(V.T), mult)))).T
+        np.array(pd.DataFrame(np.array(row_multiplication(pd.DataFrame(V.T), mult)))).T
     )
     V = pd.DataFrame()
     for i in range(len(mult1)):
@@ -270,7 +272,7 @@ def get_variable_contributions(model: Model, df: pd.DataFrame) -> NDArray[np.flo
 
     # final U
     mult1 = pd.DataFrame(
-        np.array(pd.DataFrame(np.array(_rmultiplication(pd.DataFrame(U.T), mult)))).T
+        np.array(pd.DataFrame(np.array(row_multiplication(pd.DataFrame(U.T), mult)))).T
     )
     U = pd.DataFrame()
     for i in range(len(mult1)):
@@ -307,23 +309,3 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
     contributions = get_variable_contributions(model, df)
     model.contributions = contributions
     return model
-
-
-def _rmultiplication(F: pd.DataFrame, marge: NDArray[Any]) -> pd.DataFrame:
-    """Multiply each column with the same vector."""
-    df_dict = F.to_dict("list")
-    for col in df_dict.keys():
-        df_dict[col] = df_dict[col] * marge
-    df = pd.DataFrame.from_dict(df_dict)
-    df.index = F.index
-    return df
-
-
-def _rdivision(F: pd.DataFrame, marge: NDArray[Any]) -> pd.DataFrame:
-    """Divide each column with the same vector."""
-    df_dict = F.to_dict("list")
-    for col in df_dict.keys():
-        df_dict[col] = df_dict[col] / marge
-    df = pd.DataFrame.from_dict(df_dict)
-    df.index = F.index
-    return df

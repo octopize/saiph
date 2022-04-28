@@ -290,67 +290,67 @@ def get_variable_contributions(
     scaled_df = pd.DataFrame(scaler(model, df))
     weighted = _apply_weights(model, scaled_df)
 
-    min_nf = min(weighted.shape[0], weighted.shape[1], model.nf)
+    min_nf = min(min(weighted.shape), model.nf)
     s, U, eig = _compute_svd(model, weighted, min_nf=min_nf)
 
     # compute the contribution
-    coord_var: NDArray[np.float_] = np.array(U[0] * s)
-    for i in range(1, len(U[:, 0])):
-        coord_var = np.vstack((coord_var, U[i] * s))
-    contrib_var = (((((coord_var**2) / eig).T) * model.column_weights).T) * 100
+    contrib_var = (U * s) ** 2 / eig
+    contrib_var = np.multiply(contrib_var, model.column_weights[:, np.newaxis])
+    contrib_var *= 100
 
     # compute cos2
-    squared_values: NDArray[np.float_] = scaled_df.to_numpy() ** 2
-    dfrow_w: NDArray[np.float_] = np.array(
-        pd.DataFrame((squared_values.T) * model.row_weights).T
-    )
-    dist2 = []
-    for i in range(len(dfrow_w[0])):
-        dist2 += [np.sum(dfrow_w[:, i])]
-        if abs(abs(dist2[i]) - 1) < 0.001:
-            dist2[i] = 1
+    squared_values: NDArray[np.float_] = scaled_df.values**2
 
-    cor = ((coord_var.T) / np.sqrt(dist2)).T
-    cos2 = cor**2
+    weighted_df = np.multiply(squared_values, model.row_weights[:, np.newaxis])
+
+    dist2 = np.sum(weighted_df, axis=0)
+    dist2 = np.where(np.abs(dist2 - 1) < 0.001, 1, dist2)
+
+    coord_var = U * s
+    cos2 = np.divide(coord_var, np.sqrt(dist2[:, np.newaxis])) ** 2
 
     # compute eta2
     eta2: NDArray[np.float_] = np.array([])
-    fi = 0
+    modality_iterator = 0
 
-    columns = get_projected_column_names(model.nf)[:min_nf]
+    columns = get_projected_column_names(min_nf)
     if model.U is not None and model.s is not None:
-        coord = pd.DataFrame(model.U[:, :min_nf] * model.s[:min_nf], columns=columns)
-    mods = []
+        model_coords = pd.DataFrame(model.U[:, :min_nf] * model.s[:min_nf], columns=columns)
+    nb_modalities = []
+
     # for each qualitative column in the original data set
     for col in model.original_categorical:
         dummy = pd.get_dummies(
             df[col].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
         )
-        mods += [len(dummy.columns) - 1]
+
+        # FIXME: Why - 1 ?
+        nb_modalities += [len(dummy.columns) - 1]
         # for each dimension
         dim = []
-        for j, coordcol in enumerate(coord.columns):
+        for coord_col in model_coords.columns:
             # for each modality of the qualitative column
             p = 0
             for i in range(len(dummy.columns)):
-                p += (
-                    np.array(dummy.T)[i] * coord[coordcol] * model.row_weights
-                ).sum() ** 2 / model.prop[fi + i]
+                weighted_coords = model_coords[coord_col] * model.row_weights
+                proportion = model.prop[modality_iterator + i]
+                values = dummy.values[:, i]
+                p += (values * weighted_coords).sum() ** 2 / proportion
+
             dim += [p]
-        eta1 = (
-            np.array(dim)
-            / np.array((coord**2).T * model.row_weights).sum(axis=1).tolist()
-        )
+        all_weighted_coords = (model_coords.values**2).T * model.row_weights
+        eta1 = np.array(dim) / all_weighted_coords.sum(axis=1).tolist()
         eta2 = np.append(eta2, eta1)
-        fi += len(dummy.columns)
 
-        cos2 = cos2[: len(model.original_continuous)]
+        modality_iterator += len(dummy.columns)
 
+    # FIXME: Why original_continuous, we have been computing cos2 for all the dummies for nothing ?
+    cos2 = cos2[: len(model.original_continuous)]
     cos2 = cos2**2
-    eta2 = eta2**2
-    eta2 = ((eta2).T / mods).T
+    eta2 = eta2**2  # FIXME: We do a lot of ** 2 and /**2
+    eta2 = np.true_divide(eta2, nb_modalities)
 
-    cos2 = np.concatenate([cos2, [eta2]], axis=0)
+    cos2 = np.vstack([cos2, eta2])
 
     return contrib_var, cos2
 
@@ -371,7 +371,6 @@ def _compute_svd(model, weighted, min_nf):
     signed_U = column_multiplication(pd.DataFrame(U), sign).values
 
     # Divide diagonal values by weights
-    # FIXME: strange that the df is not square
     min_shape = min(signed_U.shape)
     diagonal = np.diag_indices_from(signed_U[:min_shape, :min_shape])
     weighted_U = signed_U
@@ -382,7 +381,6 @@ def _compute_svd(model, weighted, min_nf):
 
 
 def _apply_weights(model: Model, df: pd.DataFrame) -> pd.DataFrame:
-    # svd of x with row_w and col_w
     working = df.copy()
     working = column_multiplication(working, np.sqrt(model.column_weights))
     working = row_multiplication(working, np.sqrt(model.row_weights))

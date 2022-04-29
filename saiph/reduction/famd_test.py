@@ -65,12 +65,12 @@ def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
 
     assert_allclose(model.mean, np.array(2.5))
     assert_allclose(model.std, np.array(1.5))
-
-    assert_series_equal(
-        model.prop.reset_index(drop=True),
-        pd.Series([0.5, 0.5, 0.5, 0.5]).reset_index(drop=True),
-        atol=0.01,
-    )
+    if model.prop is not None:
+        assert_series_equal(
+            model.prop.reset_index(drop=True),
+            pd.Series([0.5, 0.5, 0.5, 0.5]).reset_index(drop=True),
+            atol=0.01,
+        )
     assert np.array_equal(
         model._modalities,  # type: ignore
         [
@@ -155,7 +155,7 @@ def test_center_pca_famd(mixed_df2: pd.DataFrame) -> None:
 
 def test_get_variable_contributions(iris_df: pd.DataFrame) -> None:
     df = iris_df
-    _, model = fit_transform(df)
+    _, model = fit_transform(df, nf=5)
 
     contributions, cos2 = get_variable_contributions(model, df)
 

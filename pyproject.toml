@@ -34,6 +34,7 @@ flake8-tidy-imports = "^4.6.0"
 flake8-eradicate = "^1.2.0"
 flake8-printf-formatting = "^1.1.2"
 flake8-use-fstring = "^1.3"
+flake8-print = "^4.0.0"
 filprofiler = {git = "https://github.com/pythonspeed/filprofiler.git"}
 py-spy = "^0.3.11"
 typer = "^0.4.1"

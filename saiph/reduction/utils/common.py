@@ -1,10 +1,12 @@
 from itertools import repeat
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, OrderedDict, Tuple
 
 import numpy as np
 import pandas as pd
 import scipy
 from numpy.typing import NDArray
+
+from saiph.reduction import DUMMIES_PREFIX_SEP
 
 
 def get_projected_column_names(n: int) -> List[str]:
@@ -52,6 +54,22 @@ def explain_variance(
 def get_modalities_types(df: pd.DataFrame) -> Dict[str, str]:
     modalities_types = {col: get_type_as_string(df.loc[0, col]) for col in df.columns}
     return modalities_types
+
+
+def get_dummies_mapping(
+    columns: List[str], dummy_columns: List[str]
+) -> Dict[str, List[str]]:
+    """Get mapping between original column and all dummy columns."""
+    return OrderedDict(
+        {
+            col: list(
+                filter(
+                    lambda c: c.startswith(f"{col}{DUMMIES_PREFIX_SEP}"), dummy_columns
+                )
+            )
+            for col in columns
+        }
+    )
 
 
 TYPES = {

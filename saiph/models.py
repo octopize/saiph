@@ -50,7 +50,7 @@ class Model:
     std: Optional[pd.Series] = None
 
     # Modality proportions of categorical variables.
-    prop: Any = None  # FAMD only
+    prop: Optional[pd.Series] = None  # FAMD only
     # Modalities for the MCA/FAMD.
     _modalities: Optional[NDArray[np.string_]] = None
     # Diagonal matrix containing sums along columns of the scaled data as diagonals.
@@ -67,4 +67,4 @@ class Model:
     # Cos2 for each variable.
     cos2: Optional[pd.DataFrame] = None
     # Proportion of individuals taking each modality.
-    dummies_col_prop: Optional[NDArray[np.float_]] = None
+    dummies_col_prop: Optional[NDArray[np.float_]] = None  # MCA only

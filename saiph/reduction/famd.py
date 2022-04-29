@@ -14,6 +14,7 @@ from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
     column_multiplication,
     explain_variance,
+    get_dummies_mapping,
     get_modalities_types,
     get_projected_column_names,
     get_uniform_row_weights,
@@ -205,6 +206,51 @@ def _col_weights_compute(
     return _col_w
 
 
+def center(
+    df: pd.DataFrame, quanti: List[int], quali: List[int]
+) -> Tuple[
+    pd.DataFrame, NDArray[np.float_], NDArray[np.float_], NDArray[Any], NDArray[Any]
+]:
+    """Center data, scale it, compute modalities and proportions of each categorical.
+
+    Used as internal function during fit.
+
+    **NB**: saiph.reduction.famd.scaler is better suited when a Model is already fitted.
+
+    Parameters:
+        df: DataFrame to center.
+        quanti: Indices of continous variables.
+        quali: Indices of categorical variables.
+
+    Returns:
+        df_scale: The scaled DataFrame.
+        mean: Mean of the input dataframe.
+        std: Standard deviation of the input dataframe.
+        prop: Proportion of each categorical.
+        _modalities: Modalities for the MCA.
+    """
+    # Scale the continuous data
+    df_quanti = df[quanti]
+    mean = np.mean(df_quanti, axis=0)
+    df_quanti -= mean
+    std = np.std(df_quanti, axis=0)
+    std[std <= sys.float_info.min] = 1
+    df_quanti /= std
+
+    # scale the categorical data
+    df_quali = pd.get_dummies(
+        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+    )
+    prop = df_quali.mean(axis=0)
+    df_quali -= prop
+    df_quali /= np.sqrt(prop)
+    _modalities = df_quali.columns.values
+
+    df_scale = pd.concat([df_quanti, df_quali], axis=1)
+
+    return df_scale, mean, std, prop, _modalities
+
+
 def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     """Scale data using mean, std, modalities and proportions of each categorical from model.
 
@@ -287,72 +333,81 @@ def get_variable_contributions(
     Returns:
         tuple of contributions and cos2.
     """
-    scaled_df = pd.DataFrame(scaler(model, df))
-    weighted = _apply_weights(model, scaled_df)
 
-    min_nf = min(min(weighted.shape), model.nf)
-    s, U, eig = _compute_svd(model, weighted, min_nf=min_nf)
+    ### Shape information is for iris.csv
+    scaled_df = pd.DataFrame(scaler(model, df))  # dummified, shape (150 x 7)
+
+    weighted_df = _apply_weights(model, scaled_df)  # shape (150 x 7)
+
+    min_nf = min(min(weighted_df.shape), model.nf)
+    s, U, eig = _compute_svd(model, weighted_df, min_nf=min_nf)  # (5,), (7, 5), (5,)
 
     # compute the contribution
-    contrib_var = (U * s) ** 2 / eig
-    contrib_var = np.multiply(contrib_var, model.column_weights[:, np.newaxis])
-    contrib_var *= 100
+    contributions = (U * s) ** 2 / eig  # shape (7 x 5)
+
+    contributions = np.multiply(contributions, model.column_weights[:, np.newaxis])
+    contributions *= 100
 
     # compute cos2
-    squared_values: NDArray[np.float_] = scaled_df.values**2
+    squared_values: NDArray[np.float_] = scaled_df.values**2  # shape (150 x 7)
 
-    weighted_df = np.multiply(squared_values, model.row_weights[:, np.newaxis])
+    weighted_values = np.multiply(
+        squared_values, model.row_weights[:, np.newaxis]
+    )  # shape (150 x 7)
 
-    dist2 = np.sum(weighted_df, axis=0)
-    dist2 = np.where(np.abs(dist2 - 1) < 0.001, 1, dist2)
+    dist2 = np.sum(weighted_values, axis=0)  # shape (7,)
+    dist2 = np.where(
+        np.abs(dist2 - 1) < 0.001, 1, np.sqrt(dist2)
+    )  # round values close to 1 # shape (7,)
 
-    coord_var = U * s
-    cos2 = np.divide(coord_var, np.sqrt(dist2[:, np.newaxis])) ** 2
-
-    # compute eta2
-    eta2: NDArray[np.float_] = np.array([])
-    modality_iterator = 0
-
-    columns = get_projected_column_names(min_nf)
-    if model.U is not None and model.s is not None:
-        model_coords = pd.DataFrame(model.U[:, :min_nf] * model.s[:min_nf], columns=columns)
-    nb_modalities = []
-
-    # for each qualitative column in the original data set
-    for col in model.original_categorical:
-        dummy = pd.get_dummies(
-            df[col].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
-        )
-
-        # FIXME: Why - 1 ?
-        nb_modalities += [len(dummy.columns) - 1]
-        # for each dimension
-        dim = []
-        for coord_col in model_coords.columns:
-            # for each modality of the qualitative column
-            p = 0
-            for i in range(len(dummy.columns)):
-                weighted_coords = model_coords[coord_col] * model.row_weights
-                proportion = model.prop[modality_iterator + i]
-                values = dummy.values[:, i]
-                p += (values * weighted_coords).sum() ** 2 / proportion
-
-            dim += [p]
-        all_weighted_coords = (model_coords.values**2).T * model.row_weights
-        eta1 = np.array(dim) / all_weighted_coords.sum(axis=1).tolist()
-        eta2 = np.append(eta2, eta1)
-
-        modality_iterator += len(dummy.columns)
-
+    coord_var = U * s  # shape (7 x 5)
+    cos2 = np.divide(coord_var, dist2[:, np.newaxis]) ** 2  # shape (7, 5)
+    cos2 = cos2[: len(model.original_continuous)]  # only keep continuous components
     # FIXME: Why original_continuous, we have been computing cos2 for all the dummies for nothing ?
-    cos2 = cos2[: len(model.original_continuous)]
-    cos2 = cos2**2
-    eta2 = eta2**2  # FIXME: We do a lot of ** 2 and /**2
-    eta2 = np.true_divide(eta2, nb_modalities)
+    continuous_cos2 = pd.DataFrame(
+        cos2,
+        index=model.original_continuous,
+        columns=get_projected_column_names(min_nf),
+    )
+    continuous_cos2 = continuous_cos2**2
 
-    cos2 = np.vstack([cos2, eta2])
+    eta2: NDArray[np.float_] = np.array([])
 
-    return contrib_var, cos2
+    if model.U is not None and model.s is not None:
+        model_coords = pd.DataFrame(
+            model.U[:, :min_nf] * model.s[:min_nf],
+            columns=get_projected_column_names(min_nf),
+        )  # shape (7,)
+
+    mapping = get_dummies_mapping(model.original_categorical, model.dummy_categorical)
+    dummy = pd.get_dummies(
+        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+    )  # shape(150 x 3), only dummy of categoricals
+
+    categorical_cos2 = pd.DataFrame(
+        index=mapping.keys(), columns=get_projected_column_names(min_nf)
+    )
+
+    # Compute the categorical cos2 for each original column
+    for original_col, single_category_columns in mapping.items():
+        # FIXME: Kept this for legacy: Why - 1 ?
+        # nb_modalities += [nb_dummy_columns - 1]
+        # for each dimension
+        cat_cos2 = _compute_categorical_cos2(
+            dummy[single_category_columns], model, model_coords
+        )
+        categorical_cos2.loc[original_col] = cat_cos2
+        eta2 = np.append(eta2, cat_cos2)
+
+    nb_modalities = len(model.dummy_categorical) - len(
+        model.original_categorical
+    )  # FIXME: Why - 1 ?
+
+    categorical_cos2 = categorical_cos2**2 / nb_modalities
+
+    combined_cos2 = pd.concat([continuous_cos2, categorical_cos2])
+
+    return contributions, combined_cos2.values
 
 
 def _compute_svd(model, weighted, min_nf):
@@ -367,7 +422,7 @@ def _compute_svd(model, weighted, min_nf):
     # FIXME: kept this here for legacy, don't know why we were doing it
     # U, V = V, U # switch U and V
 
-    sign = np.sign(np.sum(U, axis=0))
+    sign = np.sign(np.sum(U))
     signed_U = column_multiplication(pd.DataFrame(U), sign).values
 
     # Divide diagonal values by weights
@@ -385,3 +440,36 @@ def _apply_weights(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     working = column_multiplication(working, np.sqrt(model.column_weights))
     working = row_multiplication(working, np.sqrt(model.row_weights))
     return working
+
+
+def _compute_categorical_cos2(
+    single_category_df: pd.DataFrame, model: Model, coords: pd.DataFrame
+) -> NDArray[np.float_]:
+    """Compute cos2 for a single original category.
+
+    Parameters
+    ----------
+    single_category_df :
+        dummy dataframe of a single original category
+    model :
+        _description_
+    coords :
+        projections of the data used to created the axes
+
+    Returns
+    -------
+        cos2 of the single category
+    """
+    dimension_proportion = []
+    for coord_col in coords.columns:
+        # for each modality of the qualitative column
+        p = 0
+        for col in single_category_df.columns:
+            weighted_coords = coords[coord_col] * model.row_weights
+            dummy_values = single_category_df[col].values
+            p += (dummy_values * weighted_coords).sum() ** 2 / model.prop[col]
+
+        dimension_proportion.append(p)
+    all_weighted_coords = (coords.values**2).T * model.row_weights
+
+    return np.array(dimension_proportion) / all_weighted_coords.sum(axis=1)

@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP, famd, famd_sparse, mca, pca
+from saiph.reduction.utils.common import get_dummies_mapping
 
 
 def fit(
@@ -240,7 +241,8 @@ def variable_correlation(
 
     concat = pd.concat([bind, coord], axis=1, keys=["bind", "coord"])
     cor = pd.DataFrame(np.corrcoef(concat, rowvar=False), columns=concat.columns).loc[
-        0 : len(bind.columns) - 1, "coord"
+        0 : len(bind.columns) - 1,
+        "coord",
     ]
     return cor
 
@@ -398,15 +400,3 @@ def get_random_weighted_columns(
     column_labels = (random_probability < cum_probability).idxmax(axis=1)
 
     return column_labels
-
-
-def get_dummies_mapping(
-    columns: List[str], dummy_columns: List[str]
-) -> Dict[str, List[str]]:
-    """Get mapping between original column and all dummy columns."""
-    return {
-        col: list(
-            filter(lambda c: c.startswith(f"{col}{DUMMIES_PREFIX_SEP}"), dummy_columns)
-        )
-        for col in columns
-    }

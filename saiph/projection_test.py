@@ -8,13 +8,11 @@ from pandas.testing import assert_frame_equal
 
 from saiph.projection import (
     fit_transform,
-    get_dummies_mapping,
     get_random_weighted_columns,
     inverse_transform,
     stats,
     transform,
 )
-from saiph.reduction import DUMMIES_PREFIX_SEP
 
 
 def test_transform_then_inverse_FAMD(iris_df: pd.DataFrame) -> None:
@@ -295,19 +293,6 @@ def test_var_ratio(df_input: pd.DataFrame, expected_var_ratio: List[float]) -> N
     _, model = fit_transform(df_input)
     stats(model, df_input)
     assert_allclose(model.explained_var_ratio[0:5], expected_var_ratio, atol=1e-07)
-
-
-def test_get_dummies_mapping(quali_df: pd.DataFrame) -> None:
-    dummy_columns = pd.get_dummies(quali_df, prefix_sep=DUMMIES_PREFIX_SEP).columns
-
-    result = get_dummies_mapping(quali_df.columns, dummy_columns)
-
-    sep = DUMMIES_PREFIX_SEP
-    expected = {
-        "tool": ([f"tool{sep}hammer", f"tool{sep}wrench"]),
-        "fruit": ([f"fruit{sep}apple", f"fruit{sep}orange"]),
-    }
-    assert result == expected
 
 
 @pytest.mark.parametrize(

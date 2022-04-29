@@ -359,9 +359,11 @@ def test_inverse_transform_deterministic() -> None:
     assert_frame_equal(result, inverse_expected)
 
 
-#FutureWarning: In a future version, the Index constructor will not infer numeric 
+# FutureWarning: In a future version, the Index constructor will not infer numeric
 # dtypes when passed object-dtype sequences (matching Series behavior)
-@pytest.mark.filterwarnings("ignore:In a future version, the Index constructor will not infer numeric dtypes")
+@pytest.mark.filterwarnings(
+    "ignore:In a future version, the Index constructor will not infer numeric dtypes"
+)
 @pytest.mark.parametrize("dtypes", ["object", "category"])
 def test_transform_then_inverse_value_type(dtypes: str) -> None:
     """Test the type of the value of each variable."""

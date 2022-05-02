@@ -376,7 +376,7 @@ def compute_continuous_cos2(
     dist2 = np.where(np.abs(dist2 - 1) < 0.001, 1, np.sqrt(dist2))
 
     cos2 = np.divide(U * s, dist2[:, np.newaxis]) ** 2
-    # FIXME: Why original_continuous, we have been computing cos2 for all the dummies for nothing ?
+    # FIXME: Why original_continuous, we have been computing cos2 for all the dummies for nothing?
     continuous_cos2 = pd.DataFrame(
         cos2[: len(model.original_continuous)],  # only keep continuous components
         index=model.original_continuous,
@@ -397,7 +397,7 @@ def _compute_svd(
     s = s[:min_nf]
     weights = model.column_weights[:min_nf]
 
-    # FIXME: kept this here for legacy, don't know why we were doing it : U, V = V, U
+    # FIXME: kept this here for legacy, don't know why we were doing it: U, V = V, U
 
     sign = np.sign(np.sum(U))
     signed_U = column_multiplication(pd.DataFrame(U), sign).values
@@ -419,7 +419,7 @@ def _compute_cos2_single_category(
 
     Parameters
     ----------
-    single_category_df :
+    single_category_df:
         dummy dataframe of a single original category
     model :
         _description_

@@ -89,9 +89,8 @@ def test_transform(mixed_df2: pd.DataFrame) -> None:
             "Dim. 2": [1.414214, 1.414214],
         }
     )
-    np.testing.assert_almost_equal(
-        df_transformed.abs().values, df_expected.abs().values, decimal=6
-    )
+    
+    assert_frame_equal(df_transformed.abs(), df_expected.abs(), check_exact=False)
 
 
 def test_transform_vs_coord(mixed_df2: pd.DataFrame) -> None:

@@ -41,7 +41,7 @@ def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
     expected_explained_var_ratio: NDArray[np.float_] = np.array([0.6, 0.4])
 
     assert_frame_equal(abs(result), abs(expected_result), check_exact=False, atol=0.01)
-    assert_allclose(model.V, expected_v, atol=0.01)
+    assert_allclose(abs(model.V), abs(expected_v), atol=0.01)
     assert_allclose(model.s, expected_s, atol=0.01)
     assert_allclose(model.U, expected_u, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
@@ -89,7 +89,7 @@ def test_transform(mixed_df2: pd.DataFrame) -> None:
             "Dim. 2": [1.414214, 1.414214],
         }
     )
-    assert_frame_equal(df_transformed, df_expected)
+    assert_frame_equal(df_transformed.abs(), df_expected.abs())
 
 
 def test_transform_vs_coord(mixed_df2: pd.DataFrame) -> None:

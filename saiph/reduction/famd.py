@@ -18,6 +18,7 @@ from saiph.reduction.utils.common import (
     get_modalities_types,
     get_projected_column_names,
     get_uniform_row_weights,
+    row_division,
     row_multiplication,
 )
 from saiph.reduction.utils.svd import SVD
@@ -347,9 +348,8 @@ def compute_categorical_cos2(
             dummy[single_category_columns], model, model_coords
         )
 
-    nb_modalities = len(model.dummy_categorical) - len(
-        model.original_categorical
-    )  # FIXME: Why - len(model.original_categorical) ?
+    # FIXME: Why - 1 ?
+    nb_modalities = df[model.original_categorical].nunique() - 1
 
     categorical_cos2 = pd.DataFrame.from_dict(
         data=all_category_cos,
@@ -357,7 +357,8 @@ def compute_categorical_cos2(
         columns=get_projected_column_names(min_nf),
     )
 
-    categorical_cos2 = categorical_cos2**2 / nb_modalities
+    categorical_cos2 = row_division(categorical_cos2**2, nb_modalities)
+
     return categorical_cos2
 
 

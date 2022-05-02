@@ -28,7 +28,6 @@ def main(sparse: bool) -> None:
     start = time.perf_counter()
     filename = f"/tmp/{time.time()}"
     full_path = BASE_PATH / filename / "index.html"
-    print(full_path)
     profile(lambda: fit(df, nf=5, sparse=sparse), filename)
     end = time.perf_counter()
 

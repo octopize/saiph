@@ -48,7 +48,7 @@ test:  ## Run tests
 	poetry run pytest --benchmark-skip saiph
 .PHONY: test
 
-test-benchmark: ./tmp/fake_1k.csv ./tmp/fake_10k.csv ./tmp/fake_1000000.csv ## Run benchmark with smaller files, often.
+test-benchmark: ./tmp/fake_1k.csv ./tmp/fake_10k.csv ## Run benchmark with smaller files, often.
 	@echo "Run manually with --benchmark-cox@x@gainst last run test."
 	poetry run pytest --benchmark-only -m "not slow_benchmark" --benchmark-autosave --benchmark-warmup=on --benchmark-warmup-iterations=5 --benchmark-min-rounds=10 --benchmark-max-time=10
 .PHONY: test-benchmark

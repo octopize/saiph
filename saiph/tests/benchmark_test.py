@@ -18,5 +18,5 @@ def test_memory_iris(record_property: Any) -> None:
     tracemalloc.stop()
 
     # memory usage should be below x kiB
-    assert peak < 360000
+    assert peak <= 64276
     record_property("peak_memory_usage", peak)

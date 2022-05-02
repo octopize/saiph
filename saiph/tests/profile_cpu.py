@@ -1,11 +1,9 @@
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from saiph import fit
 
-# flake8: noqa
 
 N_ROWS = 1000000
 

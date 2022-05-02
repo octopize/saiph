@@ -53,4 +53,4 @@ jobs:
     - name: Build docs
       run: make docs
     - name: Run tests
-      run: make test
+      run: make lci

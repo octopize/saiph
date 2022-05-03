@@ -22,7 +22,7 @@ def plot_circle(
     Parameters:
         model: The model for transforming new data.
         dimensions: Dimensions to help by each axis
-        min_cor: Minimuim correlation threshold to display arrow. default: 0.1
+        min_cor: Minimum correlation threshold to display arrow. default: 0.1
         max_var: Number of variables to display (in descending order). default: 7
     """
     # make sure stats have been computed prior to visualization

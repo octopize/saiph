@@ -328,7 +328,7 @@ def undummify(
     use_max_modalities: bool = True,
     seed: Optional[int] = None,
 ) -> pd.DataFrame:
-    """Return undummified dataframe from the dummy.
+    """Return undummified dataframe from the dummy dataframe.
 
     Parameters:
         dummy_df: dummy df of categorical variables

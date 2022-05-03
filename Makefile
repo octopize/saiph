@@ -31,8 +31,8 @@ lci: lint-fix ci ## Autofix then run CI
 .PHONY: lci
 
 lint:  ## Run linting
-	poetry run black --check .
-	poetry run flake8 .
+	poetry run black --check saiph
+	poetry run flake8 saiph
 .PHONY: lint
 
 lint-fix:  ## Run autoformatters

@@ -53,6 +53,10 @@ build-backend = "poetry.core.masonry.api"
 filterwarnings = [
     "error"
 ]
+markers = [
+    "slow_benchmark: marks benchmarks as slow (deselect with '-m \"not slow_benchmark\"')",
+]
+
 python_files = "*_test.py"
 addopts = "--tb=short"
 

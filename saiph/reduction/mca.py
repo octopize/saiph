@@ -10,6 +10,7 @@ from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
+    column_multiplication,
     diag,
     explain_variance,
     get_dummies_mapping,
@@ -229,78 +230,30 @@ def get_variable_contributions(
         raise ValueError(
             "Model has not been fitted. Call fit() to create a Model instance."
         )
-
-    V = np.dot(model.D_c, model.V.T)  # type: ignore
     df = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
-    F = df / df.sum().sum()
+
+    centered_df = df / df.sum().sum()
 
     # Column and row weights
-    marge_col = F.sum(axis=0)
-    marge_row = F.sum(axis=1)
-    fsurmargerow = row_division(F, marge_row)
-    fmargerowT = pd.DataFrame(
-        np.array(fsurmargerow).T,
-        columns=list(fsurmargerow.index),
-        index=list(fsurmargerow.columns),
-    )
-    fmargecol = row_division(fmargerowT, marge_col)
-    Tc = (
-        pd.DataFrame(
-            np.array(fmargecol).T,
-            columns=list(fmargecol.index),
-            index=list(fmargecol.columns),
-        )
-        - 1
-    )
+    col_sum = centered_df.sum(axis=0)
+    row_sum = centered_df.sum(axis=1)
+    scaled_df = row_division(centered_df, row_sum).T
 
-    # Weights and svd of Tc
-    weightedTc = row_multiplication(
-        row_multiplication(Tc.T, np.sqrt(marge_col)).T, np.sqrt(marge_row)
-    )
-    U, s, V = SVD(weightedTc.T, svd_flip=False)
-    ncp0 = min(len(weightedTc.iloc[0]), len(weightedTc), model.nf)
-    U = U[:, :ncp0]
-    V = V.T[:, :ncp0]
-    s = s[:ncp0]
-    tmp = V
-    V = U
-    U = tmp
-    mult = np.sign(np.sum(V, axis=0))
+    weighted_df = row_division(scaled_df, col_sum).T - 1
 
-    # final V
-    mult1 = pd.DataFrame(
-        np.array(pd.DataFrame(np.array(row_multiplication(pd.DataFrame(V.T), mult)))).T
-    )
-    V = pd.DataFrame()
-    for i in range(len(mult1)):
-        V[i] = mult1.iloc[i] / np.sqrt(marge_col[i])
-    V = np.array(V).T
+    weighted_df = column_multiplication(weighted_df, np.sqrt(col_sum))
+    weighted_df = row_multiplication(weighted_df, np.sqrt(row_sum))
 
-    # final U
-    mult1 = pd.DataFrame(
-        np.array(pd.DataFrame(np.array(row_multiplication(pd.DataFrame(U.T), mult)))).T
-    )
-    U = pd.DataFrame()
-    for i in range(len(mult1)):
-        U[i] = mult1.iloc[i] / np.sqrt(marge_row[i])
-    U = np.array(U).T
+    min_nf = min(min(weighted_df.shape), model.nf)
+
+    weighted_V, eig = _compute_svd(weighted_df, min_nf, col_sum)
 
     # computing the contribution
-    eig: Any = s**2
-
-    for i in range(len(V[0])):
-        V[:, i] = V[:, i] * np.sqrt(eig[i])
-    coord_col = V**2
-
-    for i in range(len(U[0])):
-        U[:, i] = U[:, i] * np.sqrt(eig[i])
-
-    for i in range(len(coord_col[0])):
-        coord_col[:, i] = (coord_col[:, i] * marge_col) / eig[i]
-
-    raw_coordinates: NDArray[np.float_] = coord_col * 100
+    coord_col = weighted_V**2
+    coord_col = (coord_col * col_sum.values[:, np.newaxis]) / eig
+    coord_col = coord_col * 100
     coordinates = pd.DataFrame(
-        raw_coordinates, columns=get_projected_column_names(ncp0), index=df.columns
+        coord_col, columns=get_projected_column_names(min_nf), index=df.columns
     )
 
     if explode:
@@ -310,6 +263,28 @@ def get_variable_contributions(
     coordinates = get_grouped_modality_values(mapping, coordinates)
 
     return coordinates
+
+
+def _compute_svd(
+    weighted: pd.DataFrame, min_nf: int, col_sum: pd.DataFrame
+) -> Tuple[pd.DataFrame, NDArray[np.float_]]:
+
+    U, s, V = SVD(weighted.T, svd_flip=False)
+
+    U = U[:, :min_nf]
+    V = V.T[:, :min_nf]
+    s = s[:min_nf]
+
+    U, V = V, U
+    eigenvalues = np.power(s, 2)
+
+    sign = np.sign(np.sum(U))
+    signed_V = column_multiplication(pd.DataFrame(V), sign)
+
+    signed_V = row_division(signed_V, np.sqrt(col_sum).values)
+    weighted_V = column_multiplication(signed_V, np.sqrt(eigenvalues)).values
+
+    return weighted_V, eigenvalues
 
 
 def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:

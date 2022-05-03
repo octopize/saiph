@@ -22,16 +22,16 @@ def main(sparse: bool) -> None:
     """Profile famd.fit using a fake dataset."""
     df = pd.read_csv(str(BASE_PATH) + "/tmp/fake_1000000.csv")
 
-    print(f"using {get_readable_size(df.memory_usage(index=True).sum())}")
+    typer.echo(f"using {get_readable_size(df.memory_usage(index=True).sum())}")
 
-    print("before fit")
+    typer.echo("before fit")
     start = time.perf_counter()
     filename = f"/tmp/{time.time()}"
     full_path = BASE_PATH / filename / "index.html"
     profile(lambda: fit(df, nf=5, sparse=sparse), filename)
     end = time.perf_counter()
 
-    print(f"after fit, took {(end-start):.3} sec")
+    typer.echo(f"after fit, took {(end-start):.3} sec")
 
     webbrowser.open(f"file://{str(full_path)}")
 

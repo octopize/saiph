@@ -83,15 +83,17 @@ def fit_transform(
     return coord, model
 
 
-def stats(model: Model, df: pd.DataFrame) -> Model:
+def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
     """Compute the contributions and cos2.
 
     Parameters:
         model: Model computed by fit.
         df: original dataframe
+        explode: whether to split the contributions of each modality (True)
+            or sum them as the contribution of the whole variable (False)
 
     Returns:
-        model: model populated with contriubtion.
+        model: model populated with contribution.
     """
     if not model.is_fitted:
         raise ValueError(
@@ -137,12 +139,16 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
     return model
 
 
-def get_variable_contributions(model: Model, df: pd.DataFrame) -> pd.DataFrame:
+def get_variable_contributions(
+    model: Model, df: pd.DataFrame, explode: bool = False
+) -> pd.DataFrame:
     """Compute the contributions of the `df` variables within the fitted space.
 
     Parameters:
         model: Model computed by fit.
         df: dataframe to compute contributions from
+        explode: whether to split the contributions of each modality (True)
+            or sum them as the contribution of the whole variable (False)
 
     Returns:
         contributions

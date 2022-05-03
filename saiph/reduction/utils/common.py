@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import scipy
 from numpy.typing import NDArray
+from toolz import concat
 
 from saiph.reduction import DUMMIES_PREFIX_SEP
 
@@ -85,3 +86,21 @@ TYPES = {
 def get_type_as_string(value: Any) -> str:
     """Return string of type."""
     return TYPES[type(value)]
+
+
+def get_grouped_modality_values(
+    mapping: Dict[str, List[str]], to_group: pd.DataFrame
+) -> pd.DataFrame:
+    grouped_contributions = {}
+    for original_col, dummy_columns in mapping.items():
+        grouped_contributions[original_col] = to_group.loc[dummy_columns].sum(axis=0)
+
+    grouped_contributions = pd.DataFrame.from_dict(
+        data=grouped_contributions,
+        orient="index",
+        columns=to_group.columns,
+    )
+
+    to_group = pd.concat([to_group, grouped_contributions])
+    to_group = to_group.drop(concat(mapping.values()))
+    return to_group

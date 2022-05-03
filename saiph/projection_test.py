@@ -9,10 +9,12 @@ from pandas.testing import assert_frame_equal
 from saiph.projection import (
     fit_transform,
     get_random_weighted_columns,
+    get_variable_contributions,
     inverse_transform,
     stats,
     transform,
 )
+from saiph.reduction.utils.common import get_projected_column_names
 
 
 def test_transform_then_inverse_FAMD(iris_df: pd.DataFrame) -> None:
@@ -178,45 +180,6 @@ df_mca = pd.DataFrame(
 def test_eval(df_input: pd.DataFrame, expected_type: str) -> None:
     _, model = fit_transform(df_input)
     assert model.type == expected_type
-
-
-# check contribution of variables to dim
-
-expected_pca_contrib = [32.81178064277649, 33.12227570926467, 34.065943647958846]
-expected_mca_contrib = [
-    13.314231201732547,
-    19.971346802598834,
-    7.924987451762375,
-    2.8647115861394203,
-    24.435070805047193,
-    11.119305005676665,
-    8.778349565191498,
-    0.47269257617482885,
-    11.119305005676662,
-]
-expected_famd_contrib = [
-    15.696161557629662,
-    36.08406414786589,
-    11.420291290785196,
-    9.852860955848701,
-    6.104123324745425,
-    20.842498723125182,
-]
-
-
-@pytest.mark.parametrize(
-    "df_input,expected_contrib",
-    [
-        (df_pca, expected_pca_contrib),
-        (df_mca, expected_mca_contrib),
-        (df_famd, expected_famd_contrib),
-    ],
-)
-def test_var_contrib(df_input: pd.DataFrame, expected_contrib: List[float]) -> None:
-    _, model = fit_transform(df_input)
-    stats(model, df_input)
-    if model.contributions is not None:
-        assert_allclose(model.contributions["Dim. 1"], expected_contrib, atol=1e-07)
 
 
 # check cor of variables to dim (if cor is ok so is cos2)
@@ -390,3 +353,28 @@ def test_transform_then_inverse_value_type(dtypes: str) -> None:
     result = inverse_transform(coord, model, seed=46)
 
     assert_frame_equal(df, result)
+
+
+def test_get_variable_contribution_for_pca(quanti_df: pd.DataFrame) -> None:
+    """Verify that get_variable_contributions returns the corrections contributions for PCA.
+
+    FIXME:There is no unique function in reduction/pca.py that computes the contributions
+    because it is a very simple task. However, it might be useful to refactor as it
+    will improve readability.
+    """
+    df = quanti_df
+    _, model = fit_transform(df, nf=3)
+
+    contributions = get_variable_contributions(model, df)
+    expected_contributions = pd.DataFrame.from_dict(
+        data={
+            "variable_1": [33.497034, 16.502966, 33.465380],
+            "variable_2": [33.497034, 16.502966, 33.465380],
+            "variable_3": [33.005932, 66.994068, 33.069241],
+        },
+        dtype=np.float_,
+        orient="index",
+        columns=get_projected_column_names(3),
+    )
+
+    assert_frame_equal(contributions, expected_contributions)

@@ -18,6 +18,7 @@ from saiph.reduction.famd import (
 from saiph.reduction.pca import center as center_pca
 from saiph.reduction.pca import fit_transform as fit_pca
 from saiph.reduction.pca import scaler as scaler_pca
+from saiph.reduction.utils.common import get_projected_column_names
 
 
 def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
@@ -168,6 +169,37 @@ def test_get_variable_contributions_iris(iris_df: pd.DataFrame) -> None:
     np.testing.assert_array_almost_equal(contributions, expected_contributions)
     np.testing.assert_array_almost_equal(cos2, expected_cos2)
 
+
+def test_get_variable_contributions(mixed_df: pd.DataFrame) -> None:
+    """Verify that the contributions and cos2 are the ones expected."""
+    df = mixed_df
+    _, model = fit_transform(df, nf=3)
+
+    contributions, cos2 = get_variable_contributions(model, df, explode=False)
+
+    expected_contributions = pd.DataFrame.from_dict(
+        data={
+            "variable_1": [50, 50, 0],
+            "tool": [50, 50, 100],
+        },
+        dtype=np.float_,
+        orient="index",
+        columns=get_projected_column_names(3),
+    )
+
+    expected_cos2 = pd.DataFrame.from_dict(
+        data={
+            "variable_1": [0.897214, 0.002786, 0],
+            "tool": [0.897214, 0.002786, 0.25],
+        },
+        orient="index",
+        columns=get_projected_column_names(3),
+    )
+
+    assert_frame_equal(
+        contributions, expected_contributions, check_exact=False, atol=0.0001
+    )
+    assert_frame_equal(cos2, expected_cos2, check_exact=False, atol=0.0001)
 
 
 def test_get_variable_contributions_exploded_parameter(mixed_df: pd.DataFrame):

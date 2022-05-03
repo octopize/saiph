@@ -91,7 +91,7 @@ def fit(
         V=V,
         explained_var=explained_var,
         explained_var_ratio=explained_var_ratio,
-        variable_coord=D_c @ V.T,
+        variable_coord=pd.DataFrame(D_c @ V.T),
         _modalities=_modalities,
         D_c=D_c,
         type="mca",

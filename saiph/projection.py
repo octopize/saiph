@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP, famd, famd_sparse, mca, pca
-from saiph.reduction.utils.common import get_dummies_mapping
+from saiph.reduction.utils.common import get_dummies_mapping, get_projected_column_names
 
 
 def fit(
@@ -100,8 +100,10 @@ def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
             "Model has not been fitted. Call fit() to create a Model instance."
         )
 
-    model.correlations = variable_correlation(model, df)
-    model.variable_coord.columns = model.correlations.columns
+    model.correlations = get_variable_correlation(model, df)
+    model.variable_coord.columns = get_projected_column_names(
+        model.variable_coord.shape[1]
+    )
     model.variable_coord.index = list(model.correlations.index)
 
     has_some_quanti = (
@@ -115,27 +117,10 @@ def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
         model.cos2 = model.correlations**2
         model.contributions = model.cos2.div(model.cos2.sum(axis=0), axis=1).mul(100)
     elif not has_some_quanti:
-        model = mca.stats(model, df)
-        if model.correlations is not None:
-            model.cos2 = model.correlations**2
-
-        if model.contributions is not None and model.correlations is not None:
-            model.contributions = pd.DataFrame(
-                model.contributions,
-                columns=model.correlations.columns,
-                index=list(model.correlations.index),
-            )
+        model = mca.stats(model, df, explode=explode)
     else:
-        model = famd.stats(model, df)
-        model.cos2 = pd.DataFrame(
-            model.cos2, index=model.original_continuous + model.original_categorical
-        )
-        if model.contributions is not None and model.correlations is not None:
-            model.contributions = pd.DataFrame(
-                model.contributions,
-                columns=model.correlations.columns,
-                index=list(model.correlations.index),
-            )
+        model = famd.stats(model, df, explode=explode)
+
     return model
 
 
@@ -158,8 +143,6 @@ def get_variable_contributions(
             "Model has not been fitted. Call fit() to create a Model instance."
         )
 
-    model.correlations = variable_correlation(model, df)
-
     has_some_quanti = (
         model.original_continuous is not None and len(model.original_continuous) != 0
     )
@@ -168,25 +151,17 @@ def get_variable_contributions(
     )
 
     if not has_some_quali:
-        cos2 = model.correlations**2
+        correlations = get_variable_correlation(model, df)
+        cos2 = correlations**2
         contributions = cos2.div(cos2.sum(axis=0), axis=1).mul(100)
+        contributions = contributions.set_index(df.columns)
         return contributions
 
     if not has_some_quanti:
-        contributions = mca.get_variable_contributions(model, df)
+        return mca.get_variable_contributions(model, df, explode=explode)
 
-        return pd.DataFrame(
-            contributions,
-            columns=model.correlations.columns,
-            index=list(model.correlations.index),
-        )
-
-    contributions, _ = famd.get_variable_contributions(model, df)
-    return pd.DataFrame(
-        contributions,
-        columns=model.correlations.columns,
-        index=list(model.correlations.index),
-    )
+    contributions, _ = famd.get_variable_contributions(model, df, explode=explode)
+    return contributions
 
 
 def transform(df: pd.DataFrame, model: Model, *, sparse: bool = False) -> pd.DataFrame:
@@ -217,7 +192,7 @@ def transform(df: pd.DataFrame, model: Model, *, sparse: bool = False) -> pd.Dat
     return famd.transform(df, model)
 
 
-def variable_correlation(
+def get_variable_correlation(
     model: Model,
     df: pd.DataFrame,
 ) -> pd.DataFrame:

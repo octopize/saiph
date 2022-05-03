@@ -115,7 +115,7 @@ def fit(
     Z = df_scaled.multiply(col_weights).T.multiply(row_w).T
 
     # compute the svd
-    if isinstance(Z, scipy.sparse.base.spmatrix):
+    if isinstance(Z, scipy.sparse.spmatrix):
         _U, s, _V = SVD(Z.todense())
     else:
         _U, s, _V = SVD(Z)

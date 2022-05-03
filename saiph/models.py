@@ -40,7 +40,7 @@ class Model:
     # Modality type of the first individuals
     modalities_types: Dict[str, str]
     # Orthogonal matrix with left singular vectors as columns.
-    U: Optional[NDArray[np.float_]] = None
+    U: NDArray[np.float_]
     # Singular values
     s: Optional[NDArray[np.float_]] = None
 

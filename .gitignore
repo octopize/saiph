@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# pytest-benchmark
+.benchmarks/
+
+# fil-profile results
+fil-result/
+
+# benchmark .csv
+tmp/

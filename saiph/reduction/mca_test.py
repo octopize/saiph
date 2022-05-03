@@ -131,15 +131,14 @@ def test_fit_zero_same_df() -> None:
 
 
 def test_transform_simple() -> None:
+    """Verify that mca.transform returns correct output."""
     df = pd.DataFrame(
         {
             "tool": ["toaster", "toaster"],
             "score": ["aa", "aa"],
         }
     )
-    _, model = fit_transform(df)
-
-    df_transformed = transform(df, model)
+    df_transformed, _ = fit_transform(df)
 
     expected_transform = pd.DataFrame(
         {
@@ -153,7 +152,8 @@ def test_transform_simple() -> None:
     )
 
 
-def test_transform_vs_coord() -> None:
+def test_fit_transform_has_same_output_as_transform() -> None:
+
     df = pd.DataFrame(
         {
             "tool": ["toaster", "toaster"],
@@ -167,6 +167,7 @@ def test_transform_vs_coord() -> None:
 
 
 def test_get_variable_contributions(quali_df: pd.DataFrame) -> None:
+    """Verify that mca.get_variable_contributions returns correct output."""
     df = quali_df
     _, model = fit_transform(df, nf=3)
 

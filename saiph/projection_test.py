@@ -272,6 +272,7 @@ def test_var_ratio(df_input: pd.DataFrame, expected_var_ratio: List[float]) -> N
     ],
 )
 def test_get_random_weighted_columns(weights: List[float], expected_index: int) -> None:
+    """Verify that get_random_weighted_columns returns the correct column."""
     df = pd.DataFrame(data=[weights])
     result = get_random_weighted_columns(df, np.random.default_rng(1))
     assert result.values[0] == expected_index
@@ -290,11 +291,12 @@ def test_inverse_transform_raises_value_error_when_wider_than_df() -> None:
         inverse_transform(coord, model)
 
 
-# using df with more dimension than N and high weight
-# allow more balanced probability inmodality assignment during inverse transform
+# using df with more dimensions than individuals and high column weights
+# allows for a more balanced probability in modality assignment during inverse transform
 
 
 def test_inverse_transform_with_ponderation() -> None:
+    """Verify that use_max_modalities=False returns a random ponderation of modalities."""
     df = pd.DataFrame(
         zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 3], [2, 2, 10]),
         columns=["cat1", "cat2", "cont1", "cont2"],
@@ -311,6 +313,7 @@ def test_inverse_transform_with_ponderation() -> None:
 
 
 def test_inverse_transform_deterministic() -> None:
+    """Verify that use_max_modalities=True returns a deterministic of modalities."""
     df = pd.DataFrame(
         zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 3], [2, 2, 10]),
         columns=["cat1", "cat2", "cont1", "cont2"],
@@ -387,18 +390,22 @@ def test_get_variable_contribution_for_pca(quanti_df: pd.DataFrame) -> None:
 def test_get_variable_contributions_calls_correct_subfunction(
     quanti_df: pd.DataFrame, quali_df: pd.DataFrame, mixed_df: pd.DataFrame
 ) -> None:
-
+    """Verify that projection.get_variable_contributions calls the correct subfunction."""
+    # FAMD
     model = fit(mixed_df)
     expect(saiph.reduction.famd).get_variable_contributions(
         model, mixed_df, explode=False
     ).once().and_return((None, None))
     projection.get_variable_contributions(model, mixed_df)
+
+    # MCA
     model = fit(quali_df)
     expect(saiph.reduction.mca).get_variable_contributions(
         model, quali_df, explode=False
     ).once().and_return(None)
     projection.get_variable_contributions(model, quali_df)
 
+    # PCA
     model = fit(quanti_df)
     expect(saiph.projection).get_variable_correlation(
         model, quanti_df
@@ -406,12 +413,17 @@ def test_get_variable_contributions_calls_correct_subfunction(
     projection.get_variable_contributions(model, quanti_df)
 
 
-def test_stats_calls_correct_subfunction(quali_df, mixed_df) -> None:
-
+def test_stats_calls_correct_subfunction(
+    quali_df: pd.DataFrame, mixed_df: pd.DataFrame
+) -> None:
+    """Verify that projection.stats calls the correct subfunction."""
+    # FAMD
     model = fit(mixed_df)
     expect(saiph.reduction.famd).stats(
         model, mixed_df, explode=False
     ).once().and_return(model)
+
+    # MCA
     projection.stats(model, mixed_df)
     model = fit(quali_df)
     expect(saiph.reduction.mca).stats(model, quali_df, explode=False).once().and_return(

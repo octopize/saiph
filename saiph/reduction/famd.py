@@ -38,7 +38,7 @@ def center(
 
     Parameters:
         df: DataFrame to center.
-        quanti: Indices of continous variables.
+        quanti: Indices of continuous variables.
         quali: Indices of categorical variables.
 
     Returns:
@@ -374,14 +374,13 @@ def compute_categorical_cos2(
     dummy = pd.get_dummies(
         df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
     )
-
     # Compute the categorical cos2 for each original column
     all_category_cos = {}
-    for original_col, single_category_columns in mapping.items():
+    for original_col, dummy_columns in mapping.items():
         # FIXME: Kept this for legacy: Why - 1 ? nb_modalities += [nb_dummy_columns - 1] #
         # for each dimension
         all_category_cos[original_col] = _compute_cos2_single_category(
-            dummy[single_category_columns], model, model_coords
+            dummy[dummy_columns], model, model_coords
         )
 
     # FIXME: Why - 1 ?
@@ -407,7 +406,7 @@ def compute_continuous_cos2(
 ) -> pd.DataFrame:
     squared_values: NDArray[np.float_] = scaled_df.values**2
 
-    weighted_values = np.multiply(squared_values, model.row_weights[:, np.newaxis])
+    weighted_values = squared_values * model.row_weights[:, np.newaxis]
 
     dist2 = np.sum(weighted_values, axis=0)
     dist2 = np.where(np.abs(dist2 - 1) < 0.001, 1, np.sqrt(dist2))

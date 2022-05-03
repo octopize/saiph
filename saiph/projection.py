@@ -90,7 +90,8 @@ def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
         model: Model computed by fit.
         df: original dataframe
         explode: whether to split the contributions of each modality (True)
-            or sum them as the contribution of the whole variable (False)
+            or sum them as the contribution of the whole variable (False).
+            Only valid for categorical variables.
 
     Returns:
         model: model populated with contribution.

@@ -202,7 +202,7 @@ def test_get_variable_contributions(mixed_df: pd.DataFrame) -> None:
     assert_frame_equal(cos2, expected_cos2, check_exact=False, atol=0.0001)
 
 
-def test_get_variable_contributions_exploded_parameter(mixed_df: pd.DataFrame):
+def test_get_variable_contributions_exploded_parameter(mixed_df: pd.DataFrame) -> None:
     """Verify argument explode=False and explode=True in get_variable_contributions.
 
     Make sure that explode=False is the sum of explode=True for categorical variables.
@@ -225,7 +225,7 @@ def test_get_variable_contributions_exploded_parameter(mixed_df: pd.DataFrame):
     )
 
 
-# FIXME: We get division by wero because 2 columns are identical
+# FIXME: We get division by zero because 2 columns are identical
 # def test_get_variable_contributions_with_multiple_variables(
 #     mixed_df: pd.DataFrame,
 # ) -> None:

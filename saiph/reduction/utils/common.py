@@ -91,6 +91,19 @@ def get_type_as_string(value: Any) -> str:
 def get_grouped_modality_values(
     mapping: Dict[str, List[str]], to_group: pd.DataFrame
 ) -> pd.DataFrame:
+    """Get the sum of the values of modalities into the category.
+
+    Parameters
+    ----------
+    mapping :
+        mapping between categorical columns and their dummy equivalent
+    to_group :
+        dataframe from which to sum the values of modalities
+
+    Returns
+    -------
+        a dataframe with the categorical variables without the dummies
+    """
     grouped_contributions = {}
     for original_col, dummy_columns in mapping.items():
         grouped_contributions[original_col] = to_group.loc[dummy_columns].sum(axis=0)

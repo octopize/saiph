@@ -3,10 +3,14 @@ from typing import List
 import numpy as np
 import pandas as pd
 import pytest
+from doubles import expect
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
+import saiph
+from saiph import projection
 from saiph.projection import (
+    fit,
     fit_transform,
     get_random_weighted_columns,
     get_variable_contributions,
@@ -378,3 +382,41 @@ def test_get_variable_contribution_for_pca(quanti_df: pd.DataFrame) -> None:
     )
 
     assert_frame_equal(contributions, expected_contributions)
+
+
+def test_get_variable_contributions_calls_correct_subfunction(
+    quanti_df: pd.DataFrame, quali_df: pd.DataFrame, mixed_df: pd.DataFrame
+) -> None:
+
+    model = fit(mixed_df)
+    expect(saiph.reduction.famd).get_variable_contributions(
+        model, mixed_df, explode=False
+    ).once().and_return((None, None))
+    projection.get_variable_contributions(model, mixed_df)
+    model = fit(quali_df)
+    expect(saiph.reduction.mca).get_variable_contributions(
+        model, quali_df, explode=False
+    ).once().and_return(None)
+    projection.get_variable_contributions(model, quali_df)
+
+    model = fit(quanti_df)
+    expect(saiph.projection).get_variable_correlation(
+        model, quanti_df
+    ).once().and_return(pd.DataFrame([1, 2, 3]))
+    projection.get_variable_contributions(model, quanti_df)
+
+
+def test_stats_calls_correct_subfunction(quali_df, mixed_df) -> None:
+
+    model = fit(mixed_df)
+    expect(saiph.reduction.famd).stats(
+        model, mixed_df, explode=False
+    ).once().and_return(model)
+    projection.stats(model, mixed_df)
+    model = fit(quali_df)
+    expect(saiph.reduction.mca).stats(model, quali_df, explode=False).once().and_return(
+        model
+    )
+    projection.stats(model, quali_df)
+
+    # FIXME: Can't test PCA as it has no subfunction associated to it

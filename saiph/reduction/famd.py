@@ -478,7 +478,10 @@ def _compute_cos2_single_category(
 
         cos2.append(p)
     all_weighted_coords = (coords.values**2).T * model.row_weights
-    single_category_cos2: NDArray[np.float_] = np.array(cos2) / all_weighted_coords.sum(
-        axis=1
-    )
+    summed_weights = all_weighted_coords.sum(axis=1)
+
+    if any(summed_weights == 0):
+        raise ValueError("You have perfectly correlated columns. Please remove one.")
+
+    single_category_cos2: NDArray[np.float_] = np.array(cos2) / summed_weights
     return single_category_cos2

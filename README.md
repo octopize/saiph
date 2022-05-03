@@ -13,7 +13,7 @@ See the documentation for more details and a tutorial.
 ## Install
 
 ```bash
-poetry install install --no-dev
+poetry install --no-dev
 ```
 
 If you want to install dev dependencies, make sure you have a rust compiler installed:

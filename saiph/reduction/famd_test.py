@@ -2,7 +2,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pytest
 from numpy.testing import assert_allclose
 from numpy.typing import NDArray
 from pandas._testing.asserters import assert_series_equal
@@ -238,16 +237,3 @@ def test_get_variable_contributions_with_multiple_variables(
     df = pd.concat([quali_df, quanti_df], axis="columns")
     _, model = fit_transform(df, nf=4)
     get_variable_contributions(model, df, explode=True)
-
-
-def test_get_variable_contributions_returns_error_with_perfect_correlation(
-    mixed_df: pd.DataFrame,
-) -> None:
-    """Verify that we raise a custom error when 2 columns are perfectly correlated."""
-    df = pd.concat(
-        [mixed_df, mixed_df.rename(columns=lambda x: x + "_copy")], axis="columns"
-    )
-    _, model = fit_transform(df, nf=4)
-
-    with pytest.raises(ValueError, match="perfectly correlated columns"):
-        get_variable_contributions(model, df, explode=True)

@@ -10,11 +10,25 @@ The package provides a visualization module for correlation circles, contributio
 
 See the documentation for more details and a tutorial.
 
+## Install
+
+```bash
+poetry install install --no-dev
+```
+
+If you want to install dev dependencies, make sure you have a rust compiler installed:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+make install
+```
+
+
 ## Documentation
 
 To get the documentation, clone the repo then
 
-```
+```bash
 make install docs docs-open
 ```
 

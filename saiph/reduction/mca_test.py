@@ -2,10 +2,11 @@ import numpy as np
 import pandas as pd
 from numpy.testing import assert_allclose
 from numpy.typing import NDArray
-from pandas.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 from saiph.reduction import DUMMIES_PREFIX_SEP
-from saiph.reduction.mca import fit_transform, transform
+from saiph.reduction.mca import fit_transform, get_variable_contributions, transform
+from saiph.reduction.utils.common import get_projected_column_names
 
 
 def test_fit() -> None:
@@ -163,3 +164,25 @@ def test_transform_vs_coord() -> None:
     df_transformed = transform(df, model)
 
     assert_frame_equal(coord, df_transformed)
+
+
+def test_get_variable_contributions_exploded_parameter(mixed_df: pd.DataFrame) -> None:
+    """Verify argument explode=False and explode=True in get_variable_contributions.
+
+    Make sure that explode=False is the sum of explode=True for categorical variables.
+    """
+    df = mixed_df
+    variable = "tool"
+    _, model = fit_transform(df, nf=3)
+
+    contributions_exploded = get_variable_contributions(model, df, explode=True)
+    contributions_not_exploded = get_variable_contributions(model, df, explode=False)
+    dummies = filter(
+        lambda name: f"{variable}{DUMMIES_PREFIX_SEP}" in name,
+        contributions_exploded.index,
+    )
+    assert_series_equal(
+        contributions_exploded.loc[list(dummies)].sum(),
+        contributions_not_exploded.loc[variable],
+        check_names=False,
+    )

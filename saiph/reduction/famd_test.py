@@ -153,11 +153,11 @@ def test_center_pca_famd(mixed_df2: pd.DataFrame) -> None:
     assert_series_equal(std1, std2)
 
 
-def test_get_variable_contributions(iris_df: pd.DataFrame) -> None:
+def test_get_variable_contributions_iris(iris_df: pd.DataFrame) -> None:
     df = iris_df
     _, model = fit_transform(df, nf=5)
 
-    contributions, cos2 = get_variable_contributions(model, df)
+    contributions, cos2 = get_variable_contributions(model, df, explode=True)
 
     contributions_path = Path("fixtures/famd_contributions.csv")
     cos2_path = Path("fixtures/famd_cos2.csv")
@@ -167,3 +167,41 @@ def test_get_variable_contributions(iris_df: pd.DataFrame) -> None:
 
     np.testing.assert_array_almost_equal(contributions, expected_contributions)
     np.testing.assert_array_almost_equal(cos2, expected_cos2)
+
+
+
+def test_get_variable_contributions_exploded_parameter(mixed_df: pd.DataFrame):
+    """Verify argument explode=False and explode=True in get_variable_contributions.
+
+    Make sure that explode=False is the sum of explode=True for categorical variables.
+    """
+    df = mixed_df
+    variable = "tool"
+    _, model = fit_transform(df, nf=3)
+
+    contributions_exploded, _ = get_variable_contributions(model, df, explode=True)
+    contributions_not_exploded, _ = get_variable_contributions(model, df, explode=False)
+
+    dummies = filter(
+        lambda name: f"{variable}{DUMMIES_PREFIX_SEP}" in name,
+        contributions_exploded.index,
+    )
+    assert_series_equal(
+        contributions_exploded.loc[list(dummies)].sum(),
+        contributions_not_exploded.loc[variable],
+        check_names=False,
+    )
+
+
+# FIXME: We get division by wero because 2 columns are identical
+# def test_get_variable_contributions_with_multiple_variables(
+#     mixed_df: pd.DataFrame,
+# ) -> None:
+#     """Verify that contributions can be computed using multiple categorical columns.
+
+#     This is a regression test.
+#     """
+#     copy = mixed_df.rename(columns=lambda x: x + "_copy")
+#     df = pd.concat([mixed_df, copy], axis="columns")
+#     _, model = fit_transform(df, nf=4)
+#     get_variable_contributions(model, df, explode=True)

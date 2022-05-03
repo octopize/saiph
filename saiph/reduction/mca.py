@@ -12,6 +12,8 @@ from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
     diag,
     explain_variance,
+    get_dummies_mapping,
+    get_grouped_modality_values,
     get_modalities_types,
     get_projected_column_names,
     get_uniform_row_weights,
@@ -209,12 +211,16 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     return coord
 
 
-def get_variable_contributions(model: Model, df: pd.DataFrame) -> NDArray[np.float_]:
+def get_variable_contributions(
+    model: Model, df: pd.DataFrame, explode: bool = False
+) -> pd.DataFrame:
     """Compute the contributions of the `df` variables within the fitted space.
 
     Parameters:
         model: Model computed by fit.
         df: dataframe to compute contributions from
+        explode: whether to split the contributions of each modality (True)
+            or sum them as the contribution of the whole variable (False)
 
     Returns:
         contributions
@@ -292,20 +298,32 @@ def get_variable_contributions(model: Model, df: pd.DataFrame) -> NDArray[np.flo
     for i in range(len(coord_col[0])):
         coord_col[:, i] = (coord_col[:, i] * marge_col) / eig[i]
 
-    coordinates: NDArray[np.float_] = coord_col * 100
+    raw_coordinates: NDArray[np.float_] = coord_col * 100
+    coordinates = pd.DataFrame(
+        raw_coordinates, columns=get_projected_column_names(ncp0), index=df.columns
+    )
+
+    if explode:
+        return coordinates
+
+    mapping = get_dummies_mapping(model.original_categorical, model.dummy_categorical)
+    coordinates = get_grouped_modality_values(mapping, coordinates)
+
     return coordinates
 
 
-def stats(model: Model, df: pd.DataFrame) -> Model:
+def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
     """Compute the contributions.
 
     Parameters:
         model: Model computed by fit.
         df : dataframe to compute contributions from in the original space
+        explode: whether to split the contributions of each modality (True)
+            or sum them as the contribution of the whole variable (False)
 
     Returns:
         model.
     """
-    contributions = get_variable_contributions(model, df)
+    contributions = get_variable_contributions(model, df, explode=explode)
     model.contributions = contributions
     return model

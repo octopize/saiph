@@ -15,6 +15,7 @@ from saiph.reduction.utils.common import (
     column_multiplication,
     explain_variance,
     get_dummies_mapping,
+    get_grouped_modality_values,
     get_modalities_types,
     get_projected_column_names,
     get_uniform_row_weights,
@@ -260,11 +261,14 @@ def transform(
     return coord
 
 
-def stats(model: Model, df: pd.DataFrame) -> Model:
+def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
     """Compute contributions and cos2.
 
     Parameters:
         model: Model computed by fit.
+        df: dataframe to compute statistics from
+        explode: whether to split the contributions of each modality (True)
+            or sum them as the contribution of the whole variable (False)
 
     Returns:
         model: model populated with contriubtion and cos2.
@@ -274,20 +278,22 @@ def stats(model: Model, df: pd.DataFrame) -> Model:
             "Model has not been fitted. Call fit() to create a Model instance."
         )
 
-    contributions, cos2 = get_variable_contributions(model, df)
+    contributions, cos2 = get_variable_contributions(model, df, explode=explode)
     model.contributions = contributions
     model.cos2 = cos2
     return model
 
 
 def get_variable_contributions(
-    model: Model, df: pd.DataFrame
-) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
+    model: Model, df: pd.DataFrame, explode: bool = False
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the contributions of the `df` variables within the fitted space.
 
     Parameters:
         model: Model computed by fit.
         df: dataframe to compute contributions from
+        explode: whether to split the contributions of each modality (True)
+            or sum them as the contribution of the whole variable (False)
 
     Returns:
         tuple of contributions and cos2.
@@ -298,16 +304,46 @@ def get_variable_contributions(
 
     min_nf = min(min(weighted_df.shape), model.nf)
     s, U, eig = _compute_svd(model, weighted_df, min_nf=min_nf)
-    # compute the contribution
-    contributions = (U * s) ** 2 / eig
-    contributions = np.multiply(contributions, model.column_weights[:, np.newaxis])
-    contributions *= 100
+    contributions = _compute_contributions(
+        model, s, U, eig, min_nf, scaled_df.columns, explode=explode
+    )
 
     continuous_cos2 = compute_continuous_cos2(model, scaled_df, min_nf, s, U)
     categorical_cos2 = compute_categorical_cos2(model, df, min_nf)
     combined_cos2 = pd.concat([continuous_cos2, categorical_cos2])
 
     return contributions, combined_cos2
+
+
+def _compute_contributions(
+    model: Model,
+    s: NDArray[np.float_],
+    U: NDArray[np.float_],
+    eig: NDArray[np.float_],
+    min_nf: int,
+    column_names: List[str],
+    *,
+    explode: bool = True,
+) -> pd.DataFrame:
+    # compute the contribution
+    raw_contributions = (U * s) ** 2 / eig
+    raw_contributions = raw_contributions * model.column_weights[:, np.newaxis]
+    raw_contributions *= 100
+
+    contributions = pd.DataFrame(
+        raw_contributions,
+        index=column_names,
+        columns=get_projected_column_names(min_nf),
+    )
+
+    if explode:
+        return contributions
+
+    mapping = get_dummies_mapping(model.original_categorical, model.dummy_categorical)
+
+    contributions = get_grouped_modality_values(mapping, contributions)
+
+    return contributions
 
 
 def compute_categorical_cos2(

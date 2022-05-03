@@ -20,17 +20,17 @@ def get_uniform_row_weights(n: int) -> NDArray[np.float64]:
 
 def row_multiplication(df: pd.DataFrame, arr: NDArray[Any]) -> pd.DataFrame:
     """Multiply each row of `df` with the corresponding value in `arr`."""
-    return df.apply(lambda x: x * arr, axis="rows")
+    return df.multiply(arr, axis="rows")
 
 
 def column_multiplication(df: pd.DataFrame, arr: NDArray[Any]) -> pd.DataFrame:
     """Multiply each column of `df` with the corresponding value in `arr`."""
-    return df.apply(lambda x: x * arr, axis="columns")
+    return df.multiply(arr, axis="columns")
 
 
 def row_division(df: pd.DataFrame, arr: NDArray[Any]) -> pd.DataFrame:
     """Divide each row of `df` with the corresponding value in `arr`."""
-    return df.apply(lambda x: x / arr, axis="rows")
+    return df.divide(arr, axis="rows")
 
 
 def diag(arr: NDArray[Any], use_scipy: bool = False) -> NDArray[Any]:

@@ -166,6 +166,27 @@ def test_transform_vs_coord() -> None:
     assert_frame_equal(coord, df_transformed)
 
 
+def test_get_variable_contributions(quali_df: pd.DataFrame) -> None:
+    df = quali_df
+    _, model = fit_transform(df, nf=3)
+
+    contributions = get_variable_contributions(model, df, explode=True)
+
+    expected_contributions = pd.DataFrame.from_dict(
+        data={
+            "tool___hammer": [25.0, 25.0, 48.104419],
+            "tool___wrench": [25.0, 25.0, 48.104419],
+            "fruit___apple": [12.5, 12.5, 2.843371],
+            "fruit___orange": [37.5, 37.5, 0.947790],
+        },
+        dtype=np.float_,
+        orient="index",
+        columns=get_projected_column_names(3),
+    )
+
+    assert_frame_equal(contributions, expected_contributions)
+
+
 def test_get_variable_contributions_exploded_parameter(mixed_df: pd.DataFrame) -> None:
     """Verify argument explode=False and explode=True in get_variable_contributions.
 

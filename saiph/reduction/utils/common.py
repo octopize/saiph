@@ -40,16 +40,28 @@ def diag(arr: NDArray[Any], use_scipy: bool = False) -> NDArray[Any]:
         return np.diag(arr)
 
 
-def explain_variance(
-    s: NDArray[Any], df: pd.DataFrame, nf: int
-) -> Tuple[NDArray[Any], NDArray[Any]]:
-    explained_var: NDArray[Any] = ((s**2) / (df.shape[0] - 1))[:nf]
-    summed_explained_var = explained_var.sum()
-    if summed_explained_var == 0:
-        explained_var_ratio: NDArray[np.float_] = np.array([np.nan])
-    else:
-        explained_var_ratio = explained_var / explained_var.sum()
-    return explained_var, explained_var_ratio
+def get_explained_variance(
+    s: NDArray[np.float_],
+    nb_individuals: int,
+    nf: int,
+    column_names: List[str],
+    explode: bool = False,
+) -> Tuple[pd.Series, pd.Series]:
+
+    all_variance = (s**2) / (nb_individuals - 1)
+    variance = pd.Series(data=all_variance[:nf], index=column_names[:nf])
+    variance_sum = variance.sum()
+    variance_ratio = (
+        pd.Series([np.nan]) if variance_sum == 0 else variance / variance_sum
+    )
+
+    if not explode:
+        return variance, variance_ratio
+
+    # variance_grouped = get_grouped_modality_values(variance)
+    # variance_ratio_grouped = get_grouped_modality_values(variance_ratio)
+
+    # return variance
 
 
 def get_modalities_types(df: pd.DataFrame) -> Dict[str, str]:

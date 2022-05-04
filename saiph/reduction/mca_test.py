@@ -75,7 +75,7 @@ def test_fit_zero() -> None:
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
-    assert pd.isna(model.explained_var_ratio)
+    assert pd.isna(model.explained_var_ratio).all()
     assert np.array_equal(
         model._modalities,  # type: ignore
         [f"tool{DUMMIES_PREFIX_SEP}toaster", f"score{DUMMIES_PREFIX_SEP}aa"],
@@ -124,6 +124,8 @@ def test_fit_zero_same_df() -> None:
         k2 = getattr(model2, k)
         if isinstance(k1, pd.DataFrame):
             assert k1.equals(k2)
+        elif isinstance(k1, pd.Series):
+            assert np.array_equal(k1.values, k2.values)
         elif isinstance(k1, np.ndarray):
             assert np.array_equal(k1, k2)
         else:

@@ -58,7 +58,11 @@ def fit_transform(
 def center_sparse(
     df: pd.DataFrame, quanti: List[str], quali: List[str]
 ) -> Tuple[
-    pd.DataFrame, NDArray[np.float_], NDArray[np.float_], NDArray[Any], NDArray[Any]
+    scipy.sparse.spmatrix,
+    NDArray[np.float_],
+    NDArray[np.float_],
+    NDArray[Any],
+    NDArray[Any],
 ]:
     """Center data, scale it, compute modalities and proportions of each categorical.
 
@@ -68,7 +72,7 @@ def center_sparse(
 
     Parameters:
         df: DataFrame to center.
-        quanti: Indices of continous variables.
+        quanti: Indices of continuous variables.
         quali: Indices of categorical variables.
 
     Returns:
@@ -85,7 +89,7 @@ def center_sparse(
     std = np.std(df_quanti, axis=0)
     std[std <= sys.float_info.min] = 1
     df_quanti /= std
-    df_quanti = scipy.sparse.csr_matrix(df_quanti)
+    df_quanti = csr_matrix(df_quanti)
 
     # scale the categorical data
     df_quali = pd.get_dummies(

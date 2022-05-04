@@ -12,8 +12,8 @@ from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
     column_multiplication,
     diag,
-    explain_variance,
     get_dummies_mapping,
+    get_explained_variance,
     get_grouped_modality_values,
     get_modalities_types,
     get_projected_column_names,
@@ -77,7 +77,9 @@ def fit(
     Z = ((T * col_weights).T * row_weights).T
     U, s, V = SVD(Z)
 
-    explained_var, explained_var_ratio = explain_variance(s, df, nf)
+    explained_var, explained_var_ratio = get_explained_variance(
+        s, df_dummies.shape[0], nf, df_dummies.columns
+    )
 
     U = U[:, :nf]
     s = s[:nf]

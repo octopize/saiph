@@ -1,12 +1,13 @@
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.common import (
     column_multiplication,
     get_dummies_mapping,
+    get_explained_variance,
     get_grouped_modality_values,
     get_projected_column_names,
     row_division,
@@ -77,3 +78,14 @@ def test_get_grouped_modality_values(quali_df: pd.DataFrame) -> None:
     )
 
     assert_frame_equal(grouped_df, expected_grouped)
+
+
+def test_get_explained_variance() -> None:
+
+    s = np.array([10, 10, 10])
+    index = ["one", "two"]
+    variance, ratio = get_explained_variance(
+        s, nb_individuals=3, nf=2, column_names=index
+    )
+    assert_series_equal(variance, pd.Series([50.0, 50.0], index=index))
+    assert_series_equal(ratio, pd.Series([0.5, 0.5], index=index))

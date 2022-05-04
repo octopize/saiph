@@ -154,14 +154,15 @@ def test_center_pca_famd(mixed_df2: pd.DataFrame) -> None:
     assert_series_equal(std1, std2)
 
 
-def test_get_variable_contributions_iris(iris_df: pd.DataFrame) -> None:
+def test_get_variable_contributions_same_as_factomineR(iris_df: pd.DataFrame) -> None:
+    """Verify that we get the same contributions and cos2 with factormineR."""
     df = iris_df
     _, model = fit_transform(df, nf=5)
 
     contributions, cos2 = get_variable_contributions(model, df, explode=True)
 
-    contributions_path = Path("fixtures/famd_contributions.csv")
-    cos2_path = Path("fixtures/famd_cos2.csv")
+    contributions_path = Path("fixtures/iris_factomineR_contributions.csv")
+    cos2_path = Path("fixtures/iris_factomineR_cos2.csv")
 
     expected_contributions = pd.read_csv(contributions_path)
     expected_cos2 = pd.read_csv(cos2_path)

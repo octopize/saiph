@@ -384,7 +384,9 @@ def test_get_variable_contribution_for_pca(quanti_df: pd.DataFrame) -> None:
         columns=get_projected_column_names(3),
     )
 
-    assert_frame_equal(contributions, expected_contributions)
+    # We only look at n - 1 first dimensions because of roundoff errors.
+    # https://github.com/octopize/saiph/issues/58
+    assert_frame_equal(contributions.iloc[:, :-1], expected_contributions.iloc[:, :-1])
 
 
 def test_get_variable_contributions_calls_correct_subfunction(

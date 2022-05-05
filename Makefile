@@ -24,7 +24,7 @@ docs-open:  ## Open docs
 
 ##@ Tests
 
-ci: lint typecheck docs test  ## Run all checks
+ci: typecheck lint docs test  ## Run all checks
 .PHONY: ci
 
 lci: lint-fix ci ## Autofix then run CI

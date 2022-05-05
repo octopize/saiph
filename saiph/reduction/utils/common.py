@@ -44,24 +44,21 @@ def get_explained_variance(
     s: NDArray[np.float_],
     nb_individuals: int,
     nf: int,
-    column_names: List[str],
-    explode: bool = False,
 ) -> Tuple[pd.Series, pd.Series]:
 
     all_variance = (s**2) / (nb_individuals - 1)
-    variance = pd.Series(data=all_variance[:nf], index=column_names[:nf])
-    variance_sum = variance.sum()
+    names = get_projected_column_names(min(all_variance.shape[0], nf))
+    variance = pd.Series(data=all_variance[:nf], index=names)
+
+    variance_sum = all_variance.sum()
+
     variance_ratio = (
-        pd.Series([np.nan]) if variance_sum == 0 else variance / variance_sum
+        variance / variance_sum
+        if variance_sum != 0
+        else pd.Series([np.nan] * variance.shape[0], index=names)
     )
 
-    if not explode:
-        return variance, variance_ratio
-
-    # variance_grouped = get_grouped_modality_values(variance)
-    # variance_ratio_grouped = get_grouped_modality_values(variance_ratio)
-
-    # return variance
+    return variance, variance_ratio
 
 
 def get_modalities_types(df: pd.DataFrame) -> Dict[str, str]:
@@ -116,6 +113,8 @@ def get_grouped_modality_values(
     -------
         a dataframe with the categorical variables without the dummies
     """
+    if not mapping:  # We have no mapping, we have no categorical variables
+        return to_group
     grouped_contributions = {}
     for original_col, dummy_columns in mapping.items():
         grouped_contributions[original_col] = to_group.loc[dummy_columns].sum(axis=0)

@@ -55,9 +55,7 @@ def fit(
     U = ((U.T) / np.sqrt(row_w)).T
     V = V / np.sqrt(_col_weights)
 
-    explained_var, explained_var_ratio = get_explained_variance(
-        s, df.shape[0], nf, df.columns
-    )
+    explained_var, explained_var_ratio = get_explained_variance(s, df.shape[0], nf)
 
     U = U[:, :nf]
     s = s[:nf]

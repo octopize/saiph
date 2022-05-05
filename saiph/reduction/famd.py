@@ -128,14 +128,7 @@ def fit(
     U = ((_U.T) / np.sqrt(row_w)).T
     V = _V / np.sqrt(col_weights)
 
-    column_names = (
-        np.arange(df_scaled.shape[1])
-        if isinstance(Z, scipy.sparse.spmatrix)
-        else df_scaled.columns
-    )
-    explained_var, explained_var_ratio = get_explained_variance(
-        s, df.shape[0], nf, column_names
-    )
+    explained_var, explained_var_ratio = get_explained_variance(s, df.shape[0], nf)
 
     U = U[:, :nf]
     s = s[:nf]

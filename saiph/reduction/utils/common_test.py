@@ -1,7 +1,9 @@
+from typing import Any
+
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal, assert_series_equal
+from pandas.testing import assert_frame_equal
 
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.common import (
@@ -57,7 +59,7 @@ def test_get_dummies_mapping(quali_df: pd.DataFrame) -> None:
 
 
 def test_get_grouped_modality_values(quali_df: pd.DataFrame) -> None:
-    """Verify that grouping modalities returns the correct dataframe."""
+    """Verify that grouping modalities returns the correct groupings."""
     df = quali_df
     dummy_df = pd.get_dummies(df, prefix_sep=DUMMIES_PREFIX_SEP)
     dummy_df.index = get_projected_column_names(dummy_df.shape[1])
@@ -80,12 +82,20 @@ def test_get_grouped_modality_values(quali_df: pd.DataFrame) -> None:
     assert_frame_equal(grouped_df, expected_grouped)
 
 
-def test_get_explained_variance() -> None:
+@pytest.mark.parametrize(
+    "s,expected_variance,expected_ratio",
+    [
+        ([10, 10, 10], [50.0, 50.0], [1 / 3, 1 / 3]),  # nf < len(s), we don't get 100%.
+        ([0.0, 0.0, 0.0], [0.0, 0.0], [np.nan, np.nan]),
+    ],
+)
+def test_get_explained_variance_returns_correct_variance_and_ratio(
+    s: Any, expected_variance: Any, expected_ratio: Any
+) -> None:
+    variance, ratio = get_explained_variance(np.array(s), nb_individuals=3, nf=2)
+    np.testing.assert_array_equal(variance.values, expected_variance)
+    np.testing.assert_array_equal(ratio.values, expected_ratio)
 
-    s = np.array([10, 10, 10])
-    index = ["one", "two"]
-    variance, ratio = get_explained_variance(
-        s, nb_individuals=3, nf=2, column_names=index
-    )
-    assert_series_equal(variance, pd.Series([50.0, 50.0], index=index))
-    assert_series_equal(ratio, pd.Series([0.5, 0.5], index=index))
+
+def test_get_modalities_type() -> None:
+    raise NotImplementedError()

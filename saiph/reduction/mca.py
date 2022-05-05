@@ -78,7 +78,7 @@ def fit(
     U, s, V = SVD(Z)
 
     explained_var, explained_var_ratio = get_explained_variance(
-        s, df_dummies.shape[0], nf, df_dummies.columns
+        s, df_dummies.shape[0], nf
     )
 
     U = U[:, :nf]

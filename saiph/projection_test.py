@@ -335,6 +335,9 @@ def test_inverse_transform_deterministic() -> None:
     "ignore:In a future version, the Index constructor will not infer numeric dtypes"
 )
 @pytest.mark.parametrize("dtypes", ["object", "category"])
+# This test checks that inverse_transform o transform = id in those cases:
+# - We have a categorical variable of BOOLEANS True | False
+# - We have a categorical variable of STRINGS "True" | "False"
 def test_transform_then_inverse_value_type(dtypes: str) -> None:
     """Test the type of the value of each variable."""
     df = pd.DataFrame(

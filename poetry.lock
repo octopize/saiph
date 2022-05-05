@@ -101,6 +101,25 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "bandit"
+version = "1.7.4"
+description = "Security oriented static analyser for python code."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+colorama = {version = ">=0.3.9", markers = "platform_system == \"Windows\""}
+GitPython = ">=1.0.1"
+PyYAML = ">=5.3.1"
+stevedore = ">=1.20.0"
+
+[package.extras]
+test = ["coverage (>=4.5.4)", "fixtures (>=3.0.0)", "flake8 (>=4.0.0)", "stestr (>=2.5.0)", "testscenarios (>=0.5.0)", "testtools (>=2.3.0)", "toml", "beautifulsoup4 (>=4.8.0)", "pylint (==1.9.4)"]
+toml = ["toml"]
+yaml = ["pyyaml"]
+
+[[package]]
 name = "beautifulsoup4"
 version = "4.11.1"
 description = "Screen-scraping library"
@@ -488,6 +507,28 @@ type1 = ["xattr"]
 ufo = ["fs (>=2.2.0,<3)"]
 unicode = ["unicodedata2 (>=14.0.0)"]
 woff = ["zopfli (>=0.1.4)", "brotlicffi (>=0.8.0)", "brotli (>=1.0.1)"]
+
+[[package]]
+name = "gitdb"
+version = "4.0.9"
+description = "Git Object Database"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+smmap = ">=3.0.1,<6"
+
+[[package]]
+name = "gitpython"
+version = "3.1.27"
+description = "GitPython is a python library used to interact with Git repositories"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+gitdb = ">=4.0.1,<5"
 
 [[package]]
 name = "idna"
@@ -1125,6 +1166,14 @@ optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 
 [[package]]
+name = "pbr"
+version = "5.8.1"
+description = "Python Build Reasonableness"
+category = "dev"
+optional = false
+python-versions = ">=2.6"
+
+[[package]]
 name = "pexpect"
 version = "4.8.0"
 description = "Pexpect allows easy control of interactive console applications."
@@ -1536,6 +1585,14 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 
 [[package]]
+name = "smmap"
+version = "5.0.0"
+description = "A pure Python implementation of a sliding window memory map manager"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
 name = "snowballstemmer"
 version = "2.2.0"
 description = "This package provides 29 stemmers for 28 languages generated from Snowball algorithms."
@@ -1684,6 +1741,17 @@ pure-eval = "*"
 
 [package.extras]
 tests = ["pytest", "typeguard", "pygments", "littleutils", "cython"]
+
+[[package]]
+name = "stevedore"
+version = "3.5.0"
+description = "Manage dynamic plugins for Python applications"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+pbr = ">=2.0.0,<2.1.0 || >2.1.0"
 
 [[package]]
 name = "terminado"
@@ -1893,7 +1961,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.10"
-content-hash = "ea48c146e8ea72a48ce87d7c14c62a9187cb470537292427be69ee545cfdb094"
+content-hash = "0f2c764eff36fa133a9159e9fe143c7dee05d9b7760a572ef37255e694c97425"
 
 [metadata.files]
 alabaster = [
@@ -1950,6 +2018,10 @@ babel = [
 backcall = [
     {file = "backcall-0.2.0-py2.py3-none-any.whl", hash = "sha256:fbbce6a29f263178a1f7915c1940bde0ec2b2a967566fe1c65c1dfb7422bd255"},
     {file = "backcall-0.2.0.tar.gz", hash = "sha256:5cbdbf27be5e7cfadb448baf0aa95508f91f2bbc6c6437cd9cd06e2a4c215e1e"},
+]
+bandit = [
+    {file = "bandit-1.7.4-py3-none-any.whl", hash = "sha256:412d3f259dab4077d0e7f0c11f50f650cc7d10db905d98f6520a95a18049658a"},
+    {file = "bandit-1.7.4.tar.gz", hash = "sha256:2d63a8c573417bae338962d4b9b06fbc6080f74ecd955a092849e1e65c717bd2"},
 ]
 beautifulsoup4 = [
     {file = "beautifulsoup4-4.11.1-py3-none-any.whl", hash = "sha256:58d5c3d29f5a36ffeb94f02f0d786cd53014cf9b3b3951d42e0080d8a9498d30"},
@@ -2158,6 +2230,14 @@ flit-core = [
 fonttools = [
     {file = "fonttools-4.33.3-py3-none-any.whl", hash = "sha256:f829c579a8678fa939a1d9e9894d01941db869de44390adb49ce67055a06cc2a"},
     {file = "fonttools-4.33.3.zip", hash = "sha256:c0fdcfa8ceebd7c1b2021240bd46ef77aa8e7408cf10434be55df52384865f8e"},
+]
+gitdb = [
+    {file = "gitdb-4.0.9-py3-none-any.whl", hash = "sha256:8033ad4e853066ba6ca92050b9df2f89301b8fc8bf7e9324d412a63f8bf1a8fd"},
+    {file = "gitdb-4.0.9.tar.gz", hash = "sha256:bac2fd45c0a1c9cf619e63a90d62bdc63892ef92387424b855792a6cabe789aa"},
+]
+gitpython = [
+    {file = "GitPython-3.1.27-py3-none-any.whl", hash = "sha256:5b68b000463593e05ff2b261acff0ff0972df8ab1b70d3cdbd41b546c8b8fc3d"},
+    {file = "GitPython-3.1.27.tar.gz", hash = "sha256:1c885ce809e8ba2d88a29befeb385fcea06338d3640712b59ca623c220bb5704"},
 ]
 idna = [
     {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},
@@ -2500,6 +2580,10 @@ parso = [
 pathspec = [
     {file = "pathspec-0.9.0-py2.py3-none-any.whl", hash = "sha256:7d15c4ddb0b5c802d161efc417ec1a2558ea2653c2e8ad9c19098201dc1c993a"},
     {file = "pathspec-0.9.0.tar.gz", hash = "sha256:e564499435a2673d586f6b2130bb5b95f04a3ba06f81b8f895b651a3c76aabb1"},
+]
+pbr = [
+    {file = "pbr-5.8.1-py2.py3-none-any.whl", hash = "sha256:27108648368782d07bbf1cb468ad2e2eeef29086affd14087a6d04b7de8af4ec"},
+    {file = "pbr-5.8.1.tar.gz", hash = "sha256:66bc5a34912f408bb3925bf21231cb6f59206267b7f63f3503ef865c1a292e25"},
 ]
 pexpect = [
     {file = "pexpect-4.8.0-py2.py3-none-any.whl", hash = "sha256:0b48a55dcb3c05f3329815901ea4fc1537514d6ba867a152b581d69ae3710937"},
@@ -2877,6 +2961,10 @@ six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
 ]
+smmap = [
+    {file = "smmap-5.0.0-py3-none-any.whl", hash = "sha256:2aba19d6a040e78d8b09de5c57e96207b09ed71d8e55ce0959eeee6c8e190d94"},
+    {file = "smmap-5.0.0.tar.gz", hash = "sha256:c840e62059cd3be204b0c9c9f74be2c09d5648eddd4580d9314c3ecde0b30936"},
+]
 snowballstemmer = [
     {file = "snowballstemmer-2.2.0-py2.py3-none-any.whl", hash = "sha256:c8e1716e83cc398ae16824e5572ae04e0d9fc2c6b985fb0f900f5f0c96ecba1a"},
     {file = "snowballstemmer-2.2.0.tar.gz", hash = "sha256:09b16deb8547d3412ad7b590689584cd0fe25ec8db3be37788be3810cbf19cb1"},
@@ -2920,6 +3008,10 @@ sphinxcontrib-serializinghtml = [
 stack-data = [
     {file = "stack_data-0.2.0-py3-none-any.whl", hash = "sha256:999762f9c3132308789affa03e9271bbbe947bf78311851f4d485d8402ed858e"},
     {file = "stack_data-0.2.0.tar.gz", hash = "sha256:45692d41bd633a9503a5195552df22b583caf16f0b27c4e58c98d88c8b648e12"},
+]
+stevedore = [
+    {file = "stevedore-3.5.0-py3-none-any.whl", hash = "sha256:a547de73308fd7e90075bb4d301405bebf705292fa90a90fc3bcf9133f58616c"},
+    {file = "stevedore-3.5.0.tar.gz", hash = "sha256:f40253887d8712eaa2bb0ea3830374416736dc8ec0e22f5a65092c1174c44335"},
 ]
 terminado = [
     {file = "terminado-0.13.3-py3-none-any.whl", hash = "sha256:874d4ea3183536c1782d13c7c91342ef0cf4e5ee1d53633029cbc972c8760bd8"},

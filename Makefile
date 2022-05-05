@@ -63,6 +63,14 @@ compare-benchmarks: ## Compare benchmarks with your previous ones
 	poetry run py.test-benchmark compare --group-by=func --sort=name --columns=min,median,mean,stddev,rounds
 .PHONY: compare-benchmarks
 
+profile-cpu: ./tmp/fake_1000000.csv  ## Profile CPU usage
+	sudo poetry run py-spy record -f speedscope -o "tmp/profile_$(date)" -- python saiph/tests/profile_cpu.py False
+.PHONY: profile-cpu
+
+profile-momory: ./tmp/fake_1000000.csv  ## Profile memory usage
+	poetry run fil-profile python saiph/tests/profile_memory.py True
+.PHONY: profile-memory
+
 ./tmp/fake_1000000.csv: 
 	poetry run python ./bin/create_csv.py --row-count 1000000 $@
 

@@ -20,7 +20,7 @@ BASE_PATH = (Path(__file__).parent / "../").resolve()
 
 def main(sparse: bool) -> None:
     """Profile famd.fit using a fake dataset."""
-    df = pd.read_csv(str(BASE_PATH) + "/tmp/fake_1000000.csv")
+    df = pd.read_csv(str(BASE_PATH) + "/../tmp/fake_1000000.csv")
 
     typer.echo(f"using {get_readable_size(df.memory_usage(index=True).sum())}")
 

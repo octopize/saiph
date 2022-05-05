@@ -107,7 +107,8 @@ def get_grouped_modality_values(
     mapping :
         mapping between categorical columns and their dummy equivalent
     to_group :
-        dataframe from which to sum the values of modalities
+        dataframe from which to sum the values of modalities, which are
+        passed as the index.
 
     Returns
     -------
@@ -125,6 +126,8 @@ def get_grouped_modality_values(
         columns=to_group.columns,
     )
 
-    to_group = pd.concat([to_group, grouped_contributions])
-    to_group = to_group.drop(concat(mapping.values()))
-    return to_group
+    # FIXME: Do not modify the order or columns
+    # https://github.com/octopize/saiph/issues/40
+    grouped = pd.concat([to_group, grouped_contributions])
+    grouped = grouped.drop(concat(mapping.values()))
+    return grouped

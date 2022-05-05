@@ -89,7 +89,3 @@ def test_get_explained_variance_returns_correct_variance_and_ratio(
     variance, ratio = get_explained_variance(np.array(s), nb_individuals=3, nf=2)
     np.testing.assert_array_equal(variance.values, expected_variance)
     np.testing.assert_array_equal(ratio.values, expected_ratio)
-
-
-def test_get_modalities_type() -> None:
-    raise NotImplementedError()

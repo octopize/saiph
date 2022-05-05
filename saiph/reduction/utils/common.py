@@ -50,6 +50,8 @@ def get_explained_variance(
     names = get_projected_column_names(min(all_variance.shape[0], nf))
     variance = pd.Series(data=all_variance[:nf], index=names)
 
+    # We divide by the all_variance and not variance because
+    # if nf < len(all_variance), we shouldn't sum up to 100%
     variance_sum = all_variance.sum()
 
     variance_ratio = (

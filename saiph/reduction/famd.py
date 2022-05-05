@@ -268,7 +268,7 @@ def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
             or sum them as the contribution of the whole variable (False)
 
     Returns:
-        model: model populated with contriubtion and cos2.
+        model: model populated with contribution and cos2.
     """
     if not model.is_fitted:
         raise ValueError(

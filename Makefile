@@ -33,6 +33,7 @@ lci: lint-fix ci ## Autofix then run CI
 lint:  ## Run linting
 	poetry run black --check saiph
 	poetry run flake8 saiph
+	poetry run bandit -c bandit.yaml -r saiph bin
 .PHONY: lint
 
 lint-fix:  ## Run autoformatters

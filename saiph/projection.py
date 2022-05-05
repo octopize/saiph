@@ -1,4 +1,5 @@
 """Project any dataframe, inverse transform and compute stats."""
+import ast
 from typing import Optional, Tuple, Union
 
 import numpy as np
@@ -311,7 +312,7 @@ def inverse_transform(
         # first, we force the value type of the first value of the original df
         if dtype in ["object", "category"]:
             if model.modalities_types[name] == "bool":
-                inverse[name] = [eval(ele) for ele in inverse[name]]
+                inverse[name] = [ast.literal_eval(ele) for ele in inverse[name]]
             else:
                 inverse[name] = inverse[name].astype(model.modalities_types[name])
 

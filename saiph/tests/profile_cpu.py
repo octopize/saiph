@@ -16,7 +16,7 @@ BASE_PATH = (Path(__file__).parent / "../").resolve()
 
 def main(sparse: bool) -> None:
     """Run famd and sparse famd on a fake dataset."""
-    df = pd.read_csv(str(BASE_PATH) + "/tmp/fake_1000000.csv")
+    df = pd.read_csv(str(BASE_PATH) + "/../tmp/fake_1000000.csv")
 
     fit(df, nf=5, sparse=sparse)
 

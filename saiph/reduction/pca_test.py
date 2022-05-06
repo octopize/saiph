@@ -61,7 +61,7 @@ def test_fit_zero() -> None:
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     # np.nan == np.nan returns False
-    assert pd.isnull(model.explained_var_ratio)
+    assert pd.isnull(model.explained_var_ratio).all()
     assert_allclose(model.variable_coord, model.V.T, atol=0.01)
     assert_allclose(model.mean, [1.0, 2.0])
     assert_allclose(model.std, [1.0, 1.0])

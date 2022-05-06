@@ -40,16 +40,24 @@ def diag(arr: NDArray[Any], use_scipy: bool = False) -> NDArray[Any]:
         return np.diag(arr)
 
 
-def explain_variance(
-    s: NDArray[Any], df: pd.DataFrame, nf: int
-) -> Tuple[NDArray[Any], NDArray[Any]]:
-    explained_var: NDArray[Any] = ((s**2) / (df.shape[0] - 1))[:nf]
-    summed_explained_var = explained_var.sum()
-    if summed_explained_var == 0:
-        explained_var_ratio: NDArray[np.float_] = np.array([np.nan])
-    else:
-        explained_var_ratio = explained_var / explained_var.sum()
-    return explained_var, explained_var_ratio
+def get_explained_variance(
+    s: NDArray[np.float_],
+    nb_individuals: int,
+    nf: int,
+) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
+
+    all_variance = (s**2) / (nb_individuals - 1)
+    variance = all_variance[:nf]
+
+    # We divide by the all_variance and not variance because
+    # if nf < len(all_variance), we shouldn't sum up to 100%
+    variance_sum = all_variance.sum()
+
+    variance_ratio = (
+        variance / variance_sum if variance_sum != 0 else np.full_like(variance, np.nan)
+    )
+
+    return variance, variance_ratio
 
 
 def get_modalities_types(df: pd.DataFrame) -> Dict[str, str]:
@@ -98,12 +106,15 @@ def get_grouped_modality_values(
     mapping :
         mapping between categorical columns and their dummy equivalent
     to_group :
-        dataframe from which to sum the values of modalities
+        dataframe from which to sum the values of modalities, which are
+        passed as the index.
 
     Returns
     -------
         a dataframe with the categorical variables without the dummies
     """
+    if not mapping:  # We have no mapping, we have no categorical variables
+        return to_group
     grouped_contributions = {}
     for original_col, dummy_columns in mapping.items():
         grouped_contributions[original_col] = to_group.loc[dummy_columns].sum(axis=0)
@@ -114,6 +125,8 @@ def get_grouped_modality_values(
         columns=to_group.columns,
     )
 
-    to_group = pd.concat([to_group, grouped_contributions])
-    to_group = to_group.drop(concat(mapping.values()))
-    return to_group
+    # FIXME: Do not modify the order or columns
+    # https://github.com/octopize/saiph/issues/40
+    grouped = pd.concat([to_group, grouped_contributions])
+    grouped = grouped.drop(concat(mapping.values()))
+    return grouped

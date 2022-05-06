@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 from saiph.models import Model
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
-    explain_variance,
+    get_explained_variance,
     get_projected_column_names,
     get_uniform_row_weights,
 )
@@ -55,7 +55,7 @@ def fit(
     U = ((U.T) / np.sqrt(row_w)).T
     V = V / np.sqrt(_col_weights)
 
-    explained_var, explained_var_ratio = explain_variance(s, df_centered, nf)
+    explained_var, explained_var_ratio = get_explained_variance(s, df.shape[0], nf)
 
     U = U[:, :nf]
     s = s[:nf]

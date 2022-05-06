@@ -13,8 +13,8 @@ from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
     column_multiplication,
-    explain_variance,
     get_dummies_mapping,
+    get_explained_variance,
     get_grouped_modality_values,
     get_modalities_types,
     get_projected_column_names,
@@ -123,15 +123,12 @@ def fit(
     Z = df_scaled.multiply(col_weights).T.multiply(row_w).T
 
     # compute the svd
-    if isinstance(Z, scipy.sparse.spmatrix):
-        _U, s, _V = SVD(Z.todense())
-    else:
-        _U, s, _V = SVD(Z)
+    _U, s, _V = SVD(Z.todense()) if isinstance(Z, scipy.sparse.spmatrix) else SVD(Z)
 
     U = ((_U.T) / np.sqrt(row_w)).T
     V = _V / np.sqrt(col_weights)
 
-    explained_var, explained_var_ratio = explain_variance(s, df, nf)
+    explained_var, explained_var_ratio = get_explained_variance(s, df.shape[0], nf)
 
     U = U[:, :nf]
     s = s[:nf]
@@ -271,7 +268,7 @@ def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
             or sum them as the contribution of the whole variable (False)
 
     Returns:
-        model: model populated with contriubtion and cos2.
+        model: model populated with contribution and cos2.
     """
     if not model.is_fitted:
         raise ValueError(

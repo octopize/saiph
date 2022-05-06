@@ -87,5 +87,5 @@ def test_get_explained_variance_returns_correct_variance_and_ratio(
     s: Any, expected_variance: Any, expected_ratio: Any
 ) -> None:
     variance, ratio = get_explained_variance(np.array(s), nb_individuals=3, nf=2)
-    np.testing.assert_array_equal(variance.values, expected_variance)
-    np.testing.assert_array_equal(ratio.values, expected_ratio)
+    np.testing.assert_array_equal(variance, expected_variance)
+    np.testing.assert_array_equal(ratio, expected_ratio)

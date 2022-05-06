@@ -30,9 +30,9 @@ class Model:
     row_weights: NDArray[np.float_]
 
     # Explained variance.
-    explained_var: pd.Series
+    explained_var: NDArray[np.float_]
     # Explained variance divided by the sum of the variances.
-    explained_var_ratio: pd.Series
+    explained_var_ratio: NDArray[np.float_]
     # Coordinates of the variables in the projection space.
     variable_coord: pd.DataFrame
     # Orthogonal matrix with right singular vectors as rows.

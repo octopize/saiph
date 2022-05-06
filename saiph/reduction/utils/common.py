@@ -44,20 +44,17 @@ def get_explained_variance(
     s: NDArray[np.float_],
     nb_individuals: int,
     nf: int,
-) -> Tuple[pd.Series, pd.Series]:
+) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
 
     all_variance = (s**2) / (nb_individuals - 1)
-    names = get_projected_column_names(min(all_variance.shape[0], nf))
-    variance = pd.Series(data=all_variance[:nf], index=names)
+    variance = all_variance[:nf]
 
     # We divide by the all_variance and not variance because
     # if nf < len(all_variance), we shouldn't sum up to 100%
     variance_sum = all_variance.sum()
 
     variance_ratio = (
-        variance / variance_sum
-        if variance_sum != 0
-        else pd.Series([np.nan] * variance.shape[0], index=names)
+        variance / variance_sum if variance_sum != 0 else np.full_like(variance, np.nan)
     )
 
     return variance, variance_ratio

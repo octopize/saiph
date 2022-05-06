@@ -124,8 +124,6 @@ def test_fit_zero_same_df() -> None:
         k2 = getattr(model2, k)
         if isinstance(k1, pd.DataFrame):
             assert k1.equals(k2)
-        elif isinstance(k1, pd.Series):
-            assert np.array_equal(k1.values, k2.values)
         elif isinstance(k1, np.ndarray):
             assert np.array_equal(k1, k2)
         else:

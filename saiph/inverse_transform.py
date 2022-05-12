@@ -1,6 +1,6 @@
 """Inverse transform coordinates."""
 import ast
-from typing import Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -66,7 +66,7 @@ def inverse_transform(
         descaled_values_quali = (scaled_values_quali * np.sqrt(model.prop)) + model.prop
         undummy = undummify(
             descaled_values_quali,
-            model,
+            get_dummies_mapping(model.original_categorical, model.dummy_categorical),
             use_max_modalities=use_max_modalities,
             seed=seed,
         )
@@ -82,7 +82,7 @@ def inverse_transform(
         descaled_values_quali = scaled_values_quali * scaled_values_quali.sum().sum()
         inverse = undummify(
             descaled_values_quali,
-            model,
+            get_dummies_mapping(model.original_categorical, model.dummy_categorical),
             use_max_modalities=use_max_modalities,
             seed=seed,
         )
@@ -104,7 +104,7 @@ def inverse_transform(
 
 def undummify(
     dummy_df: pd.DataFrame,
-    model: Model,
+    dummies_mapping: Dict[str, List[str]],
     *,
     use_max_modalities: bool = True,
     seed: Optional[int] = None,
@@ -113,7 +113,7 @@ def undummify(
 
     Parameters:
         dummy_df: dummy df of categorical variables
-        model: model used for projection
+        dummies_mapping: mapping between categorical columns and dummies columns.
         use_max_modalities: True to select the modality with the highest probability.
                             False for a weighted random selection. default: True
         seed: seed to fix randomness if use_max_modalities = False. default: None
@@ -121,9 +121,6 @@ def undummify(
     Returns:
         inverse_quali: undummify df of categorical variable
     """
-    dummies_mapping = get_dummies_mapping(
-        model.original_categorical, model.dummy_categorical
-    )
     inverse_quali = pd.DataFrame()
     random_gen = np.random.default_rng(seed)
 

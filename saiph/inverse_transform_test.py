@@ -1,11 +1,10 @@
-from typing import List
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-from saiph import projection
 from saiph.inverse_transform import get_random_weighted_columns, undummify
 
 
@@ -43,14 +42,13 @@ def test_get_random_weighted_columns(weights: List[float], expected_index: int) 
     ],
 )
 def test_undummify(
-    quali_df: pd.DataFrame, use_max_modalities: bool, expected: pd.DataFrame
+    mapping: Dict[str, List[str]], use_max_modalities: bool, expected: pd.DataFrame
 ) -> None:
-    model = projection.fit(quali_df)
-
     dummy_df = pd.DataFrame(
         [[0.3, 0.7, 0.01, 0.99], [0.51, 0.49, 0.8, 0.2]],
         columns=["tool___hammer", "tool___wrench", "fruit___apple", "fruit___orange"],
     )
-    df = undummify(dummy_df, model, use_max_modalities=use_max_modalities, seed=321)
+
+    df = undummify(dummy_df, mapping, use_max_modalities=use_max_modalities, seed=321)
 
     assert_frame_equal(df, expected)

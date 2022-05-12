@@ -1,10 +1,11 @@
-from typing import Any
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
 import pytest
 
 from saiph.models import Model
+from saiph.reduction import DUMMIES_PREFIX_SEP
 
 _iris_csv = pd.read_csv("fixtures/iris.csv")
 
@@ -60,6 +61,15 @@ def mixed_df2() -> pd.DataFrame:
             "age": [55, 62],
         }
     )
+
+
+@pytest.fixture
+def mapping() -> Dict[str, List[str]]:
+    sep = DUMMIES_PREFIX_SEP
+    return {
+        "tool": [f"tool{sep}hammer", f"tool{sep}wrench"],
+        "fruit": [f"fruit{sep}apple", f"fruit{sep}orange"],
+    }
 
 
 def check_model_equality(

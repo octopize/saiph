@@ -45,15 +45,6 @@ def test_row_division(df: pd.DataFrame) -> None:
     assert_frame_equal(result, expected)
 
 
-@pytest.fixture
-def mapping() -> Dict[str, List[str]]:
-    sep = DUMMIES_PREFIX_SEP
-    return {
-        "tool": [f"tool{sep}hammer", f"tool{sep}wrench"],
-        "fruit": [f"fruit{sep}apple", f"fruit{sep}orange"],
-    }
-
-
 def test_get_dummies_mapping(
     quali_df: pd.DataFrame, mapping: Dict[str, List[str]]
 ) -> None:

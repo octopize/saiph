@@ -1,4 +1,5 @@
-from .projection import fit, fit_transform, inverse_transform, stats, transform
+from .projection import fit, fit_transform, stats, transform
+from .inverse_transform import inverse_transform
 
 # Also modify in pyproject.toml
 __version__ = "1.0.7"

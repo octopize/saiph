@@ -9,12 +9,11 @@ from pandas.testing import assert_frame_equal
 
 import saiph
 from saiph import projection
+from saiph.inverse_transform import inverse_transform
 from saiph.projection import (
     fit,
     fit_transform,
-    get_random_weighted_columns,
     get_variable_contributions,
-    inverse_transform,
     stats,
     transform,
 )
@@ -262,20 +261,6 @@ def test_var_ratio(df_input: pd.DataFrame, expected_var_ratio: List[float]) -> N
     assert_allclose(model.explained_var_ratio[0:5], expected_var_ratio, atol=1e-07)
 
 
-@pytest.mark.parametrize(
-    "weights, expected_index",
-    [
-        ([0.3, 0.7, 0.01], 1),
-        ([0.7, 0.3, 0.01], 0),
-        ([0.01, 0.7, 0.3], 1),
-        ([0.01, 0.3, 0.7], 2),
-    ],
-)
-def test_get_random_weighted_columns(weights: List[float], expected_index: int) -> None:
-    """Verify that get_random_weighted_columns returns the correct column."""
-    df = pd.DataFrame(data=[weights])
-    result = get_random_weighted_columns(df, np.random.default_rng(1))
-    assert result.values[0] == expected_index
 
 
 # wider than len df
@@ -437,3 +422,4 @@ def test_stats_calls_correct_subfunction(
     projection.stats(model, quali_df)
 
     # FIXME: Can't test PCA as it has no subfunction associated to it
+

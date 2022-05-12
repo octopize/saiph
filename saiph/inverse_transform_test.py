@@ -53,5 +53,4 @@ def test_undummify(
     )
     df = undummify(dummy_df, model, use_max_modalities=use_max_modalities, seed=321)
 
-    expected = expected
     assert_frame_equal(df, expected)

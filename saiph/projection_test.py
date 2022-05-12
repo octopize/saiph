@@ -261,8 +261,6 @@ def test_var_ratio(df_input: pd.DataFrame, expected_var_ratio: List[float]) -> N
     assert_allclose(model.explained_var_ratio[0:5], expected_var_ratio, atol=1e-07)
 
 
-
-
 # wider than len df
 def test_inverse_transform_raises_value_error_when_wider_than_df() -> None:
     wider_df = pd.DataFrame(
@@ -422,4 +420,3 @@ def test_stats_calls_correct_subfunction(
     projection.stats(model, quali_df)
 
     # FIXME: Can't test PCA as it has no subfunction associated to it
-

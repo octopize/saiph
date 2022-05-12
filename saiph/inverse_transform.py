@@ -1,15 +1,13 @@
-"""inverse transform coordinate"""
+"""inverse transform coordinate."""
 import ast
 from typing import Optional
 
 import numpy as np
 import pandas as pd
-from numpy.typing import NDArray
 
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.common import get_dummies_mapping
-
 
 
 def inverse_transform(

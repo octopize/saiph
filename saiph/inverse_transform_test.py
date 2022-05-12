@@ -25,16 +25,33 @@ def test_get_random_weighted_columns(weights: List[float], expected_index: int) 
     assert result.values[0] == expected_index
 
 
-def test_undummify(quali_df: pd.DataFrame) -> None:
+@pytest.mark.parametrize(
+    "use_max_modalities, expected",
+    [
+        (
+            True,
+            pd.DataFrame(
+                [["wrench", "orange"], ["hammer", "apple"]], columns=["tool", "fruit"]
+            ),
+        ),
+        (
+            False,
+            pd.DataFrame(
+                [["wrench", "orange"], ["wrench", "apple"]], columns=["tool", "fruit"]
+            ),
+        ),
+    ],
+)
+def test_undummify(
+    quali_df: pd.DataFrame, use_max_modalities: bool, expected: pd.DataFrame
+) -> None:
     model = projection.fit(quali_df)
 
     dummy_df = pd.DataFrame(
-        [[0.3, 0.7, 0.01, 0.99], [0.6, 0.4, 0.8, 0.2]],
+        [[0.3, 0.7, 0.01, 0.99], [0.51, 0.49, 0.8, 0.2]],
         columns=["tool___hammer", "tool___wrench", "fruit___apple", "fruit___orange"],
     )
-    df = undummify(dummy_df, model, use_max_modalities=True, seed=123)
+    df = undummify(dummy_df, model, use_max_modalities=use_max_modalities, seed=321)
 
-    expected = pd.DataFrame(
-        [["wrench", "orange"], ["hammer", "apple"]], columns=["tool", "fruit"]
-    )
+    expected = expected
     assert_frame_equal(df, expected)

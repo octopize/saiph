@@ -1,4 +1,4 @@
-"""inverse transform coordinate."""
+"""Inverse transform coordinates."""
 import ast
 from typing import Optional
 

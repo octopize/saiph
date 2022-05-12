@@ -261,57 +261,6 @@ def test_var_ratio(df_input: pd.DataFrame, expected_var_ratio: List[float]) -> N
     assert_allclose(model.explained_var_ratio[0:5], expected_var_ratio, atol=1e-07)
 
 
-# wider than len df
-def test_inverse_transform_raises_value_error_when_wider_than_df() -> None:
-    wider_df = pd.DataFrame(
-        {
-            "variable_1": ["a", "b", "c"],
-            "variable_2": ["ZZ", "ZZ", "WW"],
-        }
-    )
-    coord, model = fit_transform(wider_df)
-    with pytest.raises(ValueError, match=r"n_dimensions"):
-        inverse_transform(coord, model)
-
-
-# using df with more dimensions than individuals and high column weights
-# allows for a more balanced probability in modality assignment during inverse transform
-
-
-def test_inverse_transform_with_ponderation() -> None:
-    """Verify that use_max_modalities=False returns a random ponderation of modalities."""
-    df = pd.DataFrame(
-        zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 3], [2, 2, 10]),
-        columns=["cat1", "cat2", "cont1", "cont2"],
-    )
-    inverse_expected = pd.DataFrame(
-        zip(["c", "b", "a"], ["ZZ", "ZZ", "WW"], [1, 2, 2], [4, 4, 4]),
-        columns=["cat1", "cat2", "cont1", "cont2"],
-    )
-    coord, model = fit_transform(df, col_w=np.array([1, 2000, 1, 1]))
-    result = inverse_transform(
-        coord, model, use_approximate_inverse=True, use_max_modalities=False, seed=46
-    )
-    assert_frame_equal(result, inverse_expected)
-
-
-def test_inverse_transform_deterministic() -> None:
-    """Verify that use_max_modalities=True returns a deterministic of modalities."""
-    df = pd.DataFrame(
-        zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 3], [2, 2, 10]),
-        columns=["cat1", "cat2", "cont1", "cont2"],
-    )
-    inverse_expected = pd.DataFrame(
-        zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 2], [4, 4, 4]),
-        columns=["cat1", "cat2", "cont1", "cont2"],
-    )
-    coord, model = fit_transform(df, col_w=np.array([1, 2000, 1, 1]))
-    result = inverse_transform(
-        coord, model, use_approximate_inverse=True, use_max_modalities=True, seed=46
-    )
-    assert_frame_equal(result, inverse_expected)
-
-
 # FutureWarning: In a future version, the Index constructor will not infer numeric
 # dtypes when passed object-dtype sequences (matching Series behavior)
 @pytest.mark.filterwarnings(

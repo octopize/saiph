@@ -7,7 +7,7 @@ MAKEFLAGS += --no-builtin-rules
 
 install:  ## Install the stack
 	pre-commit install --hook-type commit-msg
-	poetry install
+	poetry install --extras "matplotlib"
 .PHONY: install
 
 notebook:  ## Run the notebook

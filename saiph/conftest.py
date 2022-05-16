@@ -8,6 +8,11 @@ from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 
 _iris_csv = pd.read_csv("fixtures/iris.csv")
+_wbcd_csv = pd.read_csv("fixtures/breast_cancer_wisconsin.csv")
+_wbcd_supplemental_csv = pd.read_csv("fixtures/wbcd_supplemental.csv")
+_wbcd_supplemental_coordinates_csv = pd.read_csv(
+    "fixtures/wbcd_supplemental_coordinates.csv"
+)
 
 
 @pytest.fixture
@@ -61,6 +66,21 @@ def mixed_df2() -> pd.DataFrame:
             "age": [55, 62],
         }
     )
+
+
+@pytest.fixture
+def wbcd_quali_df() -> pd.DataFrame:
+    return _wbcd_csv.drop(columns=["Sample_code_number"]).astype("category").copy()
+
+
+@pytest.fixture
+def wbcd_quali_supplemental_df() -> pd.DataFrame:
+    return _wbcd_supplemental_csv.astype("category").copy()
+
+
+@pytest.fixture
+def wbcd_supplemental_coord() -> pd.DataFrame:
+    return _wbcd_supplemental_coordinates_csv.copy()
 
 
 @pytest.fixture

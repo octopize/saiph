@@ -47,7 +47,6 @@ def inverse_transform(
     # Get back scaled_values from coord with inverse matrix operation
     # If n_records < n_dimensions, There will be an approximation of the inverse of V.T
     scaled_values = pd.DataFrame(coord @ np.linalg.pinv(model.V.T))
-    print('scaled_values', scaled_values)
     # get number of continuous variables
     nb_quanti = len(model.original_continuous)
 
@@ -78,8 +77,8 @@ def inverse_transform(
 
     # MCA
     else:
-        # As we are not scaling MCA such as FAMD categorical, the descale is
-        # not the same. Doing the same as FAMD introduce a bug.
+        # As we are not scaling MCA such as FAMD categorical, the descale is
+        # not the same. Doing the same as FAMD introduce a bug.
         inverse_coord_quali = coord @ (model.D_c @ model.V.T).T
         inverse_coord_quali.columns = model.dummy_categorical
         descaled_values_quali = np.divide(inverse_coord_quali, model.dummies_col_prop)
@@ -89,7 +88,6 @@ def inverse_transform(
             use_max_modalities=use_max_modalities,
             seed=seed,
         )
-        print("inverse", inverse)
     # Cast columns to same type as input
     for name, dtype in model.original_dtypes.iteritems():
         # Can create a bug if a column is object but contains int and float values,

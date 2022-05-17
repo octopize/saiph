@@ -116,7 +116,10 @@ def test_inverse_from_coord_mca(
     wbcd_supplemental_coord: pd.DataFrame,
     wbcd_supplemental_df: pd.DataFrame,
 ) -> None:
-    """Inverse supplemental coordinates using MCA model."""
+    """Verify that inverse coordinates using MCA yield correct results.
+    
+    We are comparing the distributions of each column.
+    """
     model = fit(wbcd_quali_df, nf="all")
     reversed_individuals = inverse_transform(
         wbcd_supplemental_coord, model, seed=123, use_max_modalities=False

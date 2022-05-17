@@ -114,7 +114,7 @@ def test_inverse_transform_deterministic() -> None:
 def test_inverse_from_coord_mca(
     wbcd_quali_df: pd.DataFrame,
     wbcd_supplemental_coord: pd.DataFrame,
-    wbcd_quali_supplemental_df: pd.DataFrame,
+    wbcd_supplemental_df: pd.DataFrame,
 ) -> None:
     """Inverse supplemental coordinates using MCA model."""
     model = fit(wbcd_quali_df, nf="all")
@@ -123,10 +123,10 @@ def test_inverse_from_coord_mca(
     )
 
     reversed_individuals = reversed_individuals.astype("int")
-    wbcd_quali_supplemental_df = wbcd_quali_supplemental_df.astype("int")
+    wbcd_supplemental_df = wbcd_supplemental_df.astype("int")
     for col in wbcd_quali_df.columns:
         assert_series_equal(
             reversed_individuals[col].describe(),
-            wbcd_quali_supplemental_df[col].describe(),
+            wbcd_supplemental_df[col].describe(),
             rtol=0.1,
         )

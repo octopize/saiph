@@ -74,7 +74,7 @@ def wbcd_quali_df() -> pd.DataFrame:
 
 
 @pytest.fixture
-def wbcd_quali_supplemental_df() -> pd.DataFrame:
+def wbcd_supplemental_df() -> pd.DataFrame:
     return _wbcd_supplemental_csv.astype("category").copy()
 
 

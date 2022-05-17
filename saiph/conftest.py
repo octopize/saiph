@@ -71,7 +71,7 @@ def mixed_df2() -> pd.DataFrame:
 @pytest.fixture
 def wbcd_quali_df() -> pd.DataFrame:
     """Wisconsin breast cancer dataframe.
-    
+
     Columns are categorical variables.
     """
     return _wbcd_csv.drop(columns=["Sample_code_number"]).astype("category").copy()

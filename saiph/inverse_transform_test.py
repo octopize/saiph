@@ -117,7 +117,7 @@ def test_inverse_from_coord_mca(
     wbcd_supplemental_df: pd.DataFrame,
 ) -> None:
     """Check that inverse supplemental coordinates using MCA yield correct results.
-    
+
     We use `use_max_modalities=False` to keep the data logical.
     We compare indicators of the distributions for each column.
     """

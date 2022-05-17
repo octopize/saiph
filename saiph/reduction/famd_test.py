@@ -161,8 +161,8 @@ def test_get_variable_contributions_same_as_factomineR(iris_df: pd.DataFrame) ->
 
     contributions, cos2 = get_variable_contributions(model, df, explode=True)
 
-    contributions_path = Path("fixtures/iris_factomineR_contributions.csv")
-    cos2_path = Path("fixtures/iris_factomineR_cos2.csv")
+    contributions_path = Path("tests/fixtures/iris_factomineR_contributions.csv")
+    cos2_path = Path("tests/fixtures/iris_factomineR_cos2.csv")
 
     expected_contributions = pd.read_csv(contributions_path)
     expected_cos2 = pd.read_csv(cos2_path)

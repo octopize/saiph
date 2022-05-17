@@ -8,10 +8,7 @@ import pytest
 from saiph.projection import fit
 
 
-def test_memory_iris(record_property: Any) -> None:
-    path = (Path(__file__) / "../../../fixtures/iris.csv").resolve()
-    iris_df = pd.read_csv(path)
-
+def test_memory_iris(record_property: Any, iris_df: pd.DataFrame) -> None:
     fit(iris_df)
     peak = int(getrusage(RUSAGE_SELF).ru_maxrss / 1024)
     # memory usage should be below x kiB
@@ -20,10 +17,7 @@ def test_memory_iris(record_property: Any) -> None:
     record_property("peak_memory_usage", peak)
 
 
-def test_memory_iris_sparse(record_property: Any) -> None:
-    path = (Path(__file__) / "../../../fixtures/iris.csv").resolve()
-    iris_df = pd.read_csv(path)
-
+def test_memory_iris_sparse(record_property: Any, iris_df: pd.DataFrame) -> None:
     fit(iris_df, sparse=True)
     peak = int(getrusage(RUSAGE_SELF).ru_maxrss / 1024)
     # memory usage should be below x kiB

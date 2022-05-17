@@ -7,11 +7,11 @@ import pytest
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 
-_iris_csv = pd.read_csv("fixtures/iris.csv")
-_wbcd_csv = pd.read_csv("fixtures/breast_cancer_wisconsin.csv")
-_wbcd_supplemental_csv = pd.read_csv("fixtures/wbcd_supplemental.csv")
+_iris_csv = pd.read_csv("tests/fixtures/iris.csv")
+_wbcd_csv = pd.read_csv("tests/fixtures/breast_cancer_wisconsin.csv")
+_wbcd_supplemental_csv = pd.read_csv("tests/fixtures/wbcd_supplemental.csv")
 _wbcd_supplemental_coordinates_csv = pd.read_csv(
-    "fixtures/wbcd_supplemental_coordinates.csv"
+    "tests/fixtures/wbcd_supplemental_coordinates.csv"
 )
 
 

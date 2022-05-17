@@ -78,7 +78,7 @@ def inverse_transform(
     # MCA
     else:
         # As we are not scaling MCA such as FAMD categorical, the descale is
-        # not the same. Doing the same as FAMD introduce a bug.
+        # not the same. Doing the same as FAMD is incoherent.
         inverse_coord_quali = coord @ (model.D_c @ model.V.T).T
         inverse_coord_quali.columns = model.dummy_categorical
         descaled_values_quali = np.divide(inverse_coord_quali, model.dummies_col_prop)

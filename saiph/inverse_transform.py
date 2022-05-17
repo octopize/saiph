@@ -44,11 +44,9 @@ def inverse_transform(
             "A matrix approximation is needed but will introduce bias "
             "You can reduce number of dimensions or set approximate=True."
         )
-
     # Get back scaled_values from coord with inverse matrix operation
     # If n_records < n_dimensions, There will be an approximation of the inverse of V.T
     scaled_values = pd.DataFrame(coord @ np.linalg.pinv(model.V.T))
-
     # get number of continuous variables
     nb_quanti = len(model.original_continuous)
 
@@ -79,7 +77,12 @@ def inverse_transform(
 
     # MCA
     else:
-        descaled_values_quali = scaled_values_quali * scaled_values_quali.sum().sum()
+        # As we are not scaling MCA such as FAMD categorical, the descale is
+        # not the same. Doing the same as FAMD is incoherent.
+        inverse_data = coord @ (model.D_c @ model.V.T).T
+        inverse_coord_quali = inverse_data.set_axis(model.dummy_categorical, axis="columns")
+        
+        descaled_values_quali = inverse_coord_quali.divide(model.dummies_col_prop)
         inverse = undummify(
             descaled_values_quali,
             get_dummies_mapping(model.original_categorical, model.dummy_categorical),
@@ -130,7 +133,6 @@ def undummify(
     for original_column, dummy_columns in dummies_mapping.items():
         # Handle a single category with all the possible modalities
         single_category = dummy_df[dummy_columns]
-
         if use_max_modalities:
             # select modalities with highest probability
             chosen_modalities = single_category.idxmax(axis="columns")

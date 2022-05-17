@@ -7,7 +7,12 @@ import pytest
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 
-_iris_csv = pd.read_csv("fixtures/iris.csv")
+_iris_csv = pd.read_csv("tests/fixtures/iris.csv")
+_wbcd_csv = pd.read_csv("tests/fixtures/breast_cancer_wisconsin.csv")
+_wbcd_supplemental_csv = pd.read_csv("tests/fixtures/wbcd_supplemental.csv")
+_wbcd_supplemental_coordinates_csv = pd.read_csv(
+    "tests/fixtures/wbcd_supplemental_coordinates.csv"
+)
 
 
 @pytest.fixture
@@ -61,6 +66,27 @@ def mixed_df2() -> pd.DataFrame:
             "age": [55, 62],
         }
     )
+
+
+@pytest.fixture
+def wbcd_quali_df() -> pd.DataFrame:
+    """Wisconsin breast cancer dataframe.
+
+    Columns are categorical variables.
+    """
+    return _wbcd_csv.drop(columns=["Sample_code_number"]).astype("category").copy()
+
+
+@pytest.fixture
+def wbcd_supplemental_df() -> pd.DataFrame:
+    """Supplemental synthetic individuals of the WBCD dataset."""
+    return _wbcd_supplemental_csv.astype("category").copy()
+
+
+@pytest.fixture
+def wbcd_supplemental_coord() -> pd.DataFrame:
+    """Synthetic coordinates of supplemental individuals of the WBCD dataset."""
+    return _wbcd_supplemental_coordinates_csv.copy()
 
 
 @pytest.fixture

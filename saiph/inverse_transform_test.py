@@ -3,14 +3,14 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 from saiph.inverse_transform import (
     get_random_weighted_columns,
     inverse_transform,
     undummify,
 )
-from saiph.projection import fit_transform
+from saiph.projection import fit, fit_transform
 
 
 @pytest.mark.parametrize(
@@ -109,3 +109,28 @@ def test_inverse_transform_deterministic() -> None:
         coord, model, use_approximate_inverse=True, use_max_modalities=True, seed=46
     )
     assert_frame_equal(result, inverse_expected)
+
+
+def test_inverse_from_coord_mca(
+    wbcd_quali_df: pd.DataFrame,
+    wbcd_supplemental_coord: pd.DataFrame,
+    wbcd_supplemental_df: pd.DataFrame,
+) -> None:
+    """Check that inverse supplemental coordinates using MCA yield correct results.
+
+    We use `use_max_modalities=False` to keep the data logical.
+    We compare indicators of the distributions for each column.
+    """
+    model = fit(wbcd_quali_df, nf="all")
+    reversed_individuals = inverse_transform(
+        wbcd_supplemental_coord, model, seed=123, use_max_modalities=False
+    )
+
+    reversed_individuals = reversed_individuals.astype("int")
+    wbcd_supplemental_df = wbcd_supplemental_df.astype("int")
+    for col in wbcd_quali_df.columns:
+        assert_series_equal(
+            reversed_individuals[col].describe(),
+            wbcd_supplemental_df[col].describe(),
+            rtol=0.1,
+        )

@@ -325,7 +325,7 @@ def _compute_contributions(
     # compute the contribution
     raw_contributions = (U * s) ** 2 / eig
     raw_contributions = raw_contributions * model.column_weights[:, np.newaxis]
-    summed_contributions = np.array(raw_contributions.sum(axis=0))
+    summed_contributions: NDArray[np.float_] = np.array(raw_contributions.sum(axis=0))
     raw_contributions /= summed_contributions
     raw_contributions *= 100
 

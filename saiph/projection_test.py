@@ -350,6 +350,16 @@ def test_get_variable_contributions_calls_correct_subfunction(
     projection.get_variable_contributions(model, quanti_df)
 
 
+def test_get_variable_contributions_sum_is_100(mixed_df: pd.DataFrame) -> None:
+    model = fit(mixed_df)
+    print(model)
+    expect(saiph.reduction.famd).get_variable_contributions(
+        model, mixed_df, explode=False
+    ).once().and_return((None, None))
+    projection.get_variable_contributions(model, mixed_df)
+    assert False
+
+
 def test_stats_calls_correct_subfunction(
     quali_df: pd.DataFrame, mixed_df: pd.DataFrame
 ) -> None:

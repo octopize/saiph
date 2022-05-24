@@ -12,8 +12,8 @@ def test_memory_iris(record_property: Any, iris_df: pd.DataFrame) -> None:
     fit(iris_df)
     peak = int(getrusage(RUSAGE_SELF).ru_maxrss / 1024)
     # memory usage should be below x kiB
-    error_margin = 1.05
-    assert peak <= 119200 * error_margin
+    error_margin = 1.1
+    assert peak <= 130000 * error_margin
     record_property("peak_memory_usage", peak)
 
 
@@ -21,8 +21,8 @@ def test_memory_iris_sparse(record_property: Any, iris_df: pd.DataFrame) -> None
     fit(iris_df, sparse=True)
     peak = int(getrusage(RUSAGE_SELF).ru_maxrss / 1024)
     # memory usage should be below x kiB
-    error_margin = 1.05
-    assert peak <= 114400 * error_margin
+    error_margin = 1.1
+    assert peak <= 130000 * error_margin
     record_property("peak_memory_usage", peak)
 
 

@@ -3,8 +3,8 @@ name = "saiph"
 # Also modify in saiph/__init__.py
 version = "1.0.9"
 description = "A projection package"
-authors = ["Zineb Bennis", "Julien Petot <julien@octopize-md.com>"]
-license = "MIT"
+authors = ["Octopize <help@octopize.io>"]
+license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.10"

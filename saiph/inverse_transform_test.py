@@ -111,7 +111,6 @@ def test_inverse_transform_deterministic() -> None:
     assert_frame_equal(result, inverse_expected)
 
 
-@pytest.mark.skip(reason="FIXME")
 def test_inverse_from_coord_mca(
     wbcd_quali_df: pd.DataFrame,
     wbcd_supplemental_coord: pd.DataFrame,

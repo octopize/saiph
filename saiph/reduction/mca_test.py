@@ -5,7 +5,12 @@ from numpy.typing import NDArray
 from pandas.testing import assert_frame_equal, assert_series_equal
 
 from saiph.reduction import DUMMIES_PREFIX_SEP
-from saiph.reduction.mca import fit_transform, get_variable_contributions, transform
+from saiph.reduction.mca import (
+    fit,
+    fit_transform,
+    get_variable_contributions,
+    transform,
+)
 from saiph.reduction.utils.common import get_projected_column_names
 
 
@@ -210,3 +215,12 @@ def test_get_variable_contributions_exploded_parameter(mixed_df: pd.DataFrame) -
         contributions_not_exploded.loc[variable],
         check_names=False,
     )
+
+
+def test_get_variable_contributions_sum_is_100_with_col_weights_random_mca(
+    quali_df: pd.DataFrame,
+) -> None:
+    model = fit(quali_df, col_w=[3.0, 2.0])  # type: ignore
+    contributions = get_variable_contributions(model, quali_df)
+    summed_contributions = contributions.sum(axis=0)
+    assert_series_equal(summed_contributions, pd.Series([100.0] * 4), check_index=False)

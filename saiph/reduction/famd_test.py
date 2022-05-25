@@ -10,6 +10,7 @@ from pandas.testing import assert_frame_equal
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.famd import (
     center,
+    fit,
     fit_transform,
     get_variable_contributions,
     scaler,
@@ -238,3 +239,12 @@ def test_get_variable_contributions_with_multiple_variables(
     df = pd.concat([quali_df, quanti_df], axis="columns")
     _, model = fit_transform(df, nf=4)
     get_variable_contributions(model, df, explode=True)
+
+
+def test_get_variable_contributions_sum_is_100_with_col_weights_random_famd(
+    mixed_df: pd.DataFrame,
+) -> None:
+    model = fit(mixed_df, col_w=[3.0, 2.0])  # type: ignore
+    contributions, _ = get_variable_contributions(model, mixed_df)
+    summed_contributions = contributions.sum(axis=0)
+    assert_series_equal(summed_contributions, pd.Series([100.0] * 3), check_index=False)

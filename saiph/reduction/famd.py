@@ -76,7 +76,7 @@ def center(
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_w: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float_]] = None,
     center: Callable[
         [pd.DataFrame, List[str], List[str]],
         Tuple[
@@ -93,14 +93,14 @@ def fit(
     Parameters:
         df: Data to project.
         nf: Number of components to keep. default: min(df.shape)
-        col_w: Weight assigned to each variable in the projection
+        col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes). default: np.ones(df.shape[1])
 
     Returns:
         model: The model for transforming new data.
     """
     nf = nf or min(pd.get_dummies(df).shape)
-    _col_weights = np.ones(df.shape[1]) if col_w is None else col_w
+    _col_weights = np.ones(df.shape[1]) if col_weights is None else col_weights
 
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
@@ -163,31 +163,31 @@ def fit(
 def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_w: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float_]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a FAMD model on data and return transformed data.
 
     Parameters:
         df: Data to project.
         nf: Number of components to keep. default: min(df.shape)
-        col_w: Weight assigned to each variable in the projection
+        col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes). default: np.ones(df.shape[1])
 
     Returns:
         coord: The transformed data.
         model: The model for transforming new data.
     """
-    model = fit(df, nf, col_w)
+    model = fit(df, nf, col_weights)
     coord = transform(df, model)
     return coord, model
 
 
 def _col_weights_compute(
-    df: pd.DataFrame, col_w: NDArray[Any], quanti: List[int], quali: List[int]
+    df: pd.DataFrame, col_weights: NDArray[Any], quanti: List[int], quali: List[int]
 ) -> NDArray[Any]:
     """Calculate weights for columns given what weights the user gave."""
     # Set the columns and row weights
-    weight_df = pd.DataFrame([col_w], columns=df.columns)
+    weight_df = pd.DataFrame([col_weights], columns=df.columns)
     weight_quanti = weight_df[quanti]
     weight_quali = weight_df[quali]
 
@@ -203,9 +203,11 @@ def _col_weights_compute(
         )
     )
 
-    _col_w: NDArray[Any] = np.array(list(weight_quanti.iloc[0]) + weight_quali_rep)
+    _col_weights: NDArray[Any] = np.array(
+        list(weight_quanti.iloc[0]) + weight_quali_rep
+    )
 
-    return _col_w
+    return _col_weights
 
 
 def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:

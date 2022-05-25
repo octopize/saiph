@@ -17,40 +17,40 @@ from saiph.reduction.famd import transform as transform_famd
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_w: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float_]] = None,
 ) -> Model:
     """Fit a FAMD model on sparse data.
 
     Parameters:
         df: Data to project.
         nf: Number of components to keep. default: min(df.shape)
-        col_w: Weight assigned to each variable in the projection
+        col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes). default: np.ones(df.shape[1])
 
     Returns:
         model: The model for transforming new data.
     """
-    return fit_famd(df, nf, col_w, center=center_sparse)
+    return fit_famd(df, nf, col_weights, center=center_sparse)
 
 
 def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_w: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float_]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a FAMD model on data and return transformed data.
 
     Parameters:
         df: Data to project.
         nf: Number of components to keep. default: min(df.shape)
-        col_w: Weight assigned to each variable in the projection
+        col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes). default: np.ones(df.shape[1])
 
     Returns:
         coord: The transformed data.
         model: The model for transforming new data.
     """
-    model = fit(df, nf, col_w)
+    model = fit(df, nf, col_weights)
     coord = transform(df, model)
     return coord, model
 

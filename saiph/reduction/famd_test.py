@@ -1,7 +1,9 @@
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
+import pytest
 from numpy.testing import assert_allclose
 from numpy.typing import NDArray
 from pandas._testing.asserters import assert_series_equal
@@ -204,14 +206,18 @@ def test_get_variable_contributions(mixed_df: pd.DataFrame) -> None:
     assert_frame_equal(cos2, expected_cos2, check_exact=False, atol=0.0001)
 
 
-def test_get_variable_contributions_exploded_parameter(mixed_df: pd.DataFrame) -> None:
+@pytest.mark.parametrize("col_weights", [[2.0, 3.0], None])
+def test_get_variable_contributions_exploded_parameter(
+    mixed_df: pd.DataFrame, col_weights: Any
+) -> None:
     """Verify argument explode=False and explode=True in get_variable_contributions.
 
     Make sure that explode=False is the sum of explode=True for categorical variables.
+    Also make sure that this remains true with any col_weights.
     """
     df = mixed_df
     variable = "tool"
-    _, model = fit_transform(df, nf=3)
+    _, model = fit_transform(df, nf=3, col_w=col_weights)
 
     contributions_exploded, _ = get_variable_contributions(model, df, explode=True)
     contributions_not_exploded, _ = get_variable_contributions(model, df, explode=False)

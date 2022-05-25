@@ -62,6 +62,8 @@ def inverse_transform(
     if model.type == "famd":
         descaled_values_quanti = (scaled_values_quanti * model.std) + model.mean
         descaled_values_quali = (scaled_values_quali * np.sqrt(model.prop)) + model.prop
+        del scaled_values_quali
+        del scaled_values_quanti
         undummy = undummify(
             descaled_values_quali,
             get_dummies_mapping(model.original_categorical, model.dummy_categorical),
@@ -74,9 +76,13 @@ def inverse_transform(
     elif model.type == "pca":
         descaled_values_quanti = (scaled_values_quanti * model.std) + model.mean
         inverse = descaled_values_quanti.round(12)
+        del scaled_values_quali
+        del scaled_values_quanti
 
     # MCA
     else:
+        del scaled_values_quali
+        del scaled_values_quanti
         # As we are not scaling MCA such as FAMD categorical, the descale is
         # not the same. Doing the same as FAMD is incoherent.
         inverse_data = coord @ (model.D_c @ model.V.T).T

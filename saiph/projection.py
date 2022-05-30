@@ -23,7 +23,7 @@ def fit(
     Parameters:
         df: Data to project.
         nf: Number of components to keep. default: 'all'
-        col_w: Weight assigned to each variable in the projection
+        col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes).
             default: np.ones(df.shape[1])
 
@@ -62,7 +62,7 @@ def fit(
 def fit_transform(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
-    col_w: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float_]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
@@ -71,14 +71,14 @@ def fit_transform(
     Parameters:
         df: Data to project.
         nf: Number of components to keep. default: 'all'
-        col_w: Weight assigned to each variable in the projection
+        col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes).
             default: np.ones(df.shape[1])
 
     Returns:
         model: The model for transforming new data.
     """
-    model = fit(df, nf, col_w)
+    model = fit(df, nf, col_weights)
     coord = transform(df, model)
     return coord, model
 

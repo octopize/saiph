@@ -53,7 +53,7 @@ def test_transform_then_inverse_MCA_type(quali_df: pd.DataFrame) -> None:
 
 def test_transform_then_inverse_FAMD_weighted(mixed_df: pd.DataFrame) -> None:
     df = mixed_df
-    transformed, model = fit_transform(df, col_w=np.array([2, 3]))
+    transformed, model = fit_transform(df, col_weights=np.array([2, 3]))
     un_transformed = inverse_transform(transformed, model)
 
     assert_frame_equal(un_transformed, df)
@@ -61,7 +61,7 @@ def test_transform_then_inverse_FAMD_weighted(mixed_df: pd.DataFrame) -> None:
 
 def test_transform_then_inverse_PCA_weighted(quanti_df: pd.DataFrame) -> None:
     df = quanti_df
-    coords, model = fit_transform(df, col_w=np.array([2, 1, 3]))
+    coords, model = fit_transform(df, col_weights=np.array([2, 1, 3]))
     un_transformed = inverse_transform(coords, model)
 
     assert_frame_equal(un_transformed, df)
@@ -88,7 +88,7 @@ def test_transform_then_inverse_MCA_weighted() -> None:
         }
     )
 
-    transformed, model = fit_transform(df, col_w=np.array([2, 1, 3, 2]))
+    transformed, model = fit_transform(df, col_weights=np.array([2, 1, 3, 2]))
     un_transformed = inverse_transform(transformed, model)
 
     assert_frame_equal(un_transformed, df)

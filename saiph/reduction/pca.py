@@ -19,22 +19,22 @@ from saiph.reduction.utils.svd import SVD
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_w: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float_]] = None,
 ) -> Model:
     """Fit a PCA model on data.
 
     Parameters:
         df: Data to project.
         nf: Number of components to keep. default: min(df.shape)
-        col_w: Weight assigned to each variable in the projection
+        col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes). default: np.ones(df.shape[1])
 
     Returns:
         model: The model for transforming new data.
     """
     nf = nf or min(df.shape)
-    if col_w is not None:
-        _col_weights = col_w
+    if col_weights is not None:
+        _col_weights = col_weights
     else:
         _col_weights = np.ones(df.shape[1])
 
@@ -87,21 +87,21 @@ def fit(
 def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_w: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float_]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a PCA model on data and return transformed data.
 
     Parameters:
         df: Data to project.
         nf: Number of components to keep. default: min(df.shape)
-        col_w: Weight assigned to each variable in the projection
+        col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes). default: np.ones(df.shape[1])
 
     Returns:
         model: The model for transforming new data.
         coord: The transformed data.
     """
-    model = fit(df, nf, col_w)
+    model = fit(df, nf, col_weights)
     coord = transform(df, model)
     return coord, model
 

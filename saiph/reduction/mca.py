@@ -27,24 +27,22 @@ from saiph.reduction.utils.svd import SVD
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_w: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float_]] = None,
 ) -> Model:
     """Fit a MCA model on data.
 
     Parameters:
         df: Data to project.
         nf: Number of components to keep. default: min(df.shape)
-        col_w: Weight assigned to each variable in the projection
+        col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes). default: np.ones(df.shape[1])
 
     Returns:
         model: The model for transforming new data.
     """
     nf = nf or min(pd.get_dummies(df).shape)
-    if col_w is not None:
-        _col_weights = col_w
-    else:
-        _col_weights = np.ones(df.shape[1])
+
+    _col_weights = col_weights if col_weights is not None else np.ones(df.shape[1])
 
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
@@ -58,7 +56,8 @@ def fit(
     modality_numbers = []
     for column in df.columns:
         modality_numbers += [len(df[column].unique())]
-    col_weights: NDArray[Any] = np.array(
+
+    col_weights_dummies: NDArray[Any] = np.array(
         list(
             chain.from_iterable(
                 repeat(i, j) for i, j in zip(_col_weights, modality_numbers)
@@ -74,7 +73,7 @@ def fit(
     dummies_col_prop = len(df_dummies) / df_dummies.sum(axis=0)
 
     # apply the weights and compute the svd
-    Z = ((T * col_weights).T * row_weights).T
+    Z = ((T * col_weights_dummies).T * row_weights).T
     U, s, V = SVD(Z)
 
     explained_var, explained_var_ratio = get_explained_variance(
@@ -100,7 +99,7 @@ def fit(
         type="mca",
         is_fitted=True,
         nf=nf,
-        column_weights=col_weights,
+        column_weights=col_weights_dummies,
         row_weights=row_weights,
         dummies_col_prop=dummies_col_prop,
         modalities_types=modalities_types,
@@ -112,21 +111,21 @@ def fit(
 def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_w: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float_]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a MCA model on data and return transformed data.
 
     Parameters:
         df: Data to project.
         nf: Number of components to keep. default: min(df.shape)
-        col_w: Weight assigned to each variable in the projection
+        col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes). default: np.ones(df.shape[1])
 
     Returns:
         model: The model for transforming new data.
         coord: The transformed data.
     """
-    model = fit(df, nf, col_w)
+    model = fit(df, nf, col_weights)
     coord = transform(df, model)
     return coord, model
 

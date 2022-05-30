@@ -220,7 +220,7 @@ def test_get_variable_contributions_exploded_parameter(mixed_df: pd.DataFrame) -
 def test_get_variable_contributions_sum_is_100_with_col_weights_random_mca(
     quali_df: pd.DataFrame,
 ) -> None:
-    model = fit(quali_df, col_w=[3.0, 2.0])  # type: ignore
+    model = fit(quali_df, col_weights=[3.0, 2.0])  # type: ignore
     contributions = get_variable_contributions(model, quali_df)
     summed_contributions = contributions.sum(axis=0)
     assert_series_equal(summed_contributions, pd.Series([100.0] * 4), check_index=False)

@@ -111,7 +111,10 @@ def test_inverse_transform_deterministic() -> None:
     assert_frame_equal(result, inverse_expected)
 
 
-@pytest.mark.skip(reason="FIXME")
+@pytest.mark.skip(
+    reason="""Different results on different architectures.
+            See https://github.com/octopize/saiph/issues/72"""
+)
 def test_inverse_from_coord_mca(
     wbcd_quali_df: pd.DataFrame,
     wbcd_supplemental_coord: pd.DataFrame,

@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from doubles import expect
 from numpy.testing import assert_allclose
-from pandas.testing import assert_frame_equal, assert_series_equal
+from pandas.testing import assert_frame_equal
 
 import saiph
 from saiph import projection
@@ -348,65 +348,6 @@ def test_get_variable_contributions_calls_correct_subfunction(
         model, quanti_df
     ).once().and_return(pd.DataFrame([1, 2, 3]))
     projection.get_variable_contributions(model, quanti_df)
-
-
-def test_get_variable_contributions_sum_is_100_famd(mixed_df: pd.DataFrame) -> None:
-    model = fit(mixed_df)
-    contributions = projection.get_variable_contributions(model, mixed_df)
-    summed_contributions = contributions.sum(axis=0)
-    assert_series_equal(summed_contributions, pd.Series([100.0] * 3), check_index=False)
-
-
-def test_get_variable_contributions_sum_is_100_with_col_weights_1_famd(
-    mixed_df: pd.DataFrame,
-) -> None:
-    model = fit(mixed_df, col_weights=np.array([1.0, 1.0]))
-    contributions = projection.get_variable_contributions(model, mixed_df)
-    summed_contributions = contributions.sum(axis=0)
-    assert_series_equal(summed_contributions, pd.Series([100.0] * 3), check_index=False)
-
-
-def test_get_variable_contributions_sum_is_100_with_col_weights_random_famd(
-    mixed_df: pd.DataFrame,
-) -> None:
-    model = fit(mixed_df, col_weights=np.array([3.0, 2.0]))
-    contributions = projection.get_variable_contributions(model, mixed_df)
-    summed_contributions = contributions.sum(axis=0)
-    assert_series_equal(summed_contributions, pd.Series([100.0] * 3), check_index=False)
-
-
-def test_get_variable_contributions_sum_is_100_with_col_weights_random_famd2(
-    iris_df: pd.DataFrame,
-) -> None:
-    model = fit(iris_df, col_weights=np.array([3.0, 2.0, 0.5, 1.0, 2.1]))
-    contributions = projection.get_variable_contributions(model, iris_df)
-    summed_contributions = contributions.sum(axis=0)
-    assert_series_equal(summed_contributions, pd.Series([100.0] * 7), check_index=False)
-
-
-def test_get_variable_contributions_sum_is_100_mca(quali_df: pd.DataFrame) -> None:
-    model = fit(quali_df)
-    contributions = projection.get_variable_contributions(model, quali_df)
-    summed_contributions = contributions.sum(axis=0)
-    assert_series_equal(summed_contributions, pd.Series([100.0] * 4), check_index=False)
-
-
-def test_get_variable_contributions_sum_is_100_with_col_weights_1_mca(
-    quali_df: pd.DataFrame,
-) -> None:
-    model = fit(quali_df, col_weights=np.array([1.0, 1.0]))
-    contributions = projection.get_variable_contributions(model, quali_df)
-    summed_contributions = contributions.sum(axis=0)
-    assert_series_equal(summed_contributions, pd.Series([100.0] * 4), check_index=False)
-
-
-def test_get_variable_contributions_sum_is_100_with_col_weights_random_mca(
-    quali_df: pd.DataFrame,
-) -> None:
-    model = fit(quali_df, col_weights=np.array([3.0, 2.0]))
-    contributions = projection.get_variable_contributions(model, quali_df)
-    summed_contributions = contributions.sum(axis=0)
-    assert_series_equal(summed_contributions, pd.Series([100.0] * 4), check_index=False)
 
 
 def test_stats_calls_correct_subfunction(

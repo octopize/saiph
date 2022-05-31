@@ -112,6 +112,10 @@ def test_inverse_transform_deterministic() -> None:
     assert_frame_equal(result, inverse_expected)
 
 
+@pytest.mark.skip(
+    reason="""Different results on different architectures.
+            See https://github.com/octopize/saiph/issues/72"""
+)
 def test_inverse_from_coord_mca(
     wbcd_quali_df: pd.DataFrame,
     wbcd_supplemental_coord_quali: pd.DataFrame,
@@ -189,14 +193,14 @@ def test_inverse_from_coord_famd(
     wbcd_mixed_df: pd.DataFrame,
     wbcd_supplemental_coord_mixed: pd.DataFrame,
 ) -> None:
-    """Check that inverse supplemental coordinates using PCA yield correct results.
+    """Check that inverse supplemental coordinates using FAMD yield correct results.
 
     We use `use_max_modalities=False` to keep the data logical.
     We compare indicators of the distributions for each column.
     """
     model = fit(wbcd_mixed_df, nf="all")
     # wbcd_supplemental_df was obtained using
-    # inverse_transform with wbcd_supplemental_coord_quanti and seed=123)
+    # inverse_transform with wbcd_supplemental_coord_quanti and seed=123
     reversed_individuals = inverse_transform(
         wbcd_supplemental_coord_mixed, model, use_max_modalities=False
     )

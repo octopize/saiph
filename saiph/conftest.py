@@ -86,7 +86,7 @@ def wbcd_quali_df() -> pd.DataFrame:
 def wbcd_quanti_df() -> pd.DataFrame:
     """Wisconsin breast cancer dataframe.
 
-    Columns are categorical variables.
+    Columns are continuous variables.
     """
     return _wbcd_csv.drop(columns=["Sample_code_number"]).astype("int").copy()
 
@@ -95,7 +95,7 @@ def wbcd_quanti_df() -> pd.DataFrame:
 def wbcd_mixed_df() -> pd.DataFrame:
     """Wisconsin breast cancer dataframe.
 
-    Columns are categorical variables.
+    Columns are mixed of continuous and categorical variables.
     """
     wbcd_mixed = _wbcd_csv.drop(columns=["Sample_code_number"]).astype("int").copy()
     wbcd_mixed[["Class", "Mitoses", "Normal_Nucleoli", "Bland_Chromatin"]] = wbcd_mixed[
@@ -106,19 +106,22 @@ def wbcd_mixed_df() -> pd.DataFrame:
 
 @pytest.fixture
 def wbcd_supplemental_coord_quali() -> pd.DataFrame:
-    """Synthetic coordinates of supplemental individuals of the WBCD dataset."""
+    """Supplemental coordinates of the WBCD dataset, generated using MCA model."""
     return _wbcd_supplemental_coordinates_csv_mca.copy()
 
 
 @pytest.fixture
 def wbcd_supplemental_coord_quanti() -> pd.DataFrame:
-    """Synthetic coordinates of supplemental individuals of the WBCD dataset."""
+    """Supplemental coordinates of the WBCD dataset, generated using PCA model."""
     return _wbcd_supplemental_coordinates_csv_pca.copy()
 
 
 @pytest.fixture
 def wbcd_supplemental_coord_mixed() -> pd.DataFrame:
-    """Synthetic coordinates of supplemental individuals of the WBCD dataset."""
+    """Supplemental coordinates of the WBCD dataset, generated using FAMD model.
+
+    Categorical columns are Class, Mitoses, Normal_Nucleoli, Bland_Chromatin.
+    """
     return _wbcd_supplemental_coordinates_csv_famd.copy()
 
 

@@ -3,6 +3,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 import pytest
+from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal, assert_series_equal
 
 from saiph.inverse_transform import (
@@ -117,8 +118,7 @@ def test_inverse_transform_deterministic() -> None:
 )
 def test_inverse_from_coord_mca(
     wbcd_quali_df: pd.DataFrame,
-    wbcd_supplemental_coord: pd.DataFrame,
-    wbcd_supplemental_df: pd.DataFrame,
+    wbcd_supplemental_coord_quali: pd.DataFrame,
 ) -> None:
     """Check that inverse supplemental coordinates using MCA yield correct results.
 
@@ -126,15 +126,96 @@ def test_inverse_from_coord_mca(
     We compare indicators of the distributions for each column.
     """
     model = fit(wbcd_quali_df, nf="all")
+
     reversed_individuals = inverse_transform(
-        wbcd_supplemental_coord, model, seed=123, use_max_modalities=False
+        wbcd_supplemental_coord_quali, model, use_max_modalities=False
     )
 
     reversed_individuals = reversed_individuals.astype("int")
-    wbcd_supplemental_df = wbcd_supplemental_df.astype("int")
-    for col in wbcd_quali_df.columns:
-        assert_series_equal(
-            reversed_individuals[col].describe(),
-            wbcd_supplemental_df[col].describe(),
-            rtol=0.1,
-        )
+    wbcd_quali_df = wbcd_quali_df.astype("int")
+
+    reversed_statistics = reversed_individuals.describe()
+    wbcd_statistics = wbcd_quali_df.describe()
+
+    assert_series_equal(wbcd_statistics.loc["count"], reversed_statistics.loc["count"])
+    assert_allclose(
+        wbcd_statistics.loc["mean"], reversed_statistics.loc["mean"], atol=0.25
+    )
+    assert_allclose(
+        wbcd_statistics.loc["std"], reversed_statistics.loc["std"], atol=0.35
+    )
+    # assert equal for the min as there are many low values
+    assert_series_equal(wbcd_statistics.loc["min"], reversed_statistics.loc["min"])
+    assert_allclose(wbcd_statistics.loc["25%"], reversed_statistics.loc["25%"], atol=1)
+    assert_allclose(wbcd_statistics.loc["50%"], reversed_statistics.loc["50%"], atol=1)
+    assert_allclose(wbcd_statistics.loc["75%"], reversed_statistics.loc["75%"], atol=2)
+    assert_series_equal(wbcd_statistics.loc["max"], reversed_statistics.loc["max"])
+
+
+def test_inverse_from_coord_pca(
+    wbcd_quanti_df: pd.DataFrame,
+    wbcd_supplemental_coord_quanti: pd.DataFrame,
+) -> None:
+    """Check that inverse supplemental coordinates using PCA yield correct results.
+
+    We use `use_max_modalities=False` to keep the data logical.
+    We compare indicators of the distributions for each column.
+    """
+    model = fit(wbcd_quanti_df, nf="all")
+
+    reversed_individuals = inverse_transform(
+        wbcd_supplemental_coord_quanti, model, use_max_modalities=False
+    )
+
+    reversed_statistics = reversed_individuals.describe()
+    wbcd_statistics = wbcd_quanti_df.describe()
+
+    assert_series_equal(wbcd_statistics.loc["count"], reversed_statistics.loc["count"])
+    assert_allclose(
+        wbcd_statistics.loc["mean"], reversed_statistics.loc["mean"], atol=0.4
+    )
+    assert_allclose(
+        wbcd_statistics.loc["std"], reversed_statistics.loc["std"], atol=0.7
+    )
+    # assert equal for the min as there are many low values
+    assert_series_equal(wbcd_statistics.loc["min"], reversed_statistics.loc["min"])
+    assert_allclose(wbcd_statistics.loc["25%"], reversed_statistics.loc["25%"], atol=1)
+    assert_allclose(wbcd_statistics.loc["50%"], reversed_statistics.loc["50%"], atol=1)
+    assert_allclose(wbcd_statistics.loc["75%"], reversed_statistics.loc["75%"], atol=1)
+    assert_series_equal(
+        wbcd_statistics.loc["max"], reversed_statistics.loc["max"], atol=1
+    )
+
+
+def test_inverse_from_coord_famd(
+    wbcd_mixed_df: pd.DataFrame,
+    wbcd_supplemental_coord_mixed: pd.DataFrame,
+) -> None:
+    """Check that inverse supplemental coordinates using FAMD yield correct results.
+
+    We use `use_max_modalities=False` to keep the data logical.
+    We compare indicators of the distributions for each column.
+    """
+    model = fit(wbcd_mixed_df, nf="all")
+    reversed_individuals = inverse_transform(
+        wbcd_supplemental_coord_mixed, model, use_max_modalities=False
+    )
+
+    reversed_statistics = reversed_individuals.describe()
+    wbcd_statistics = wbcd_mixed_df.describe()
+
+    assert_series_equal(wbcd_statistics.loc["count"], reversed_statistics.loc["count"])
+    assert_allclose(
+        wbcd_statistics.loc["mean"], reversed_statistics.loc["mean"], atol=0.4
+    )
+    assert_allclose(
+        wbcd_statistics.loc["std"], reversed_statistics.loc["std"], atol=0.6
+    )
+    # assert equal for the min as there are many low values
+    assert_series_equal(wbcd_statistics.loc["min"], reversed_statistics.loc["min"])
+    assert_series_equal(wbcd_statistics.loc["25%"], reversed_statistics.loc["25%"])
+    assert_series_equal(wbcd_statistics.loc["50%"], reversed_statistics.loc["50%"])
+    assert_allclose(wbcd_statistics.loc["75%"], reversed_statistics.loc["75%"], atol=1)
+    assert_series_equal(
+        wbcd_statistics.loc["max"], reversed_statistics.loc["max"], atol=1
+    )

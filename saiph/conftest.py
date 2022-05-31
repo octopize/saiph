@@ -9,9 +9,14 @@ from saiph.reduction import DUMMIES_PREFIX_SEP
 
 _iris_csv = pd.read_csv("tests/fixtures/iris.csv")
 _wbcd_csv = pd.read_csv("tests/fixtures/breast_cancer_wisconsin.csv")
-_wbcd_supplemental_csv = pd.read_csv("tests/fixtures/wbcd_supplemental.csv")
-_wbcd_supplemental_coordinates_csv = pd.read_csv(
-    "tests/fixtures/wbcd_supplemental_coordinates.csv"
+_wbcd_supplemental_coordinates_csv_mca = pd.read_csv(
+    "tests/fixtures/wbcd_supplemental_coordinates_mca.csv"
+)
+_wbcd_supplemental_coordinates_csv_pca = pd.read_csv(
+    "tests/fixtures/wbcd_supplemental_coordinates_pca.csv"
+)
+_wbcd_supplemental_coordinates_csv_famd = pd.read_csv(
+    "tests/fixtures/wbcd_supplemental_coordinates_famd.csv"
 )
 
 
@@ -78,15 +83,43 @@ def wbcd_quali_df() -> pd.DataFrame:
 
 
 @pytest.fixture
-def wbcd_supplemental_df() -> pd.DataFrame:
-    """Supplemental synthetic individuals of the WBCD dataset."""
-    return _wbcd_supplemental_csv.astype("category").copy()
+def wbcd_quanti_df() -> pd.DataFrame:
+    """Wisconsin breast cancer dataframe.
+
+    Columns are categorical variables.
+    """
+    return _wbcd_csv.drop(columns=["Sample_code_number"]).astype("int").copy()
 
 
 @pytest.fixture
-def wbcd_supplemental_coord() -> pd.DataFrame:
+def wbcd_mixed_df() -> pd.DataFrame:
+    """Wisconsin breast cancer dataframe.
+
+    Columns are categorical variables.
+    """
+    wbcd_mixed = _wbcd_csv.drop(columns=["Sample_code_number"]).astype("int").copy()
+    wbcd_mixed[["Class", "Mitoses", "Normal_Nucleoli", "Bland_Chromatin"]] = wbcd_mixed[
+        ["Class", "Mitoses", "Normal_Nucleoli", "Bland_Chromatin"]
+    ].astype("category")
+    return wbcd_mixed
+
+
+@pytest.fixture
+def wbcd_supplemental_coord_quali() -> pd.DataFrame:
     """Synthetic coordinates of supplemental individuals of the WBCD dataset."""
-    return _wbcd_supplemental_coordinates_csv.copy()
+    return _wbcd_supplemental_coordinates_csv_mca.copy()
+
+
+@pytest.fixture
+def wbcd_supplemental_coord_quanti() -> pd.DataFrame:
+    """Synthetic coordinates of supplemental individuals of the WBCD dataset."""
+    return _wbcd_supplemental_coordinates_csv_pca.copy()
+
+
+@pytest.fixture
+def wbcd_supplemental_coord_mixed() -> pd.DataFrame:
+    """Synthetic coordinates of supplemental individuals of the WBCD dataset."""
+    return _wbcd_supplemental_coordinates_csv_famd.copy()
 
 
 @pytest.fixture

@@ -124,10 +124,12 @@ def test_inverse_from_coord_mca(
 
     We use `use_max_modalities=False` to keep the data logical.
     We compare indicators of the distributions for each column.
+
+    wbcd_supplemental_df_quali was obtained using inverse_transform
+    with wbcd_supplemental_coord_quali and seed=123
     """
     model = fit(wbcd_quali_df, nf="all")
-    # wbcd_supplemental_df_quali was obtained using
-    # inverse_transform with wbcd_supplemental_coord_quali and seed=123
+
     reversed_individuals = inverse_transform(
         wbcd_supplemental_coord_quali, model, use_max_modalities=False
     )
@@ -161,10 +163,12 @@ def test_inverse_from_coord_pca(
 
     We use `use_max_modalities=False` to keep the data logical.
     We compare indicators of the distributions for each column.
+
+    wbcd_supplemental_df was obtained using inverse_transform
+    with wbcd_supplemental_coord_quanti and seed=123
     """
     model = fit(wbcd_quanti_df, nf="all")
-    # wbcd_supplemental_df was obtained using
-    # inverse_transform with wbcd_supplemental_coord_quanti and seed=123
+
     reversed_individuals = inverse_transform(
         wbcd_supplemental_coord_quanti, model, use_max_modalities=False
     )
@@ -197,10 +201,11 @@ def test_inverse_from_coord_famd(
 
     We use `use_max_modalities=False` to keep the data logical.
     We compare indicators of the distributions for each column.
+
+    wbcd_supplemental_df was obtained using inverse_transform
+    with wbcd_supplemental_coord_famd and seed=123
     """
     model = fit(wbcd_mixed_df, nf="all")
-    # wbcd_supplemental_df was obtained using
-    # inverse_transform with wbcd_supplemental_coord_quanti and seed=123
     reversed_individuals = inverse_transform(
         wbcd_supplemental_coord_mixed, model, use_max_modalities=False
     )

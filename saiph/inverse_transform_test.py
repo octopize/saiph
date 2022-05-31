@@ -3,6 +3,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 import pytest
+from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal, assert_series_equal
 
 from saiph.inverse_transform import (
@@ -111,10 +112,6 @@ def test_inverse_transform_deterministic() -> None:
     assert_frame_equal(result, inverse_expected)
 
 
-@pytest.mark.skip(
-    reason="""Different results on different architectures.
-            See https://github.com/octopize/saiph/issues/72"""
-)
 def test_inverse_from_coord_mca(
     wbcd_quali_df: pd.DataFrame,
     wbcd_supplemental_coord: pd.DataFrame,
@@ -127,14 +124,24 @@ def test_inverse_from_coord_mca(
     """
     model = fit(wbcd_quali_df, nf="all")
     reversed_individuals = inverse_transform(
-        wbcd_supplemental_coord, model, seed=123, use_max_modalities=False
+        wbcd_supplemental_coord, model, use_max_modalities=False
     )
 
     reversed_individuals = reversed_individuals.astype("int")
     wbcd_supplemental_df = wbcd_supplemental_df.astype("int")
-    for col in wbcd_quali_df.columns:
-        assert_series_equal(
-            reversed_individuals[col].describe(),
-            wbcd_supplemental_df[col].describe(),
-            rtol=0.1,
-        )
+
+    reversed_statistics = reversed_individuals.describe()
+    wbcd_statistics = wbcd_supplemental_df.describe()
+
+    print(reversed_statistics)  
+    print(wbcd_statistics)  
+
+    assert_series_equal(wbcd_statistics.loc["count"], reversed_statistics.loc["count"])
+    assert_allclose(wbcd_statistics.loc["mean"], reversed_statistics.loc["mean"], atol = 0.25)
+    assert_allclose(wbcd_statistics.loc["std"], reversed_statistics.loc["std"], atol=0.3)
+    # assert equal for the min as there are many low values
+    assert_series_equal(wbcd_statistics.loc["min"], reversed_statistics.loc["min"])
+    assert_allclose(wbcd_statistics.loc["25%"], reversed_statistics.loc["25%"], atol=1)
+    assert_allclose(wbcd_statistics.loc["50%"], reversed_statistics.loc["50%"], atol=1)
+    assert_allclose(wbcd_statistics.loc["75%"], reversed_statistics.loc["75%"], atol=2)
+    assert_series_equal(wbcd_statistics.loc["max"], reversed_statistics.loc["max"])

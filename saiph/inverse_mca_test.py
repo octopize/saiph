@@ -1,3 +1,5 @@
+import platform
+from cProfile import label
 from math import ceil, sqrt
 import re
 from typing import List, Tuple
@@ -56,8 +58,12 @@ def build_histogram():
 
     for ax, col in zip(axs.flat, df.columns):
         print(ax)
-        df.hist(col, ax=ax , alpha=0.5)
-        reversed_df.hist(col, ax=ax,alpha=0.5)
+        df.hist(col, ax=ax , alpha=0.5, label="Original")
+        reversed_df.hist(col, ax=ax,alpha=0.5, label = "Inverse")
+        ax.legend()
+    fig.suptitle(f"Inverse transform on {platform.system()}", fontsize=20)
+
+    fig.savefig(f"distributions_{platform.system()}.svg")
 
     plt.show()
 

@@ -8,7 +8,7 @@ from datetime import datetime
 from saiph.conftest import _wbcd_csv, _wbcd_supplemental_coordinates_csv_mca
 from saiph.test_utils import get_filenames, to_csv, set_active_user
 import subprocess
-
+import platform
 
 def main(name : str):
 
@@ -27,7 +27,14 @@ def main(name : str):
     now = datetime.now().strftime("%m-%d_%Hh%M")
 
     archive_name = f"debug_result_{name}_{now}.tar.gz"
-    process = subprocess.run(["tar", "czfv", archive_name, *get_filenames(), "--remove-files"],capture_output = True) 
+    print(platform.system())
+    tar_command = "tar" if platform.system() == "Linux" else "gtar"
+
+    if tar_command != "tar":
+        print("This program use GNU tar. If you are on Mac, you can install it using 'brew install gnu-tar'.")
+        input("Press Enter to continue if you have installed it...")
+
+    process = subprocess.run([tar_command, "czfv", archive_name, *get_filenames(), "--remove-files"],capture_output = True) 
 
     if process.returncode == 0:
         print(f"Success! Created archive '{archive_name}'")

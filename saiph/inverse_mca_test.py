@@ -1,3 +1,5 @@
+import re
+from typing import List, Tuple
 from saiph.inverse_transform import inverse_transform
 from saiph.projection import fit
 from pathlib import Path
@@ -10,37 +12,110 @@ from saiph.test_utils import get_filenames, to_csv, set_active_user
 import subprocess
 import platform
 
-def main(name : str):
+import tempfile 
+
+from thefuzz import process
+
+app = typer.Typer()
+
+@app.command("generate")
+def generate_debug_files(name : str, compress : bool = True):
 
     set_active_user(name)
     df = _wbcd_csv.drop(columns=["Sample_code_number"]).astype("category").copy()
     coordinates = _wbcd_supplemental_coordinates_csv_mca.copy()
-    
     model = fit(df, nf="all")
-
     reversed_individuals = inverse_transform(coordinates, model)
-    
     reversed_individuals = reversed_individuals.astype("int")
-
+    
     to_csv(reversed_individuals, "reversed_individuals")
 
+    if compress:
+        return generate_archive(name)
+    
+    return 0
+
+
+def generate_archive(name : str):
+    """Generate an archive of the files and delete them after. """
     now = datetime.now().strftime("%m-%d_%Hh%M")
 
     archive_name = f"debug_result_{name}_{now}.tar.gz"
-    print(platform.system())
     tar_command = "tar" if platform.system() == "Linux" else "gtar"
 
     if tar_command != "tar":
-        print("This program use GNU tar. If you are on Mac, you can install it using 'brew install gnu-tar'.")
+        print("This program uses GNU tar. If you are on Mac, you can install it using 'brew install gnu-tar'.")
         input("Press Enter to continue if you have installed it...")
 
-    process = subprocess.run([tar_command, "czfv", archive_name, *get_filenames(), "--remove-files"],capture_output = True) 
+    process = subprocess.run([tar_command, "czf", archive_name, *get_filenames(), "--remove-files"]) 
 
     if process.returncode == 0:
         print(f"Success! Created archive '{archive_name}'")
         return 0
     print("FAILED!")
-    return 1
-if __name__ == "__main__":
-    typer.run(main)
 
+    return 1
+
+def extract_archive(archive : Path, to : Path, tar_command : str):
+    process = subprocess.run([tar_command, "xzf", archive, f"--directory={to}"]) 
+    if process.returncode != 0:
+        raise Exception("There was an ERROR. Exiting ...")
+    
+    print(f"Extracted archive '{archive.name}' to {to}")
+
+def remove_date(filename : str) -> str:
+    s = re.sub("\d", repl="", string=filename)
+    s = re.sub("-_:", repl="", string=s)
+    return s
+
+@app.command("compare")
+def compare(path_to_archive_1 : Path, path_to_archive_2 : Path):
+
+    print("This program uses 'meld' to compare files. Make sure you have it installed.\n")
+    input("Press Enter to continue if you have installed it...")
+
+    tar_command = "tar" if platform.system() == "Linux" else "gtar"
+
+    if tar_command != "tar":
+        print("This program uses GNU tar. If you are on Mac, you can install it using 'brew install gnu-tar'.")
+        input("Press Enter to continue if you have installed it...")
+
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        print('created temporary directory', tmpdirname)
+        output_dir_1 = Path(tmpdirname) / "one"
+        output_dir_2 = Path(tmpdirname) / "two"
+        output_dir_1.mkdir(exist_ok=True, parents=True)
+        output_dir_2.mkdir(exist_ok=True, parents=True)
+
+        extract_archive(path_to_archive_1, to=output_dir_1, tar_command=tar_command)
+        extract_archive(path_to_archive_2, to=output_dir_2, tar_command=tar_command)
+
+        matches = get_matching_file_pairs(output_dir_1, output_dir_2)
+        print(matches)
+
+
+        for path_1, path_2 in matches:
+            subprocess.run(["meld", str(path_1), str(path_2)])
+def get_matching_file_pairs(output_dir_1, output_dir_2):
+    """Iterate over files in dir_1 and find best matching file in dir_2"""
+
+    def pop_best_match(remaining_paths : List[Tuple[Path, str]], best_match : str) -> Tuple[Path, str]:
+        for idx, item in enumerate(remaining_paths):
+            if item[1] == best_match:
+                return remaining_paths.pop(idx)
+
+
+    remaining_paths : List[Tuple[Path, str]] = list(map(lambda p : (p, remove_date(str(p.name))), output_dir_2.iterdir()))
+    matches : List[Tuple[Path, Path]]= []
+    for path_1 in output_dir_1.iterdir():
+        filename_1 = str(path_1.name)
+        best_match, _ = process.extractOne(filename_1, map(lambda t: t[1], remaining_paths)) # compare strings
+        best_match_path = pop_best_match(remaining_paths, best_match)[0]
+        matches.append((path_1.absolute(), best_match_path.absolute()))
+    return matches
+
+
+
+if __name__ == "__main__":
+    app()

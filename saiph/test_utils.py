@@ -16,13 +16,21 @@ def get_filenames():
 def to_csv(data : Union[pd.DataFrame, NDArray[Any]], name : str):
     global FILENAMES
 
-    if isinstance(data, pd.DataFrame):
-        df = data.copy()
-    elif isinstance(data, np.ndarray):
-        df = pd.DataFrame(data)
-    else:
-        raise NotImplementedError(f"Saving {type(data)} to csv not implemented.")
     now = datetime.now().strftime("%m-%d_%H:%M")
     filename = f"{name}_{now}_{USER}"
+
+    if isinstance(data, pd.DataFrame):
+
+        with open(filename, "a+") as f:
+            f.write(f"{data.shape} items \n")
+            for col in data.columns:
+                f.write("Column name : " + str(col) + "\n")
+                f.write(data[col].to_string(max_rows=None))
+    elif isinstance(data, np.ndarray):
+        with open(filename, "w") as f:
+            arr = np.array2string(data, separator='\n', suppress_small=True, threshold=10000000000)
+            f.write(arr)
+    else:
+        raise NotImplementedError(f"Saving {type(data)} to file not implemented.")
+
     FILENAMES.append(filename)
-    df.to_csv(filename)

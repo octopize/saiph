@@ -9,8 +9,8 @@ from saiph.reduction import DUMMIES_PREFIX_SEP
 
 _iris_csv = pd.read_csv("tests/fixtures/iris.csv")
 _wbcd_csv = pd.read_csv("tests/fixtures/breast_cancer_wisconsin.csv")
-_wbcd_supplemental_coordinates_csv_mca = pd.read_csv(
-    "tests/fixtures/wbcd_supplemental_coordinates_mca.csv"
+_wbcd_supplemental_coordinates_csv_mca_macos = pd.read_csv(
+    "tests/fixtures/wbcd_supplemental_coordinates_mca_macos.csv"
 )
 _wbcd_supplemental_coordinates_csv_pca = pd.read_csv(
     "tests/fixtures/wbcd_supplemental_coordinates_pca.csv"
@@ -18,7 +18,9 @@ _wbcd_supplemental_coordinates_csv_pca = pd.read_csv(
 _wbcd_supplemental_coordinates_csv_famd = pd.read_csv(
     "tests/fixtures/wbcd_supplemental_coordinates_famd.csv"
 )
-
+_wbcd_supplemental_coordinates_csv_mca_linux = pd.read_csv(
+    "tests/fixtures/wbcd_supplemental_coordinates_mca_linux.csv"
+)
 
 @pytest.fixture
 def iris_df() -> pd.DataFrame:
@@ -105,10 +107,14 @@ def wbcd_mixed_df() -> pd.DataFrame:
 
 
 @pytest.fixture
-def wbcd_supplemental_coord_quali() -> pd.DataFrame:
+def wbcd_supplemental_coord_quali_macos_generated() -> pd.DataFrame:
     """Supplemental coordinates of the WBCD dataset, generated using MCA model."""
-    return _wbcd_supplemental_coordinates_csv_mca.copy()
+    return _wbcd_supplemental_coordinates_csv_mca_macos.copy()
 
+@pytest.fixture
+def wbcd_supplemental_coord_quali_linux_generated() -> pd.DataFrame:
+    """Supplemental coordinates of the WBCD dataset, generated using MCA model."""
+    return _wbcd_supplemental_coordinates_csv_mca_linux.copy()
 
 @pytest.fixture
 def wbcd_supplemental_coord_quanti() -> pd.DataFrame:

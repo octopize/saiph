@@ -8,7 +8,7 @@ import pandas as pd
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.common import get_dummies_mapping
-from saiph.test_utils import to_csv
+from saiph.test_utils import to_file
 
 
 def inverse_transform(
@@ -47,6 +47,8 @@ def inverse_transform(
         )
     # Get back scaled_values from coord with inverse matrix operation
     # If n_records < n_dimensions, There will be an approximation of the inverse of V.T
+    to_file(np.linalg.pinv(model.V.T), "np.linalg.pinv(model.V.T)")
+
     scaled_values = pd.DataFrame(coord @ np.linalg.pinv(model.V.T))
     # get number of continuous variables
     nb_quanti = len(model.original_continuous)
@@ -58,9 +60,9 @@ def inverse_transform(
     scaled_values_quali = scaled_values.iloc[:, nb_quanti:]
     scaled_values_quali.columns = model.dummy_categorical
 
-    to_csv(scaled_values, "scaled_values")
-    to_csv(scaled_values_quanti, "scaled_values_quanti")
-    to_csv(scaled_values_quali, "scaled_values_quali")
+    to_file(scaled_values, "scaled_values")
+    to_file(scaled_values_quanti, "scaled_values_quanti")
+    to_file(scaled_values_quali, "scaled_values_quali")
 
     # Descale regarding projection type
     # FAMD
@@ -92,11 +94,12 @@ def inverse_transform(
         # As we are not scaling MCA such as FAMD categorical, the descale is
         # not the same. Doing the same as FAMD is incoherent.
         inverse_data = coord @ (model.D_c @ model.V.T).T
-        to_csv(inverse_data, "inverse_data")
+        to_file(model.D_c, "model.D_c")
+        to_file(inverse_data, "inverse_data")
         inverse_coord_quali = inverse_data.set_axis(
             model.dummy_categorical, axis="columns"
         )
-        to_csv(inverse_coord_quali, "inverse_coord_quali")
+        to_file(inverse_coord_quali, "inverse_coord_quali")
 
         descaled_values_quali = inverse_coord_quali.divide(model.dummies_col_prop)
         inverse = undummify(
@@ -106,7 +109,7 @@ def inverse_transform(
             seed=seed,
         )
 
-        to_csv(inverse, "inverse_after_get_dummies")
+        to_file(inverse, "inverse_after_get_dummies")
 
     # Cast columns to same type as input
     for name, dtype in model.original_dtypes.iteritems():
@@ -119,10 +122,9 @@ def inverse_transform(
                 inverse[name] = inverse[name].astype(model.modalities_types[name])
 
         inverse[name] = inverse[name].astype(dtype)
-    to_csv(inverse, "inverse_after_dtype_casting")
+    to_file(inverse, "inverse_after_dtype_casting")
 
     # reorder columns
-    to_csv(inverse, "inverse")
 
     return inverse[model.original_dtypes.index]
 

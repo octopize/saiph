@@ -8,6 +8,7 @@ import pandas as pd
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.common import get_dummies_mapping
+from saiph.test_utils import to_csv
 
 
 def inverse_transform(
@@ -57,6 +58,10 @@ def inverse_transform(
     scaled_values_quali = scaled_values.iloc[:, nb_quanti:]
     scaled_values_quali.columns = model.dummy_categorical
 
+    to_csv(scaled_values, "scaled_values")
+    to_csv(scaled_values_quanti, "scaled_values_quanti")
+    to_csv(scaled_values_quali, "scaled_values_quali")
+
     # Descale regarding projection type
     # FAMD
     if model.type == "famd":
@@ -75,6 +80,7 @@ def inverse_transform(
     # PCA
     elif model.type == "pca":
         descaled_values_quanti = (scaled_values_quanti * model.std) + model.mean
+
         inverse = descaled_values_quanti.round(12)
         del scaled_values_quali
         del scaled_values_quanti
@@ -86,9 +92,11 @@ def inverse_transform(
         # As we are not scaling MCA such as FAMD categorical, the descale is
         # not the same. Doing the same as FAMD is incoherent.
         inverse_data = coord @ (model.D_c @ model.V.T).T
+        to_csv(inverse_data, "inverse_data")
         inverse_coord_quali = inverse_data.set_axis(
             model.dummy_categorical, axis="columns"
         )
+        to_csv(inverse_coord_quali, "inverse_coord_quali")
 
         descaled_values_quali = inverse_coord_quali.divide(model.dummies_col_prop)
         inverse = undummify(
@@ -97,6 +105,9 @@ def inverse_transform(
             use_max_modalities=use_max_modalities,
             seed=seed,
         )
+
+        to_csv(inverse, "inverse_after_get_dummies")
+
     # Cast columns to same type as input
     for name, dtype in model.original_dtypes.iteritems():
         # Can create a bug if a column is object but contains int and float values,
@@ -108,8 +119,11 @@ def inverse_transform(
                 inverse[name] = inverse[name].astype(model.modalities_types[name])
 
         inverse[name] = inverse[name].astype(dtype)
+    to_csv(inverse, "inverse_after_dtype_casting")
 
     # reorder columns
+    to_csv(inverse, "inverse")
+
     return inverse[model.original_dtypes.index]
 
 

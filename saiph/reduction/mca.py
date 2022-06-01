@@ -22,6 +22,7 @@ from saiph.reduction.utils.common import (
     row_multiplication,
 )
 from saiph.reduction.utils.svd import SVD
+from saiph.test_utils import to_csv
 
 
 def fit(
@@ -66,7 +67,10 @@ def fit(
     )
 
     df_scale, _modalities, r, c = center(df)
+    to_csv(df_scale, "df_scale_after_center")
     df_scale, T, D_c = _diag_compute(df_scale, r, c)
+    to_csv(df_scale, "df_scale_diag_compute")
+    to_csv(T, "T")
 
     # get the array gathering proportion of each modality among individual (N/n)
     df_dummies = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
@@ -74,7 +78,12 @@ def fit(
 
     # apply the weights and compute the svd
     Z = ((T * col_weights_dummies).T * row_weights).T
+    to_csv(Z, "Z")
+
     U, s, V = SVD(Z)
+    to_csv(U, "U")
+    to_csv(s, "s")
+    to_csv(V, "V")
 
     explained_var, explained_var_ratio = get_explained_variance(
         s, df_dummies.shape[0], nf

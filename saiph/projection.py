@@ -49,7 +49,7 @@ def fit(
         _fit = famd_sparse.fit
     else:
         _fit = famd.fit
-
+    
     model = _fit(df, _nf, col_weights)
 
     if quanti.size == 0:

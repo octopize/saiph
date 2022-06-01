@@ -1,3 +1,4 @@
+from math import ceil, sqrt
 import re
 from typing import List, Tuple
 from saiph.inverse_transform import inverse_transform
@@ -8,9 +9,10 @@ from pandas.testing import assert_series_equal
 import typer
 from datetime import datetime
 from saiph.conftest import _wbcd_csv, _wbcd_supplemental_coordinates_csv_mca
-from saiph.test_utils import get_filenames, to_csv, set_active_user
+from saiph.test_utils import get_filenames, set_debug_mode, to_csv, set_active_user
 import subprocess
 import platform
+from matplotlib import pyplot as plt
 
 import tempfile 
 
@@ -22,18 +24,42 @@ app = typer.Typer()
 def generate_debug_files(name : str, compress : bool = True):
 
     set_active_user(name)
+    set_debug_mode(True)
+
     df = _wbcd_csv.drop(columns=["Sample_code_number"]).astype("category").copy()
     coordinates = _wbcd_supplemental_coordinates_csv_mca.copy()
     model = fit(df, nf="all")
     reversed_individuals = inverse_transform(coordinates, model)
     reversed_individuals = reversed_individuals.astype("int")
-    
+
     to_csv(reversed_individuals, "reversed_individuals")
 
     if compress:
         return generate_archive(name)
     
     return 0
+
+@app.command("explore")
+def build_histogram():
+    set_debug_mode(False)
+
+    df = _wbcd_csv.drop(columns=["Sample_code_number"]).astype("category").copy()
+    coordinates = _wbcd_supplemental_coordinates_csv_mca.copy()
+    model = fit(df, nf="all")
+    reversed_df = inverse_transform(coordinates, model)
+
+    reversed_df = reversed_df.astype("int")
+    df = df.astype("int")
+
+    grid_size = ceil(sqrt(len(df.columns)))
+    fig, axs = plt.subplots(grid_size, grid_size, figsize=(20, 20))
+
+    for ax, col in zip(axs.flat, df.columns):
+        print(ax)
+        df.hist(col, ax=ax , alpha=0.5)
+        reversed_df.hist(col, ax=ax,alpha=0.5)
+
+    plt.show()
 
 
 def generate_archive(name : str):

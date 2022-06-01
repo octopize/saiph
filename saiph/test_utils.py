@@ -6,6 +6,12 @@ from datetime import datetime
 
 USER = "UNCONFIGURED"
 FILENAMES = []
+DEBUG = False
+
+def set_debug_mode(debug : bool):
+    global DEBUG
+    DEBUG = debug
+
 def set_active_user(user : str):
     global USER
     USER = user
@@ -15,6 +21,9 @@ def get_filenames():
 
 def to_csv(data : Union[pd.DataFrame, NDArray[Any]], name : str):
     global FILENAMES
+
+    if not DEBUG:
+        return
 
     now = datetime.now().strftime("%m-%d_%H:%M")
     filename = f"{name}_{now}_{USER}"

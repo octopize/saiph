@@ -1,9 +1,9 @@
-from typing import Dict, List
+import platform
+from typing import Dict, List, NamedTuple, Optional
 
 import numpy as np
 import pandas as pd
 import pytest
-from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal, assert_series_equal
 
 from saiph.inverse_transform import (
@@ -12,6 +12,12 @@ from saiph.inverse_transform import (
     undummify,
 )
 from saiph.projection import fit, fit_transform
+
+
+class CompareDistributions(NamedTuple):
+    label: str
+    atol: float = 0.0
+    rtol: float = 0.0
 
 
 @pytest.mark.parametrize(
@@ -112,13 +118,42 @@ def test_inverse_transform_deterministic() -> None:
     assert_frame_equal(result, inverse_expected)
 
 
-@pytest.mark.skip(
-    reason="""Different results on different architectures.
-            See https://github.com/octopize/saiph/issues/72"""
+def compare_distributions(
+    df1: pd.DataFrame,
+    df2: pd.DataFrame,
+    to_compare: Optional[List[CompareDistributions]] = None,
+) -> None:
+
+    df1_statistics = df1.describe()
+    df2_statistics = df2.describe()
+
+    valid_values = df2_statistics.index.to_list()
+    if not to_compare:
+        to_compare = [
+            CompareDistributions(label=idx) for idx in valid_values
+        ]  # compare all]
+    else:
+        if unknown_items := list(
+            filter(lambda c: c.label not in valid_values, to_compare)
+        ):
+            unknown_labels = [item.label for item in unknown_items]
+            raise ValueError(f"Expected valid values to compare, got {unknown_labels}")
+
+    for label, atol, rtol in to_compare:
+        values_1 = df1_statistics.loc[label]
+        values_2 = df2_statistics.loc[label]
+        # Default value of check_exact is False,  but rtol and atol default here is 0.
+        assert_series_equal(values_1, values_2, atol=atol, rtol=rtol)
+
+
+@pytest.mark.xfail(
+    platform.system() != "Linux",
+    reason="Coordinates have to be inversed on the same architecture they were generated"
+    "See https://github.com/octopize/saiph/issues/72.",
 )
-def test_inverse_from_coord_mca(
+def test_inverse_from_coord_mca_linux(
     wbcd_quali_df: pd.DataFrame,
-    wbcd_supplemental_coord_quali: pd.DataFrame,
+    wbcd_supplemental_coord_quali_linux_generated: pd.DataFrame,
 ) -> None:
     """Check that inverse supplemental coordinates using MCA yield correct results.
 
@@ -128,28 +163,61 @@ def test_inverse_from_coord_mca(
     model = fit(wbcd_quali_df, nf="all")
 
     reversed_individuals = inverse_transform(
-        wbcd_supplemental_coord_quali, model, use_max_modalities=False
+        wbcd_supplemental_coord_quali_linux_generated, model, use_max_modalities=False
     )
 
     reversed_individuals = reversed_individuals.astype("int")
     wbcd_quali_df = wbcd_quali_df.astype("int")
 
-    reversed_statistics = reversed_individuals.describe()
-    wbcd_statistics = wbcd_quali_df.describe()
+    to_compare = [
+        CompareDistributions(label="count"),
+        CompareDistributions(label="mean", atol=0.25),
+        CompareDistributions(label="std", atol=0.35),
+        # assert equal for the min as there are many low values
+        CompareDistributions(label="min"),
+        CompareDistributions(label="max"),
+        CompareDistributions(label="25%", atol=1),
+        CompareDistributions(label="50%", atol=1),
+        CompareDistributions(label="75%", atol=2),
+    ]
+    compare_distributions(reversed_individuals, wbcd_quali_df, to_compare)
 
-    assert_series_equal(wbcd_statistics.loc["count"], reversed_statistics.loc["count"])
-    assert_allclose(
-        wbcd_statistics.loc["mean"], reversed_statistics.loc["mean"], atol=0.25
+
+@pytest.mark.xfail(
+    platform.system() != "Darwin",
+    reason="Coordinates have to be inversed on the same architecture they were generated"
+    "See https://github.com/octopize/saiph/issues/72.",
+)
+def test_inverse_from_coord_mca_macos(
+    wbcd_quali_df: pd.DataFrame,
+    wbcd_supplemental_coord_quali_macos_generated: pd.DataFrame,
+) -> None:
+    """Check that inverse supplemental coordinates using MCA yield correct results.
+
+    We use `use_max_modalities=False` to keep the data logical.
+    We compare indicators of the distributions for each column.
+    """
+    model = fit(wbcd_quali_df, nf="all")
+
+    reversed_individuals = inverse_transform(
+        wbcd_supplemental_coord_quali_macos_generated, model, use_max_modalities=False
     )
-    assert_allclose(
-        wbcd_statistics.loc["std"], reversed_statistics.loc["std"], atol=0.35
-    )
-    # assert equal for the min as there are many low values
-    assert_series_equal(wbcd_statistics.loc["min"], reversed_statistics.loc["min"])
-    assert_allclose(wbcd_statistics.loc["25%"], reversed_statistics.loc["25%"], atol=1)
-    assert_allclose(wbcd_statistics.loc["50%"], reversed_statistics.loc["50%"], atol=1)
-    assert_allclose(wbcd_statistics.loc["75%"], reversed_statistics.loc["75%"], atol=2)
-    assert_series_equal(wbcd_statistics.loc["max"], reversed_statistics.loc["max"])
+
+    reversed_individuals = reversed_individuals.astype("int")
+    wbcd_quali_df = wbcd_quali_df.astype("int")
+
+    to_compare = [
+        CompareDistributions(label="count"),
+        CompareDistributions(label="mean", atol=0.25),
+        CompareDistributions(label="std", atol=0.35),
+        # assert equal for the min as there are many low values
+        CompareDistributions(label="min"),
+        CompareDistributions(label="max"),
+        CompareDistributions(label="25%", atol=1),
+        CompareDistributions(label="50%", atol=1),
+        CompareDistributions(label="75%", atol=2),
+    ]
+    compare_distributions(reversed_individuals, wbcd_quali_df, to_compare)
 
 
 def test_inverse_from_coord_pca(
@@ -167,24 +235,18 @@ def test_inverse_from_coord_pca(
         wbcd_supplemental_coord_quanti, model, use_max_modalities=False
     )
 
-    reversed_statistics = reversed_individuals.describe()
-    wbcd_statistics = wbcd_quanti_df.describe()
-
-    assert_series_equal(wbcd_statistics.loc["count"], reversed_statistics.loc["count"])
-    assert_allclose(
-        wbcd_statistics.loc["mean"], reversed_statistics.loc["mean"], atol=0.4
-    )
-    assert_allclose(
-        wbcd_statistics.loc["std"], reversed_statistics.loc["std"], atol=0.7
-    )
-    # assert equal for the min as there are many low values
-    assert_series_equal(wbcd_statistics.loc["min"], reversed_statistics.loc["min"])
-    assert_allclose(wbcd_statistics.loc["25%"], reversed_statistics.loc["25%"], atol=1)
-    assert_allclose(wbcd_statistics.loc["50%"], reversed_statistics.loc["50%"], atol=1)
-    assert_allclose(wbcd_statistics.loc["75%"], reversed_statistics.loc["75%"], atol=1)
-    assert_series_equal(
-        wbcd_statistics.loc["max"], reversed_statistics.loc["max"], atol=1
-    )
+    to_compare = [
+        CompareDistributions(label="count"),
+        CompareDistributions(label="mean", atol=0.4),
+        CompareDistributions(label="std", atol=0.7),
+        # assert equal for the min as there are many low values
+        CompareDistributions(label="min"),
+        CompareDistributions(label="max", atol=1),
+        CompareDistributions(label="25%", atol=1),
+        CompareDistributions(label="50%", atol=1),
+        CompareDistributions(label="75%", atol=1),
+    ]
+    compare_distributions(reversed_individuals, wbcd_quanti_df, to_compare)
 
 
 def test_inverse_from_coord_famd(
@@ -201,21 +263,15 @@ def test_inverse_from_coord_famd(
         wbcd_supplemental_coord_mixed, model, use_max_modalities=False
     )
 
-    reversed_statistics = reversed_individuals.describe()
-    wbcd_statistics = wbcd_mixed_df.describe()
-
-    assert_series_equal(wbcd_statistics.loc["count"], reversed_statistics.loc["count"])
-    assert_allclose(
-        wbcd_statistics.loc["mean"], reversed_statistics.loc["mean"], atol=0.4
-    )
-    assert_allclose(
-        wbcd_statistics.loc["std"], reversed_statistics.loc["std"], atol=0.6
-    )
-    # assert equal for the min as there are many low values
-    assert_series_equal(wbcd_statistics.loc["min"], reversed_statistics.loc["min"])
-    assert_series_equal(wbcd_statistics.loc["25%"], reversed_statistics.loc["25%"])
-    assert_series_equal(wbcd_statistics.loc["50%"], reversed_statistics.loc["50%"])
-    assert_allclose(wbcd_statistics.loc["75%"], reversed_statistics.loc["75%"], atol=1)
-    assert_series_equal(
-        wbcd_statistics.loc["max"], reversed_statistics.loc["max"], atol=1
-    )
+    to_compare = [
+        CompareDistributions(label="count"),
+        CompareDistributions(label="mean", atol=0.4),
+        CompareDistributions(label="std", atol=0.6),
+        # assert equal for the min as there are many low values
+        CompareDistributions(label="min"),
+        CompareDistributions(label="max", atol=1),
+        CompareDistributions(label="25%"),
+        CompareDistributions(label="50%"),
+        CompareDistributions(label="75%", atol=1),
+    ]
+    compare_distributions(reversed_individuals, wbcd_mixed_df, to_compare)

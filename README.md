@@ -13,7 +13,13 @@ See the documentation for more details and a tutorial.
 ## Install
 
 ```bash
-poetry install --no-dev
+pip install saiph
+```
+
+## Development
+
+```bash
+poetry install
 ```
 
 If you want to install dev dependencies, make sure you have a rust compiler installed:
@@ -22,7 +28,6 @@ If you want to install dev dependencies, make sure you have a rust compiler inst
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 make install
 ```
-
 
 ## Documentation
 

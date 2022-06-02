@@ -142,6 +142,7 @@ def compare_distributions(
     for label, atol, rtol in to_compare:
         values_1 = df1_statistics.loc[label]
         values_2 = df2_statistics.loc[label]
+        print(f"Label: {label}, values : {values_1}")  # noqa: T001
         # Default value of check_exact is False,  but rtol and atol default here is 0.
         assert_series_equal(values_1, values_2, atol=atol, rtol=rtol)
 

@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import numpy as np
 import pandas as pd
@@ -88,7 +88,13 @@ def test_inverse_transform_with_ponderation() -> None:
         zip(["c", "b", "a"], ["ZZ", "ZZ", "WW"], [1, 2, 2], [4, 4, 4]),
         columns=["cat1", "cat2", "cont1", "cont2"],
     )
-    coord, model = fit_transform(df, col_weights=np.array([1, 2000, 1, 1]))
+    col_weights: Dict[str, Union[int, float]] = {
+        "cat1": 1,
+        "cat2": 2000,
+        "cont1": 1,
+        "cont2": 1,
+    }
+    coord, model = fit_transform(df, col_weights=col_weights)
     result = inverse_transform(
         coord, model, use_approximate_inverse=True, use_max_modalities=False, seed=46
     )
@@ -105,7 +111,13 @@ def test_inverse_transform_deterministic() -> None:
         zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 2], [4, 4, 4]),
         columns=["cat1", "cat2", "cont1", "cont2"],
     )
-    coord, model = fit_transform(df, col_weights=np.array([1, 2000, 1, 1]))
+    col_weights: Dict[str, Union[int, float]] = {
+        "cat1": 1,
+        "cat2": 2000,
+        "cont1": 1,
+        "cont2": 1,
+    }
+    coord, model = fit_transform(df, col_weights=col_weights)
     result = inverse_transform(
         coord, model, use_approximate_inverse=True, use_max_modalities=True, seed=46
     )

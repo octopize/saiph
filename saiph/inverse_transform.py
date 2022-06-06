@@ -42,11 +42,20 @@ def inverse_transform(
         raise ValueError(
             f"n_dimensions ({n_dimensions}) is greater than n_records ({n_records})."
             "A matrix approximation is needed but will introduce bias "
-            "You can reduce number of dimensions or set approximate=True."
+            "You can reduce number of dimensions or set use_approximate_inverse=True."
         )
     # Get back scaled_values from coord with inverse matrix operation
     # If n_records < n_dimensions, There will be an approximation of the inverse of V.T
-    scaled_values = pd.DataFrame(coord @ np.linalg.pinv(model.V.T))
+    try:
+        scaled_values = pd.DataFrame(coord @ np.linalg.inv(model.V.T))
+    except Exception as e:
+        # We have n_records >= n_dimensions, we can still use the standard inverse.
+        # We thus re-raise the error
+        if use_approximate_inverse and n_records >= n_dimensions:
+            raise e
+
+        scaled_values = pd.DataFrame(coord @ np.linalg.pinv(model.V.T))
+
     # get number of continuous variables
     nb_quanti = len(model.original_continuous)
 

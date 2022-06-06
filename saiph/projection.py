@@ -1,5 +1,5 @@
 """Project any dataframe and compute stats."""
-from typing import Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ from saiph.reduction.utils.common import get_projected_column_names
 def fit(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
-    col_weights: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[Dict[str, Union[int, float]]] = None,
     sparse: bool = False,
 ) -> Model:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
@@ -40,6 +40,13 @@ def fit(
     else:
         _nf = nf
 
+    # Convert col weights from dict to ndarray
+    _col_weights: NDArray[np.float_] = np.ones(df.shape[1])
+
+    if col_weights is not None:
+        for col in col_weights:
+            _col_weights[df.columns.get_loc(col)] = col_weights[col]
+
     # Specify the correct function
     if quali.size == 0:
         _fit = pca.fit
@@ -50,7 +57,7 @@ def fit(
     else:
         _fit = famd.fit
 
-    model = _fit(df, _nf, col_weights)
+    model = _fit(df, _nf, _col_weights)
 
     if quanti.size == 0:
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
@@ -62,7 +69,7 @@ def fit(
 def fit_transform(
     df: pd.DataFrame,
     nf: Optional[Union[int, str]] = None,
-    col_weights: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[Dict[str, Union[int, float]]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 

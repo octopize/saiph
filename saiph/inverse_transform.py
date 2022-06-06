@@ -48,7 +48,13 @@ def inverse_transform(
     # If n_records < n_dimensions, There will be an approximation of the inverse of V.T
     try:
         print("Using standard inverse")  # noqa: T001
-        scaled_values = pd.DataFrame(coord @ np.linalg.inv(model.V.T))
+        inverse = np.linalg.inv(model.V.T)
+
+        inverse_standard_saved = np.fromfile("inverse_standard").reshape(
+            model.V.T.shape
+        )
+        np.testing.assert_allclose(inverse, inverse_standard_saved)
+        scaled_values = pd.DataFrame(coord @ inverse)
     except Exception as e:
         # We have n_records >= n_dimensions, we can still use the standard inverse.
         # We thus re-raise the error
@@ -58,7 +64,14 @@ def inverse_transform(
             raise e
 
         print("Using approximate inverse")  # noqa: T001
-        scaled_values = pd.DataFrame(coord @ np.linalg.pinv(model.V.T))
+        approximate_inverse = np.linalg.pinv(model.V.T)
+        approximate_inverse.tofile("approximate_inverse_saved")
+        approximate_inverse_saved = np.fromfile("approximate_inverse_saved").reshape(
+            model.V.T.shape
+        )
+        np.testing.assert_allclose(approximate_inverse, approximate_inverse_saved)
+
+        scaled_values = pd.DataFrame(coord @ approximate_inverse)
 
     # get number of continuous variables
     nb_quanti = len(model.original_continuous)

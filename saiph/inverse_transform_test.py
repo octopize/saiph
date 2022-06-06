@@ -173,7 +173,7 @@ def test_inverse_from_coord_mca_linux(
     to_compare = [
         CompareDistributions(label="count"),
         CompareDistributions(label="mean", atol=0.25),
-        CompareDistributions(label="std", atol=0.35),
+        CompareDistributions(label="std", atol=0.5),
         # assert equal for the min as there are many low values
         CompareDistributions(label="min"),
         CompareDistributions(label="max"),
@@ -210,7 +210,7 @@ def test_inverse_from_coord_mca_macos(
     to_compare = [
         CompareDistributions(label="count"),
         CompareDistributions(label="mean", atol=0.25),
-        CompareDistributions(label="std", atol=0.35),
+        CompareDistributions(label="std", atol=0.5),
         # assert equal for the min as there are many low values
         CompareDistributions(label="min"),
         CompareDistributions(label="max"),

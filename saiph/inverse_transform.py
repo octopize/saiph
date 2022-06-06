@@ -47,13 +47,17 @@ def inverse_transform(
     # Get back scaled_values from coord with inverse matrix operation
     # If n_records < n_dimensions, There will be an approximation of the inverse of V.T
     try:
+        print("Using standard inverse")  # noqa: T001
         scaled_values = pd.DataFrame(coord @ np.linalg.inv(model.V.T))
     except Exception as e:
         # We have n_records >= n_dimensions, we can still use the standard inverse.
         # We thus re-raise the error
+
+        print(e)  # noqa: T001
         if use_approximate_inverse and n_records >= n_dimensions:
             raise e
 
+        print("Using approximate inverse")  # noqa: T001
         scaled_values = pd.DataFrame(coord @ np.linalg.pinv(model.V.T))
 
     # get number of continuous variables

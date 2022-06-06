@@ -46,6 +46,8 @@ typecheck:  ## Run typechecking
 .PHONY: typecheck
 
 test:  ## Run tests
+	poetry run python -c "import numpy as np; np.__config__.show()" 
+	poetry run python -c "import scipy as sp; sp.__config__.show()" 
 	poetry run pytest --benchmark-skip saiph -k test_inverse_from_coord_mca -s
 .PHONY: test
 

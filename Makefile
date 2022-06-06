@@ -46,7 +46,9 @@ typecheck:  ## Run typechecking
 .PHONY: typecheck
 
 test:  ## Run tests
-	poetry run pytest --benchmark-skip saiph
+	poetry run python -c "import numpy as np; np.__config__.show()" 
+	poetry run python -c "import scipy as sp; sp.__config__.show()" 
+	poetry run pytest --benchmark-skip saiph -k test_inverse_from_coord_mca -s
 .PHONY: test
 
 test-benchmark: ./tmp/fake_1k.csv ./tmp/fake_10k.csv ## Run benchmark with smaller files, often.

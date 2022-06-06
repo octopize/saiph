@@ -74,7 +74,17 @@ def fit(
 
     # apply the weights and compute the svd
     Z = ((T * col_weights_dummies).T * row_weights).T
+    Z_saved = pd.read_csv("Z.csv")
+    np.testing.assert_allclose(Z.values, Z_saved.values)
+
     U, s, V = SVD(Z)
+
+    U_saved = np.fromfile("U").reshape(U.shape)
+    s_saved = np.fromfile("s").reshape(s.shape)
+    V_saved = np.fromfile("V").reshape(V.shape)
+    np.testing.assert_allclose(U, U_saved)
+    np.testing.assert_allclose(s, s_saved)
+    np.testing.assert_allclose(V, V_saved)
 
     explained_var, explained_var_ratio = get_explained_variance(
         s, df_dummies.shape[0], nf

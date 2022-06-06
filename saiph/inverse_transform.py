@@ -42,11 +42,37 @@ def inverse_transform(
         raise ValueError(
             f"n_dimensions ({n_dimensions}) is greater than n_records ({n_records})."
             "A matrix approximation is needed but will introduce bias "
-            "You can reduce number of dimensions or set approximate=True."
+            "You can reduce number of dimensions or set use_approximate_inverse=True."
         )
     # Get back scaled_values from coord with inverse matrix operation
     # If n_records < n_dimensions, There will be an approximation of the inverse of V.T
-    scaled_values = pd.DataFrame(coord @ np.linalg.pinv(model.V.T))
+    try:
+        print("Using standard inverse")  # noqa: T001
+        inverse = np.linalg.inv(model.V.T)
+
+        inverse_standard_saved = np.fromfile("inverse_standard").reshape(
+            model.V.T.shape
+        )
+        np.testing.assert_allclose(inverse, inverse_standard_saved)
+        scaled_values = pd.DataFrame(coord @ inverse)
+    except Exception as e:
+        # We have n_records >= n_dimensions, we can still use the standard inverse.
+        # We thus re-raise the error
+
+        print(e)  # noqa: T001
+        if use_approximate_inverse and n_records >= n_dimensions:
+            raise e
+
+        print("Using approximate inverse")  # noqa: T001
+        approximate_inverse = np.linalg.pinv(model.V.T)
+        approximate_inverse.tofile("approximate_inverse_saved")
+        approximate_inverse_saved = np.fromfile("approximate_inverse_saved").reshape(
+            model.V.T.shape
+        )
+        np.testing.assert_allclose(approximate_inverse, approximate_inverse_saved)
+
+        scaled_values = pd.DataFrame(coord @ approximate_inverse)
+
     # get number of continuous variables
     nb_quanti = len(model.original_continuous)
 

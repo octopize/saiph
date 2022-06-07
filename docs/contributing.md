@@ -11,10 +11,13 @@ VERSION="0.2.0"
 
 # 1. Edit version in `pyproject.toml` and `saiph/__init__.py`
 
-# 2. Commit
+# 2. Add to next commit
+git add pyproject.toml saiph/__init__.py
+
+# 3. Commit
 git commit -am "chore: release version $VERSION"
 
-# 3. Tag
+# 4. Tag
 git tag $VERSION
 
 # 4. Push

@@ -21,8 +21,8 @@ import saiph  # noqa: E402
 # -- Project information -----------------------------------------------------
 
 project = "Saiph"
-copyright = "2021, Octopize"
-author = "Zineb Bennis, Morgan Guillaudeux, Gaêl Russeil, Julien Petot"
+copyright = "2022, Octopize"
+author = "Octopize"
 
 # The full version, including alpha/beta/rc tags
 release = saiph.__version__

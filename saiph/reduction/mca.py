@@ -43,9 +43,6 @@ def fit(
 
     _col_weights = col_weights if col_weights is not None else np.ones(df.shape[1])
 
-    if not isinstance(df, pd.DataFrame):
-        df = pd.DataFrame(df)
-
     modalities_types = get_modalities_types(df)
 
     # initiate row and columns weights

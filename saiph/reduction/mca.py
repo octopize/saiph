@@ -273,7 +273,7 @@ def _compute_svd(
 
     U, V = V, U
     eigenvalues = np.power(s, 2)
-
+    eigenvalues = np.where(eigenvalues == 0, 1e-40, eigenvalues)
     sign = np.sign(np.sum(U))
     signed_V = column_multiplication(pd.DataFrame(V), sign)
 

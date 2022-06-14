@@ -40,8 +40,6 @@ def inverse_transform(
     n_records = len(coord)
 
     if not use_approximate_inverse and n_records < n_dimensions:
-        # Removed implementation details from the error as it will be propagated to the
-        # outside.
         raise InvalidParameterException(
             f"n_dimensions ({n_dimensions}) is greater than n_records ({n_records})."
         )

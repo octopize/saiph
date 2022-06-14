@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 
 import numpy as np
 import pandas as pd
@@ -9,26 +9,21 @@ from pandas.testing import assert_frame_equal
 
 import saiph
 from saiph import projection
+from saiph.exception import InvalidParameterException
 from saiph.inverse_transform import inverse_transform
-from saiph.projection import (
-    fit,
-    fit_transform,
-    get_variable_contributions,
-    stats,
-    transform,
-)
+from saiph.projection import fit, fit_transform, get_variable_contributions, stats
 from saiph.reduction.utils.common import get_projected_column_names
 
 
 def test_transform_then_inverse_FAMD(iris_df: pd.DataFrame) -> None:
-    transformed, model = fit_transform(iris_df, nf="all")
+    transformed, model = fit_transform(iris_df, nf=None)
     un_transformed = inverse_transform(transformed, model)
 
     assert_frame_equal(un_transformed, iris_df)
 
 
 def test_transform_then_inverse_PCA(iris_quanti_df: pd.DataFrame) -> None:
-    transformed, model = fit_transform(iris_quanti_df, nf="all")
+    transformed, model = fit_transform(iris_quanti_df, nf=None)
     un_transformed = inverse_transform(transformed, model)
     assert_frame_equal(un_transformed, iris_quanti_df)
 
@@ -103,19 +98,6 @@ def test_transform_then_inverse_MCA_weighted() -> None:
     un_transformed = inverse_transform(transformed, model)
 
     assert_frame_equal(un_transformed, df)
-
-
-def test_coords_vs_transform_with_multiple_nf(iris_df: pd.DataFrame) -> None:
-    with pytest.raises(ValueError):
-        fit_transform(iris_df, nf=10000)
-
-    with pytest.raises(ValueError):
-        fit_transform(iris_df, nf=-1)
-
-    for n in range(7):
-        coord, model = fit_transform(iris_df, nf=n)
-        transformed = transform(iris_df, model)
-        assert_frame_equal(coord, transformed)
 
 
 df_pca = pd.DataFrame(
@@ -380,3 +362,46 @@ def test_stats_calls_correct_subfunction(
     projection.stats(model, quali_df)
 
     # FIXME: Can't test PCA as it has no subfunction associated to it
+
+
+nf_invalid_parameter = pytest.mark.xfail(raises=InvalidParameterException, strict=True)
+
+
+@pytest.mark.parametrize(
+    "nf",
+    [
+        # Invalid boundary
+        pytest.param(0, marks=nf_invalid_parameter),
+        pytest.param(5, marks=nf_invalid_parameter),
+        # Valid boundary
+        pytest.param(4),
+        pytest.param(1),
+        pytest.param(None),
+    ],
+)
+def test_fit_checks_nf_parameter(quali_df: pd.DataFrame, nf: int) -> None:
+    """Verify that fit checks nf parameter and fails when it needs to."""
+    fit(quali_df, nf=nf)
+
+
+col_weights_invalid_parameter = pytest.mark.xfail(
+    raises=InvalidParameterException, strict=True
+)
+
+
+@pytest.mark.parametrize(
+    "col_weights",
+    [
+        # Invalid
+        pytest.param({"col": 2}, marks=col_weights_invalid_parameter),
+        # Valid
+        pytest.param({"tool": 2, "fruit": 3}),
+        pytest.param({"fruit": 3}),
+        pytest.param(None),
+    ],
+)
+def test_fit_checks_col_weights_parameter(
+    quali_df: pd.DataFrame, col_weights: Any
+) -> None:
+    """Verify that fit checks col_weights parameter and fails when it needs to."""
+    fit(quali_df, col_weights=col_weights)

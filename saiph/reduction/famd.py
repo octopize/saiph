@@ -10,7 +10,6 @@ from numpy.typing import NDArray
 
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
-from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
     column_multiplication,
     get_dummies_mapping,
@@ -104,7 +103,6 @@ def fit(
 
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
-    fit_check_params(nf, _col_weights, df)
 
     # select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()

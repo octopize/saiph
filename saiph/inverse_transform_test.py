@@ -6,6 +6,7 @@ import pytest
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal, assert_series_equal
 
+from saiph.exception import InvalidParameterException
 from saiph.inverse_transform import (
     get_random_weighted_columns,
     inverse_transform,
@@ -70,7 +71,7 @@ def test_inverse_transform_raises_value_error_when_wider_than_df() -> None:
         }
     )
     coord, model = fit_transform(wider_df)
-    with pytest.raises(ValueError, match=r"n_dimensions"):
+    with pytest.raises(InvalidParameterException, match=r"n_dimensions"):
         inverse_transform(coord, model)
 
 
@@ -137,7 +138,7 @@ def test_inverse_from_coord_mca(
     We use `use_max_modalities=False` to keep the data logical.
     We compare indicators of the distributions for each column.
     """
-    model = fit(wbcd_quali_df, nf="all")
+    model = fit(wbcd_quali_df, nf=None)
 
     reversed_individuals = inverse_transform(
         wbcd_supplemental_coord_quali, model, use_max_modalities=False
@@ -173,7 +174,7 @@ def test_inverse_from_coord_pca(
     We use `use_max_modalities=False` to keep the data logical.
     We compare indicators of the distributions for each column.
     """
-    model = fit(wbcd_quanti_df, nf="all")
+    model = fit(wbcd_quanti_df, nf=None)
 
     reversed_individuals = inverse_transform(
         wbcd_supplemental_coord_quanti, model, use_max_modalities=False
@@ -208,7 +209,7 @@ def test_inverse_from_coord_famd(
     We use `use_max_modalities=False` to keep the data logical.
     We compare indicators of the distributions for each column.
     """
-    model = fit(wbcd_mixed_df, nf="all")
+    model = fit(wbcd_mixed_df, nf=None)
     reversed_individuals = inverse_transform(
         wbcd_supplemental_coord_mixed, model, use_max_modalities=False
     )

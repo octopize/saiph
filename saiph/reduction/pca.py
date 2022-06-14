@@ -7,7 +7,6 @@ import pandas as pd
 from numpy.typing import NDArray
 
 from saiph.models import Model
-from saiph.reduction.utils.check_params import fit_check_params
 from saiph.reduction.utils.common import (
     get_explained_variance,
     get_projected_column_names,
@@ -33,15 +32,10 @@ def fit(
         model: The model for transforming new data.
     """
     nf = nf or min(df.shape)
-    if col_weights is not None:
-        _col_weights = col_weights
-    else:
-        _col_weights = np.ones(df.shape[1])
+    _col_weights = col_weights if col_weights is not None else np.ones(df.shape[1])
 
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
-
-    fit_check_params(nf, _col_weights, df)
 
     # set row weights
     row_w = get_uniform_row_weights(len(df))

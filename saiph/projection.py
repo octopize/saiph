@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
+from saiph.exception import InvalidParameterException
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP, famd, famd_sparse, mca, pca
 from saiph.reduction.utils.common import get_projected_column_names
@@ -12,7 +13,7 @@ from saiph.reduction.utils.common import get_projected_column_names
 
 def fit(
     df: pd.DataFrame,
-    nf: Optional[Union[int, str]] = None,
+    nf: Optional[int] = None,
     col_weights: Optional[Dict[str, Union[int, float]]] = None,
     sparse: bool = False,
 ) -> Model:
@@ -22,7 +23,7 @@ def fit(
 
     Parameters:
         df: Data to project.
-        nf: Number of components to keep. default: 'all'
+        nf: Number of components to keep. default: None, which uses all columns.
         col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes).
             default: np.ones(df.shape[1])
@@ -30,15 +31,26 @@ def fit(
     Returns:
         model: The model for transforming new data.
     """
-    # Check column types
-    quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
-    quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
+    if isinstance(nf, str):
+        raise ValueError("nf=all is deprecated. Use None instead.")
 
-    _nf: int
-    if not nf or isinstance(nf, str):
-        _nf = min(pd.get_dummies(df, prefix_sep=DUMMIES_PREFIX_SEP).shape)
-    else:
-        _nf = nf
+    if nf is not None and (nf <= 0 or nf > min(pd.get_dummies(df).shape)):
+        raise InvalidParameterException(
+            "Expected number of components to be in "
+            f"0 < 'nf' <= {min(pd.get_dummies(df).shape)}, got {nf} instead."
+        )
+
+    if col_weights is not None:
+        unknown_variables = list(
+            filter(lambda c: c not in df.columns, col_weights.keys())
+        )
+        if unknown_variables:
+            raise InvalidParameterException(
+                "Expected valid variable name(s) in 'col_weights', "
+                f"got {unknown_variables} instead."
+            )
+
+    _nf = nf if nf else min(pd.get_dummies(df, prefix_sep=DUMMIES_PREFIX_SEP).shape)
 
     # Convert col weights from dict to ndarray
     _col_weights: NDArray[np.float_] = np.ones(df.shape[1])
@@ -46,6 +58,10 @@ def fit(
     if col_weights is not None:
         for col in col_weights:
             _col_weights[df.columns.get_loc(col)] = col_weights[col]
+
+    # Check column types
+    quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
+    quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
 
     # Specify the correct function
     if quali.size == 0:
@@ -68,7 +84,7 @@ def fit(
 
 def fit_transform(
     df: pd.DataFrame,
-    nf: Optional[Union[int, str]] = None,
+    nf: Optional[int] = None,
     col_weights: Optional[Dict[str, Union[int, float]]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
@@ -85,7 +101,7 @@ def fit_transform(
     Returns:
         model: The model for transforming new data.
     """
-    model = fit(df, nf, col_weights)
+    model = fit(df, nf=nf, col_weights=col_weights)
     coord = transform(df, model)
     return coord, model
 

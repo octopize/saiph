@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
+from saiph.exception import InvalidParameterException
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.common import get_dummies_mapping
@@ -39,10 +40,10 @@ def inverse_transform(
     n_records = len(coord)
 
     if not use_approximate_inverse and n_records < n_dimensions:
-        raise ValueError(
+        # Removed implementation details from the error as it will be propagated to the
+        # outside.
+        raise InvalidParameterException(
             f"n_dimensions ({n_dimensions}) is greater than n_records ({n_records})."
-            "A matrix approximation is needed but will introduce bias "
-            "You can reduce number of dimensions or set approximate=True."
         )
     # Get back scaled_values from coord with inverse matrix operation
     # If n_records < n_dimensions, There will be an approximation of the inverse of V.T

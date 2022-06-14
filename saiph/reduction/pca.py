@@ -34,9 +34,6 @@ def fit(
     nf = nf or min(df.shape)
     _col_weights = col_weights if col_weights is not None else np.ones(df.shape[1])
 
-    if not isinstance(df, pd.DataFrame):
-        df = pd.DataFrame(df)
-
     # set row weights
     row_w = get_uniform_row_weights(len(df))
 

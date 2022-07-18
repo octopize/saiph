@@ -11,6 +11,7 @@ Welcome to Saiph's documentation!
    tutorial
    reference
    contributing
+   example/auto_examples/plot_example
 
 
 Indices and tables

@@ -16,7 +16,7 @@ from typing import List
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-import saiph  # noqa: E402
+# import saiph  # noqa: E402
 
 # -- Project information -----------------------------------------------------
 
@@ -25,7 +25,7 @@ copyright = "2022, Octopize"
 author = "Octopize"
 
 # The full version, including alpha/beta/rc tags
-release = saiph.__version__
+release = "1.4.0"
 
 
 # -- General configuration ---------------------------------------------------

@@ -8,7 +8,7 @@ Welcome to Saiph's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   tutorial
+   build/examples/plot_example
    reference
    contributing
 

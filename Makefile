@@ -42,7 +42,7 @@ lint-fix:  ## Run autoformatters
 .PHONY: lint-fix
 
 typecheck:  ## Run typechecking
-	poetry run mypy --show-error-codes --pretty .
+	poetry run mypy --show-error-codes --pretty saiph
 .PHONY: typecheck
 
 test:  ## Run tests

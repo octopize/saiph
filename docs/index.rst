@@ -8,10 +8,9 @@ Welcome to Saiph's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   tutorial
+   example/auto_examples/plot_example
    reference
    contributing
-   example/auto_examples/plot_example
 
 
 Indices and tables

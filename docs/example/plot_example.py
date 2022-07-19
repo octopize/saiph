@@ -24,7 +24,7 @@ print(coord.head())
 #
 saiph.visualization.plot_projections(model, df, (0, 1))
 # %%
-# Perform statistics on the projection
+# Get statistics about the projection
 # ------------------------
 #
 model = saiph.stats(model, df)

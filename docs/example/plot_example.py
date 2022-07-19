@@ -5,11 +5,10 @@ Tutorial
 This example show how saiph works.
 """
 
-import saiph
 import pandas as pd
 
-from saiph.visualization import plot_circle 
-
+import saiph
+from saiph.visualization import plot_circle
 
 # %%
 # Fit the model
@@ -45,7 +44,9 @@ print(model.contributions)
 #%%
 # ------------------------
 #
-saiph.visualization.plot_var_contribution(model.contributions["Dim. 1"], model.contributions.index )
+saiph.visualization.plot_var_contribution(
+    model.contributions["Dim. 1"].to_numpy(), model.contributions.index.to_numpy()
+)
 
 
 # %%
@@ -53,4 +54,3 @@ saiph.visualization.plot_var_contribution(model.contributions["Dim. 1"], model.c
 # ------------------------
 #
 saiph.visualization.plot_explained_var(model)
-

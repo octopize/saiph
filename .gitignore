@@ -70,10 +70,6 @@ instance/
 # Sphinx documentation
 docs/_build/
 
-# generated files by sphinx-gallery
-docs/example/auto_examples/
-
-
 # PyBuilder
 target/
 

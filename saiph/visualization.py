@@ -1,10 +1,9 @@
 """Visualization functions."""
 from typing import List, Optional, Tuple
 
-import matplotlib  # type: ignore
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt  # type: ignore
 from numpy.typing import NDArray
 
 from saiph import transform

@@ -33,7 +33,12 @@ release = saiph.__version__
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon", "myst_parser", 'sphinx_gallery.gen_gallery']
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "myst_parser",
+    "sphinx_gallery.gen_gallery",
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -63,6 +68,6 @@ source_suffix = {
 }
 
 sphinx_gallery_conf = {
-     'examples_dirs': 'example',   # path to your example scripts
-     'gallery_dirs': 'example/auto_examples',  # path to where to save gallery generated output
-} 
+    "examples_dirs": "example",  # path to your example scripts
+    "gallery_dirs": "build/examples",  # path to where to save gallery generated output
+}

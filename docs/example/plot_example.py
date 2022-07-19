@@ -40,6 +40,7 @@ plot_circle(model=model)
 # Variable contributions
 # ------------------------
 #
+
 print(model.contributions)
 #%%
 # ------------------------
@@ -51,6 +52,16 @@ saiph.visualization.plot_var_contribution(
 
 # %%
 # Explained variance
+# ------------------------
+#
+print(model.explained_var)
+
+#%%
+# ------------------------
+#
+print(model.explained_var_ratio)
+
+#%%
 # ------------------------
 #
 saiph.visualization.plot_explained_var(model)

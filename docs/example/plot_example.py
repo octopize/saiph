@@ -15,37 +15,38 @@ from saiph.visualization import plot_circle
 # Fit the model
 # ------------------------
 
-
 df = pd.read_csv("../../tests/fixtures/iris.csv")
 
 coord, model = saiph.fit_transform(df, nf=5)
 print(coord.head())
 
 # %%
-# Perform analyses
+# Perform statistics on the projection
 # ------------------------
 #
 model = saiph.stats(model, df)
 print(model.cos2)
 
 # %%
-# Perform analyses
+# Variable contributions
 # ------------------------
 #
 print(model.contributions)
+saiph.visualization.plot_var_contribution(model.contributions["Dim. 1"], model.contributions.index )
 
 # %%
-# Perform analyses
+# Circle of correlations
 # ------------------------
 #
 plot_circle(model=model)
 # %%
-# Perform analyses
+# Explained variance
 # ------------------------
 #
 saiph.visualization.plot_explained_var(model)
 # %%
-# Perform analyses
+# Individuals projection
 # ------------------------
 #
-#saiph.visualization.plot_var_contribution(model.contributions[["Dim. 1","Dim. 2"]], ["param", "2rz"], )
+
+saiph.visualization.plot_projections(model, df, (0, 1))

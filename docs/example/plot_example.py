@@ -19,7 +19,7 @@ df = pd.read_csv("../../tests/fixtures/iris.csv")
 coord, model = saiph.fit_transform(df, nf=5)
 print(coord.head())
 # %%
-# Individuals projection
+# Project individuals
 # ------------------------
 #
 saiph.visualization.plot_projections(model, df, (0, 1))

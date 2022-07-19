@@ -31,7 +31,7 @@ model = saiph.stats(model, df)
 print(model.cos2)
 
 # %%
-# Circle of correlations
+# Correlation circle
 # ------------------------
 #
 plot_circle(model=model)

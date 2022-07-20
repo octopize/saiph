@@ -14,7 +14,7 @@ from saiph.visualization import plot_circle
 # Fit the model
 # ------------------------
 
-df = pd.read_csv("../../tests/fixtures/iris.csv")
+df = pd.read_csv("tests/fixtures/iris.csv")
 
 coord, model = saiph.fit_transform(df, nf=5)
 print(coord.head())

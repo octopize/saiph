@@ -9,7 +9,7 @@ Welcome to Saiph's documentation!
    :caption: Contents:
 
    build/examples/plot_example
-   reference
+   source/reference
 
 
 Indices and tables

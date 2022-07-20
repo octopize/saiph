@@ -5,9 +5,15 @@ SHELL := bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
+DOCS_REQUIREMENTS := docs/requirements.txt
+
 install:  ## Install the stack
 	pre-commit install --hook-type commit-msg
 	poetry install --extras "matplotlib"
+	poetry export -f requirements.txt --output $(DOCS_REQUIREMENTS) --dev --without-hashes 
+	cat $(DOCS_REQUIREMENTS) | grep sphinx-gallery > docs/tmp.txt
+	mv docs/tmp.txt $(DOCS_REQUIREMENTS)
+
 .PHONY: install
 
 notebook:  ## Run the notebook
@@ -19,7 +25,7 @@ docs:  ## Build docs
 .PHONY: docs
 
 docs-open:  ## Open docs
-	python -m webbrowser -t "file://$(abspath build/docs)/index.html"
+	poetry run python -m webbrowser -t "file://$(abspath build/docs)/index.html"
 .PHONY: docs-open
 
 ##@ Tests

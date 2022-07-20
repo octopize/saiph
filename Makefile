@@ -11,8 +11,8 @@ install:  ## Install the stack
 	pre-commit install --hook-type commit-msg
 	poetry install --extras "matplotlib"
 	poetry export -f requirements.txt --output $(DOCS_REQUIREMENTS) --dev --extras matplotlib --without-hashes 
-	cat $(DOCS_REQUIREMENTS) | grep sphinx-gallery  > docs/tmp.txt
-	mv docs/tmp.txt $(DOCS_REQUIREMENTS)
+	# cat $(DOCS_REQUIREMENTS) | grep 'matplotlib\|sphinx-gallery\'  > docs/tmp.txt
+	# mv docs/tmp.txt $(DOCS_REQUIREMENTS)
 
 .PHONY: install
 

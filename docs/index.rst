@@ -10,7 +10,6 @@ Welcome to Saiph's documentation!
 
    build/examples/plot_example
    reference
-   contributing
 
 
 Indices and tables

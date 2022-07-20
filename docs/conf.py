@@ -36,7 +36,6 @@ release = "1.4.0"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
-    "myst_parser",
     "sphinx_gallery.gen_gallery",
 ]
 

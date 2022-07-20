@@ -31,7 +31,7 @@ mypy = "^0.920"
 black = {extras = ["jupyter"], version = "^22.1.0"}
 flit = "^3.4.0"
 flake8 = "^4.0.1"
-myst-parser = "^0.16.0"
+myst-parser = "^0.18.0"
 flake8-docstrings = "^1.6.0"
 flake8-black = "^0.3.2"
 flake8-isort = "^4.1.1"

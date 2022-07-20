@@ -2,7 +2,7 @@
 Tutorial
 =========================
 
-This example show how saiph works.
+This example shows how saiph works.
 """
 
 import pandas as pd

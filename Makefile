@@ -10,10 +10,6 @@ DOCS_REQUIREMENTS := docs/requirements.txt
 install:  ## Install the stack
 	pre-commit install --hook-type commit-msg
 	poetry install --extras "matplotlib"
-	poetry export -f requirements.txt --output $(DOCS_REQUIREMENTS) --dev --extras matplotlib --without-hashes 
-	cat $(DOCS_REQUIREMENTS) | grep 'matplotlib\|sphinx-gallery'  > docs/tmp.txt
-	mv docs/tmp.txt $(DOCS_REQUIREMENTS)
-
 .PHONY: install
 
 notebook:  ## Run the notebook
@@ -21,6 +17,10 @@ notebook:  ## Run the notebook
 .PHONY: notebook
 
 docs:  ## Build docs
+	poetry export -f requirements.txt --output $(DOCS_REQUIREMENTS) --dev --extras matplotlib --without-hashes 
+	cat $(DOCS_REQUIREMENTS) | grep 'matplotlib\|sphinx-gallery'  > docs/tmp.txt
+	mv docs/tmp.txt $(DOCS_REQUIREMENTS)
+
 	poetry run sphinx-build -b html docs build/docs
 .PHONY: docs
 

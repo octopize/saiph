@@ -83,11 +83,13 @@ def get_dummies_mapping(
 
 TYPES = {
     int: "int",
-    float: "float",
-    str: "string",
-    bool: "bool",
     np.int_: "int",
+    float: "float",
     np.float_: "float",
+    str: "string",
+    np.str_: "string",
+    bool: "bool",
+    np.bool_: "bool", 
 }
 
 

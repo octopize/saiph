@@ -88,12 +88,13 @@ def inverse_transform(
         inverse_coord_quali = inverse_data.set_axis(
             model.dummy_categorical, axis="columns"
         )
-
         descaled_values_quali = inverse_coord_quali.divide(model.dummies_col_prop)
+
         inverse = undummify(
             descaled_values_quali,
             get_dummies_mapping(model.original_categorical, model.dummy_categorical),
             use_max_modalities=use_max_modalities,
+            dropped_categories=model.dropped_categories,
             seed=seed,
         )
     # Cast columns to same type as input
@@ -117,6 +118,8 @@ def undummify(
     dummies_mapping: Dict[str, List[str]],
     *,
     use_max_modalities: bool = True,
+    # dropped_modalities: Optional[Dict[str, str]] = None,
+    dropped_categories: Optional[List[str]] = None,
     seed: Optional[int] = None,
 ) -> pd.DataFrame:
     """Return undummified dataframe from the dummy dataframe.
@@ -126,6 +129,8 @@ def undummify(
         dummies_mapping: mapping between categorical columns and dummies columns.
         use_max_modalities: True to select the modality with the highest probability.
                             False for a weighted random selection. default: True
+        
+        dropped_modalities: ...
         seed: seed to fix randomness if use_max_modalities = False. default: None
 
     Returns:
@@ -136,10 +141,17 @@ def undummify(
 
     def get_suffix(string: str) -> str:
         return string.split(DUMMIES_PREFIX_SEP)[1]
-
+    
     for original_column, dummy_columns in dummies_mapping.items():
+        single_category = dummy_df[dummy_columns].copy()
+
+        extra_col = None
+        if dropped_categories:
+            extra_col = [c for c in dropped_categories if c.startswith(original_column+DUMMIES_PREFIX_SEP)][0]
+        if extra_col:
+            single_category[extra_col] =  1 - single_category.sum(axis="columns")
+
         # Handle a single category with all the possible modalities
-        single_category = dummy_df[dummy_columns]
         if use_max_modalities:
             # select modalities with highest probability
             chosen_modalities = single_category.idxmax(axis="columns")

@@ -3,6 +3,7 @@ import pandas as pd
 from numpy.testing import assert_allclose
 from numpy.typing import NDArray
 from pandas.testing import assert_frame_equal, assert_series_equal
+import pytest
 
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.mca import (
@@ -134,16 +135,32 @@ def test_fit_zero_same_df() -> None:
         else:
             assert k1 == k2
 
-
+# @pytest.mark.parametrize(
+#     "drop_first, expected",
+#     [
+#         True, expected_transform = pd.DataFrame(
+#         {
+#             "Dim. 1": [0.707107, 0.707107],
+#             "Dim. 2": [0.707107, 0.707107],
+#         }
+#     )
+#         False, expected_transform = pd.DataFrame(
+#         {
+#             "Dim. 1": [0.707107, 0.707107],
+#             "Dim. 2": [0.707107, 0.707107],
+#         }
+#     )
+#     ],
+# )
 def test_transform_simple() -> None:
     """Verify that mca.transform returns correct output."""
     df = pd.DataFrame(
         {
-            "tool": ["toaster", "toaster"],
+            "tool": ["toaster", "hammer"],
             "score": ["aa", "aa"],
         }
     )
-    df_transformed, _ = fit_transform(df)
+    df_transformed, _ = fit_transform(df, drop_first=False)
 
     expected_transform = pd.DataFrame(
         {
@@ -156,18 +173,19 @@ def test_transform_simple() -> None:
         df_transformed, expected_transform, check_exact=False, atol=0.00001
     )
 
-
-def test_fit_transform_has_same_output_as_transform() -> None:
-
+@pytest.mark.parametrize(
+    "drop_first",
+    [True, False],
+)
+def test_fit_transform_has_same_output_as_transform(drop_first: bool) -> None:
     df = pd.DataFrame(
         {
-            "tool": ["toaster", "toaster"],
+            "tool": ["toaster", "hammer"],
             "score": ["aa", "aa"],
         }
     )
-    coord, model = fit_transform(df)
-    df_transformed = transform(df, model)
-
+    coord, model = fit_transform(df, drop_first=drop_first)
+    df_transformed = transform(df, model, drop_first=drop_first)
     assert_frame_equal(coord, df_transformed)
 
 
@@ -176,7 +194,7 @@ def test_get_variable_contributions(quali_df: pd.DataFrame) -> None:
     df = quali_df
     _, model = fit_transform(df, nf=3)
 
-    contributions = get_variable_contributions(model, df, explode=True)
+    contributions = get_variable_contributions(model, df, drop_first=False, explode=True)
 
     expected_contributions = pd.DataFrame.from_dict(
         data={
@@ -204,8 +222,8 @@ def test_get_variable_contributions_exploded_parameter(mixed_df: pd.DataFrame) -
     variable = "tool"
     _, model = fit_transform(df, nf=3)
 
-    contributions_exploded = get_variable_contributions(model, df, explode=True)
-    contributions_not_exploded = get_variable_contributions(model, df, explode=False)
+    contributions_exploded = get_variable_contributions(model, df, drop_first=False, explode=True)
+    contributions_not_exploded = get_variable_contributions(model, df, drop_first=False, explode=False)
     dummies = filter(
         lambda name: f"{variable}{DUMMIES_PREFIX_SEP}" in name,
         contributions_exploded.index,
@@ -220,7 +238,64 @@ def test_get_variable_contributions_exploded_parameter(mixed_df: pd.DataFrame) -
 def test_get_variable_contributions_sum_is_100_with_col_weights_random_mca(
     quali_df: pd.DataFrame,
 ) -> None:
-    model = fit(quali_df, col_weights=[3.0, 2.0])  # type: ignore
-    contributions = get_variable_contributions(model, quali_df)
+    model = fit(quali_df, col_weights=[3.0, 2.0], drop_first=False)  # type: ignore
+    contributions = get_variable_contributions(model, quali_df, drop_first=False)
     summed_contributions = contributions.sum(axis=0)
     assert_series_equal(summed_contributions, pd.Series([100.0] * 4), check_index=False)
+
+
+def test_fit_reconstruct() -> None:
+    # df = pd.DataFrame(
+    #     {
+    #         "tool": ["toaster", "hammer"],
+    #         "score": ["aa", "aa"],
+    #     }
+    # )
+
+    df = pd.DataFrame(
+        {
+            "tool": ["toaster", "hammer", "toaster", "hammer", "toaster", "hammer", "hammer", "mouse", "mouse", "mouse"],
+            "score": ["aa", "aa", "aa", "bb", "aa", "cc", "bb", "cc", "bb", "cc"],
+            "utility": ["zz", "zz", "zz", "yy", "zz", "yy", "yy", "zz", "yy", "zz"],
+        }
+    )
+
+    # df = pd.DataFrame(
+    #     {
+    #         "tool": ["toaster", "hammer", "toaster", "hammer", "toaster", "hammer", "hammer"],
+    #         "score": ["aa", "aa", "aa", "bb", "aa", "bb", "bb"],
+    #     }
+    # )
+
+    result, model = fit_transform(df, drop_first=True)
+    print('result: ', result)
+    from saiph.inverse_transform import inverse_transform
+
+    from saiph.visualization import plot_circle, plot_var_contribution, plot_projections
+    from saiph import stats
+    
+
+
+    # plot_projections(model, df, (0, 1))
+
+    model = stats(model, df)
+
+    print('model.contributions:', model.contributions)
+    print('model.explained_var:', model.explained_var)
+    print('model.explained_var_ratio:', model.explained_var_ratio)
+    # plot_circle(model=model, max_var=10)
+
+    # plot_var_contribution(
+    # model.contributions["Dim. 1"].to_numpy(), model.contributions.index.to_numpy()
+    # )
+    # plot_var_contribution(
+    # model.contributions["Dim. 2"].to_numpy(), model.contributions.index.to_numpy()
+    # )
+
+    inv_trans = inverse_transform(result, model)
+    print('inv_trans: ', inv_trans)
+    print('SHOULD BE: ', df)
+
+    assert_frame_equal(df, inv_trans)
+    
+    

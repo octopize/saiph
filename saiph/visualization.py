@@ -49,7 +49,6 @@ def plot_circle(
         lambda x: abs(x[dimensions[0] - 1]) + abs(x[dimensions[1] - 1]), axis=1
     )
     cor.sort_values(by="sum", ascending=False, inplace=True)
-
     # Plotting arrows
     texts = []
     i = 0

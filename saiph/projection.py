@@ -16,6 +16,7 @@ def fit(
     nf: Optional[int] = None,
     col_weights: Optional[Dict[str, Union[int, float]]] = None,
     sparse: bool = False,
+    drop_first: bool = True
 ) -> Model:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
@@ -31,6 +32,8 @@ def fit(
     Returns:
         model: The model for transforming new data.
     """
+    # assert False
+
     if isinstance(nf, str):
         raise ValueError("nf=all is deprecated. Use None instead.")
 
@@ -50,7 +53,7 @@ def fit(
                 f"got {unknown_variables} instead."
             )
 
-    _nf = nf if nf else min(pd.get_dummies(df, prefix_sep=DUMMIES_PREFIX_SEP).shape)
+    _nf = nf if nf else min(pd.get_dummies(df, prefix_sep=DUMMIES_PREFIX_SEP, drop_first=drop_first).shape)
 
     # Convert col weights from dict to ndarray
     _col_weights: NDArray[np.float_] = np.ones(df.shape[1])
@@ -73,7 +76,7 @@ def fit(
     else:
         _fit = famd.fit
 
-    model = _fit(df, _nf, _col_weights)
+    model = _fit(df, _nf, _col_weights, drop_first)
 
     if quanti.size == 0:
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
@@ -239,14 +242,18 @@ def get_variable_correlation(
         df_quali = pd.get_dummies(
             df[model.original_categorical].astype("category"),
             prefix_sep=DUMMIES_PREFIX_SEP,
+            drop_first=model.drop_first
         )
         bind = pd.concat([df_quanti, df_quali], axis=1)
     else:
         bind = df_quanti
+    
+    var_names = list(bind.columns)
 
     concat = pd.concat([bind, coord], axis=1, keys=["bind", "coord"])
     cor = pd.DataFrame(np.corrcoef(concat, rowvar=False), columns=concat.columns).loc[
         0 : len(bind.columns) - 1,
         "coord",
     ]
+    cor = cor.set_index(pd.Series(var_names))
     return cor

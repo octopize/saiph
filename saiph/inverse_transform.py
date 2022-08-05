@@ -90,6 +90,8 @@ def inverse_transform(
         )
         descaled_values_quali = inverse_coord_quali.divide(model.dummies_col_prop)
 
+        print('model.dummy_categorical: ', model.dummy_categorical)
+        print('model.dropped_categories: ', model.dropped_categories)
         inverse = undummify(
             descaled_values_quali,
             get_dummies_mapping(model.original_categorical, model.dummy_categorical),
@@ -147,7 +149,10 @@ def undummify(
 
         extra_col = None
         if dropped_categories:
-            extra_col = [c for c in dropped_categories if c.startswith(original_column+DUMMIES_PREFIX_SEP)][0]
+            tmp = [c for c in dropped_categories if c.startswith(original_column+DUMMIES_PREFIX_SEP)]
+            extra_col = None
+            if len(tmp) > 0:
+                extra_col = tmp[0]
         if extra_col:
             single_category[extra_col] =  1 - single_category.sum(axis="columns")
 

@@ -245,20 +245,45 @@ def test_get_variable_contributions_sum_is_100_with_col_weights_random_mca(
 
 
 def test_fit_reconstruct() -> None:
+    df = pd.read_csv("/Users/olivier/dev/avatar/core/fixtures/wbcd.csv").astype("category")
+    
     # df = pd.DataFrame(
     #     {
-    #         "tool": ["toaster", "hammer"],
-    #         "score": ["aa", "aa"],
+    #         "tool": ["toaster", "hammer", "hammer", "hammer", "toaster"],
+    #         "score": ["aa", "aa", "bb", "bb", "bb"],
+    #     }
+    # )  # PB !!!
+
+    # df = pd.DataFrame(
+    #     {
+    #         "var1": ["0", "1", "0", "0", "0", "1", "0", "1", "0", "0", "0", "1"],
+    #         # "var1bis": ["1", "0", "1", "1", "1", "0", "1", "0", "1", "1", "1", "0"],
+    #         "score": ["truc", "truc2", "truc3", "truc3", "truc", "truc4", "truc", "truc2", "truc3", "truc3", "truc", "truc4"],
+    #     }
+    # )  # TEST
+
+    # df = pd.DataFrame(
+    #     {
+    #         "var1": ["0", "1", "0", "0", "0", "1"],
+    #         "var1bis": ["1", "0", "1", "1", "1", "0"],
+    #         "score": ["truc", "truc2", "truc3", "truc3", "truc", "truc4"],
     #     }
     # )
 
-    df = pd.DataFrame(
-        {
-            "tool": ["toaster", "hammer", "toaster", "hammer", "toaster", "hammer", "hammer", "mouse", "mouse", "mouse"],
-            "score": ["aa", "aa", "aa", "bb", "aa", "cc", "bb", "cc", "bb", "cc"],
-            "utility": ["zz", "zz", "zz", "yy", "zz", "yy", "yy", "zz", "yy", "zz"],
-        }
-    )
+    # df = pd.DataFrame(
+    #     {
+    #         "tool": ["toaster", "toaster", "hammer", "hammer", "toaster"],
+    #         "score": ["aa", "aa", "bb", "bb", "bb"],
+    #     }
+    # )
+
+    # df = pd.DataFrame(
+    #     {
+    #         "tool": ["toaster", "hammer", "toaster", "hammer", "toaster", "hammer", "hammer", "mouse", "mouse", "mouse"],
+    #         "score": ["aa", "aa", "aa", "bb", "aa", "cc", "bb", "cc", "bb", "cc"],
+    #         "utility": ["zz", "zz", "zz", "yy", "zz", "yy", "yy", "zz", "yy", "zz"],
+    #     }
+    # )
 
     # df = pd.DataFrame(
     #     {
@@ -268,29 +293,29 @@ def test_fit_reconstruct() -> None:
     # )
 
     result, model = fit_transform(df, drop_first=True)
+
     print('result: ', result)
     from saiph.inverse_transform import inverse_transform
 
     from saiph.visualization import plot_circle, plot_var_contribution, plot_projections
     from saiph import stats
-    
 
 
-    # plot_projections(model, df, (0, 1))
+    plot_projections(model, df, (0, 1))
 
     model = stats(model, df)
 
     print('model.contributions:', model.contributions)
     print('model.explained_var:', model.explained_var)
     print('model.explained_var_ratio:', model.explained_var_ratio)
-    # plot_circle(model=model, max_var=10)
+    plot_circle(model=model, max_var=10)
 
-    # plot_var_contribution(
-    # model.contributions["Dim. 1"].to_numpy(), model.contributions.index.to_numpy()
-    # )
-    # plot_var_contribution(
-    # model.contributions["Dim. 2"].to_numpy(), model.contributions.index.to_numpy()
-    # )
+    plot_var_contribution(
+    model.contributions["Dim. 1"].to_numpy(), model.contributions.index.to_numpy()
+    )
+    plot_var_contribution(
+    model.contributions["Dim. 2"].to_numpy(), model.contributions.index.to_numpy()
+    )
 
     inv_trans = inverse_transform(result, model)
     print('inv_trans: ', inv_trans)

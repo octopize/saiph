@@ -256,6 +256,15 @@ def test_fit_reconstruct() -> None:
 
     # df = pd.DataFrame(
     #     {
+    #         "oak": ["1", "2", "2", "2", "1", "1"],
+    #         "fruity": ["0", "1", "1", "1", "0", "0"],
+    #         "woody": ["2", "1", "0", "0", "2", "1"],
+    #         "coffee": ["1", "0", "0", "0", "1", "1"],
+    #     }
+    # )  
+
+    # df = pd.DataFrame(
+    #     {
     #         "var1": ["0", "1", "0", "0", "0", "1", "0", "1", "0", "0", "0", "1"],
     #         # "var1bis": ["1", "0", "1", "1", "1", "0", "1", "0", "1", "1", "1", "0"],
     #         "score": ["truc", "truc2", "truc3", "truc3", "truc", "truc4", "truc", "truc2", "truc3", "truc3", "truc", "truc4"],
@@ -317,7 +326,7 @@ def test_fit_reconstruct() -> None:
     model.contributions["Dim. 2"].to_numpy(), model.contributions.index.to_numpy()
     )
 
-    inv_trans = inverse_transform(result, model)
+    inv_trans = inverse_transform(result, model, use_max_modalities=False)
     print('inv_trans: ', inv_trans)
     print('SHOULD BE: ', df)
 

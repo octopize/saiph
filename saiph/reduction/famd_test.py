@@ -243,8 +243,9 @@ def test_get_variable_contributions_with_multiple_variables(
     # We have to combine quali_df and quanti_df (and not use mixed_df or mixed_df_2)
     # because the latter have perfectly correlated columns which yield a division by zero.
     df = pd.concat([quali_df, quanti_df], axis="columns")
-    _, model = fit_transform(df, nf=4)
+    result, model = fit_transform(df, nf=4)
     get_variable_contributions(model, df, explode=True)
+
 
 
 def test_get_variable_contributions_sum_is_100_with_col_weights_random_famd(
@@ -254,3 +255,23 @@ def test_get_variable_contributions_sum_is_100_with_col_weights_random_famd(
     contributions, _ = get_variable_contributions(model, mixed_df)
     summed_contributions = contributions.sum(axis=0)
     assert_series_equal(summed_contributions, pd.Series([100.0] * 3), check_index=False)
+
+
+def test_use_max_modality():
+
+    df = pd.read_csv("/Users/olivier/dev/avatar/core/fixtures/wbcd.csv")
+    df['Class'] = df['Class'].astype('object')
+
+
+    # df = pd.DataFrame(
+    #     {
+    #         "var1": ["0", "1", "0", "0", "0", "1", "0", "1", "0", "0", "0", "1"],
+    #         # "var1bis": ["1", "0", "1", "1", "1", "0", "1", "0", "1", "1", "1", "0"],
+    #         "score": ["truc", "truc2", "truc3", "truc3", "truc", "truc4", "truc", "truc2", "truc3", "truc3", "truc", "truc4"],
+    #         "var_num": [1, 2, 2.5, 2.5, 2.5, 2, 1.3, 1.3, 1.1, 1.3, 1.1, 2.8],
+    #     }
+    # )  # TEST
+
+    result, model = fit_transform(df, nf=4)
+    from saiph.inverse_transform import inverse_transform
+    inv_trans = inverse_transform(result, model, use_max_modalities=False)

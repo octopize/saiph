@@ -1,5 +1,6 @@
 """Inverse transform coordinates."""
 import ast
+import warnings
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -38,6 +39,13 @@ def inverse_transform(
     # Check dimension size regarding N
     n_dimensions = len(model.dummy_categorical) + len(model.original_continuous)
     n_records = len(coord)
+
+    if model.nf < min(n_dimensions, n_records):
+        warnings.warn(
+            f"nf is set to ({model.nf}) among the ({n_dimensions}) available."
+            " Performing inverse transform with restricted nf induces precision loss",
+            UserWarning,
+        )
 
     if not use_approximate_inverse and n_records < n_dimensions:
         raise InvalidParameterException(

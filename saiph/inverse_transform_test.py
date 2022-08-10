@@ -3,7 +3,7 @@ from typing import Dict, List, Union
 import numpy as np
 import pandas as pd
 import pytest
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_warns
 from pandas.testing import assert_frame_equal, assert_series_equal
 
 from saiph.exception import InvalidParameterException
@@ -72,6 +72,18 @@ def test_inverse_transform_raises_value_error_when_wider_than_df() -> None:
     )
     coord, model = fit_transform(wider_df)
     with pytest.raises(InvalidParameterException, match=r"n_dimensions"):
+        inverse_transform(coord, model)
+
+
+def test_inverse_transform_raises_warning_when_inverse_with_small_nf() -> None:
+    wider_df = pd.DataFrame(
+        {
+            "variable_1": ["a", "a", "b", "b"],
+            "variable_2": ["ZZ", "ZZ", "WW", "ZZ"],
+        }
+    )
+    coord, model = fit_transform(wider_df, nf=2)
+    with np.testing.assert_warns(UserWarning):
         inverse_transform(coord, model)
 
 

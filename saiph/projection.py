@@ -13,6 +13,7 @@ from saiph.reduction.utils.common import get_projected_column_names
 
 def fit(
     df: pd.DataFrame,
+    drop_first: bool = False,
     nf: Optional[int] = None,
     col_weights: Optional[Dict[str, Union[int, float]]] = None,
     sparse: bool = False,
@@ -23,6 +24,7 @@ def fit(
 
     Parameters:
         df: Data to project.
+        drop_first: Drop or keep the first modality of categorical variables.
         nf: Number of components to keep. default: None, which uses all columns.
         col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes).
@@ -34,10 +36,10 @@ def fit(
     if isinstance(nf, str):
         raise ValueError("nf=all is deprecated. Use None instead.")
 
-    if nf is not None and (nf <= 0 or nf > min(pd.get_dummies(df).shape)):
+    if nf is not None and (nf <= 0 or nf > min(pd.get_dummies(df, drop_first=drop_first).shape)):
         raise InvalidParameterException(
             "Expected number of components to be in "
-            f"0 < 'nf' <= {min(pd.get_dummies(df).shape)}, got {nf} instead."
+            f"0 < 'nf' <= {min(pd.get_dummies(df, drop_first=drop_first).shape)}, got {nf} instead."
         )
 
     if col_weights is not None:
@@ -50,7 +52,7 @@ def fit(
                 f"got {unknown_variables} instead."
             )
 
-    _nf = nf if nf else min(pd.get_dummies(df, prefix_sep=DUMMIES_PREFIX_SEP).shape)
+    _nf = nf if nf else min(pd.get_dummies(df, prefix_sep=DUMMIES_PREFIX_SEP, drop_first=drop_first).shape)
 
     # Convert col weights from dict to ndarray
     _col_weights: NDArray[np.float_] = np.ones(df.shape[1])
@@ -73,7 +75,7 @@ def fit(
     else:
         _fit = famd.fit
 
-    model = _fit(df, _nf, _col_weights)
+    model = _fit(df, drop_first, _nf, _col_weights)
 
     if quanti.size == 0:
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
@@ -84,6 +86,7 @@ def fit(
 
 def fit_transform(
     df: pd.DataFrame,
+    drop_first: bool = False,
     nf: Optional[int] = None,
     col_weights: Optional[Dict[str, Union[int, float]]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
@@ -93,6 +96,7 @@ def fit_transform(
 
     Parameters:
         df: Data to project.
+        drop_first: Drop or keep the first modality of categorical variables.
         nf: Number of components to keep. default: 'all'
         col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes).
@@ -101,8 +105,8 @@ def fit_transform(
     Returns:
         model: The model for transforming new data.
     """
-    model = fit(df, nf=nf, col_weights=col_weights)
-    coord = transform(df, model)
+    model = fit(df, drop_first=drop_first, nf=nf, col_weights=col_weights)
+    coord = transform(df, model, drop_first)
     return coord, model
 
 
@@ -188,12 +192,13 @@ def get_variable_contributions(
     return contributions
 
 
-def transform(df: pd.DataFrame, model: Model, *, sparse: bool = False) -> pd.DataFrame:
+def transform(df: pd.DataFrame, model: Model, drop_first: bool = False, *,sparse: bool = False) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
 
     Parameters:
         df: DataFrame to transform.
         model: Model computed by fit.
+        drop_first: Drop or keep the first modality of categorical variables.
 
     Returns:
         coord: Coordinates of the dataframe in the fitted space.
@@ -213,7 +218,7 @@ def transform(df: pd.DataFrame, model: Model, *, sparse: bool = False) -> pd.Dat
     if sparse:
         return famd_sparse.transform(df, model)
 
-    return famd.transform(df, model)
+    return famd.transform(df, model, drop_first=drop_first)
 
 
 def get_variable_correlation(

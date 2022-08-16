@@ -16,6 +16,7 @@ def inverse_transform(
     coord: pd.DataFrame,
     model: Model,
     *,
+    drop_first: bool = False,
     use_approximate_inverse: bool = False,
     use_max_modalities: bool = True,
     seed: Optional[int] = None,
@@ -25,6 +26,7 @@ def inverse_transform(
     Parameters:
         coord: coord of individuals to reverse transform
         model: model used for projection
+        drop_first: Drop or keep the first modality of categorical variables.
         use_approximate_inverse: matrix is not invertible when n_individuals < n_dimensions
             an approximation with bias can be done by setting to ``True``. default: ``False``
         use_max_modalities: for each variable, it assigns to the individual
@@ -62,7 +64,7 @@ def inverse_transform(
     scaled_values_quanti.columns = model.original_continuous
 
     scaled_values_quali = scaled_values.iloc[:, nb_quanti:]
-    scaled_values_quali.columns = model.dummy_categorical
+    scaled_values_quali.columns = model.dummy_categorical_dropped
 
     # Descale regarding projection type
     # FAMD
@@ -76,6 +78,7 @@ def inverse_transform(
             get_dummies_mapping(model.original_categorical, model.dummy_categorical),
             use_max_modalities=use_max_modalities,
             seed=seed,
+            drop_first = drop_first
         )
         inverse = pd.concat([descaled_values_quanti, undummy], axis=1).round(12)
 
@@ -94,7 +97,7 @@ def inverse_transform(
         # not the same. Doing the same as FAMD is incoherent.
         inverse_data = coord @ (model.D_c @ model.V.T).T
         inverse_coord_quali = inverse_data.set_axis(
-            model.dummy_categorical, axis="columns"
+            model.dummy_categorical_dropped, axis="columns"
         )
 
         descaled_values_quali = inverse_coord_quali.divide(model.dummies_col_prop)
@@ -103,6 +106,7 @@ def inverse_transform(
             get_dummies_mapping(model.original_categorical, model.dummy_categorical),
             use_max_modalities=use_max_modalities,
             seed=seed,
+            drop_first = drop_first,
         )
     # Cast columns to same type as input
     for name, dtype in model.original_dtypes.iteritems():
@@ -126,6 +130,7 @@ def undummify(
     *,
     use_max_modalities: bool = True,
     seed: Optional[int] = None,
+    drop_first: bool = False,
 ) -> pd.DataFrame:
     """Return undummified dataframe from the dummy dataframe.
 
@@ -135,6 +140,7 @@ def undummify(
         use_max_modalities: True to select the modality with the highest probability.
                             False for a weighted random selection. default: True
         seed: seed to fix randomness if use_max_modalities = False. default: None
+        drop_first: Drop or keep the first modality of categorical variables.
 
     Returns:
         inverse_quali: undummify df of categorical variable
@@ -146,8 +152,15 @@ def undummify(
         return string.split(DUMMIES_PREFIX_SEP)[1]
 
     for original_column, dummy_columns in dummies_mapping.items():
+        remaining_dummies = dummy_columns[1:]
+        dummy_to_restore = dummy_columns[0]
         # Handle a single category with all the possible modalities
-        single_category = dummy_df[dummy_columns]
+        if drop_first:
+            single_category = dummy_df[remaining_dummies]
+            single_category[dummy_to_restore] = 1 - single_category.cumsum(axis=1).iloc[:,-1:]
+        else:
+            single_category = dummy_df[dummy_columns]
+
         if use_max_modalities:
             # select modalities with highest probability
             chosen_modalities = single_category.idxmax(axis="columns")

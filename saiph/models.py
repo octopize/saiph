@@ -12,6 +12,9 @@ class Model:
     # List of categorical columns transformed into dummies using pd.get_dummies
     dummy_categorical: List[str]
 
+    # dummy categorical with first modality dropped
+    dummy_categorical_dropped: List[str]
+
     # List of original columns with dtypes generated with df.dtypes.
     # Calling .index refers to column names,
     # Calling .values refers to the dtypes of the column names.

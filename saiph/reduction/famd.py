@@ -25,7 +25,7 @@ from saiph.reduction.utils.svd import SVD
 
 
 def center(
-    df: pd.DataFrame, quanti: List[str], quali: List[str]
+    df: pd.DataFrame, quanti: List[str], quali: List[str], drop_first: bool = False
 ) -> Tuple[
     pd.DataFrame, NDArray[np.float_], NDArray[np.float_], NDArray[Any], NDArray[Any]
 ]:
@@ -39,6 +39,7 @@ def center(
         df: DataFrame to center.
         quanti: Indices of continuous variables.
         quali: Indices of categorical variables.
+        drop_first: Drop or keep the first modality of categorical variables.
 
     Returns:
         df_scale: The scaled DataFrame.
@@ -57,7 +58,7 @@ def center(
 
     # scale the categorical data
     df_quali = pd.get_dummies(
-        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP, drop_first=drop_first
     )
     # .mean() is the same as counting 0s and 1s
     # This will only work if we stick with pd.get_dummies to encode the modalities
@@ -74,6 +75,7 @@ def center(
 
 def fit(
     df: pd.DataFrame,
+    drop_first: bool = False,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
     center: Callable[
@@ -91,6 +93,7 @@ def fit(
 
     Parameters:
         df: Data to project.
+        drop_first: Drop or keep the first modality of categorical variables.
         nf: Number of components to keep. default: min(df.shape)
         col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes). default: np.ones(df.shape[1])
@@ -98,7 +101,7 @@ def fit(
     Returns:
         model: The model for transforming new data.
     """
-    nf = nf or min(pd.get_dummies(df).shape)
+    nf = nf or min(pd.get_dummies(df,drop_first=drop_first).shape)
     _col_weights = np.ones(df.shape[1]) if col_weights is None else col_weights
 
     # select the categorical and continuous columns
@@ -107,12 +110,15 @@ def fit(
     dummy_categorical = pd.get_dummies(
         df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
     ).columns.to_list()
+    dummy_categorical_dropped = pd.get_dummies(
+        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP, drop_first=drop_first
+    ).columns.to_list()
     modalities_types = get_modalities_types(df[quali])
 
     row_w = get_uniform_row_weights(len(df))
-    col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
+    col_weights = _col_weights_compute(df, _col_weights, quanti, quali, drop_first=drop_first)
 
-    df_scaled, mean, std, prop, _modalities = center(df, quanti, quali)
+    df_scaled, mean, std, prop, _modalities = center(df, quanti, quali, drop_first=drop_first)
 
     # apply the weights
     Z = df_scaled.multiply(col_weights).T.multiply(row_w).T
@@ -134,6 +140,7 @@ def fit(
         original_categorical=quali,
         original_continuous=quanti,
         dummy_categorical=dummy_categorical,
+        dummy_categorical_dropped=dummy_categorical_dropped,
         U=U,
         V=V,
         s=s,
@@ -157,6 +164,7 @@ def fit(
 
 def fit_transform(
     df: pd.DataFrame,
+    drop_first: bool = False,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
@@ -164,6 +172,7 @@ def fit_transform(
 
     Parameters:
         df: Data to project.
+        drop_first: Drop or keep the first modality of categorical variables.
         nf: Number of components to keep. default: min(df.shape)
         col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes). default: np.ones(df.shape[1])
@@ -172,13 +181,13 @@ def fit_transform(
         coord: The transformed data.
         model: The model for transforming new data.
     """
-    model = fit(df, nf, col_weights)
-    coord = transform(df, model)
+    model = fit(df, drop_first, nf, col_weights)
+    coord = transform(df, model, drop_first)
     return coord, model
 
 
 def _col_weights_compute(
-    df: pd.DataFrame, col_weights: NDArray[Any], quanti: List[int], quali: List[int]
+    df: pd.DataFrame, col_weights: NDArray[Any], quanti: List[int], quali: List[int], drop_first: bool = False,
 ) -> NDArray[Any]:
     """Calculate weights for columns given what weights the user gave."""
     # Set the columns and row weights
@@ -189,7 +198,10 @@ def _col_weights_compute(
     # Get the number of modality for each quali variable
     modality_numbers = []
     for column in weight_quali.columns:
-        modality_numbers += [len(df[column].unique())]
+        if drop_first:
+            modality_numbers += [len(df[column].unique())-1]
+        else:
+            modality_numbers += [len(df[column].unique())]
 
     # Set weight vector for categorical columns
     weight_quali_rep = list(
@@ -205,12 +217,13 @@ def _col_weights_compute(
     return _col_weights
 
 
-def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
+def scaler(model: Model, df: pd.DataFrame, drop_first: bool = False) -> pd.DataFrame:
     """Scale data using mean, std, modalities and proportions of each categorical from model.
 
     Parameters:
         model: Model computed by fit.
         df: DataFrame to scale.
+        drop_first: Drop or keep the first modality of categorical variables.
 
     Returns:
         df_scaled: The scaled DataFrame.
@@ -220,7 +233,7 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
 
     # scale
     df_quali = pd.get_dummies(
-        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP, drop_first=drop_first
     )
     if model._modalities is not None:
         for mod in model._modalities:
@@ -237,6 +250,7 @@ def transform(
     df: pd.DataFrame,
     model: Model,
     *,
+    drop_first: bool = False,
     scaler: Callable[[Model, pd.DataFrame], pd.DataFrame] = scaler,
 ) -> pd.DataFrame:
     """Scale and project into the fitted numerical space.
@@ -244,11 +258,12 @@ def transform(
     Parameters:
         df: DataFrame to transform.
         model: Model computed by fit.
+        drop_first: Drop or keep the first modality of categorical variables.
 
     Returns:
         coord: Coordinates of the dataframe in the fitted space.
     """
-    df_scaled = scaler(model, df)
+    df_scaled = scaler(model, df, drop_first)
     coord = pd.DataFrame(df_scaled @ model.V.T)
 
     coord.columns = get_projected_column_names(len(coord.columns))

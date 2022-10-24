@@ -97,7 +97,7 @@ def inverse_transform(
             seed=seed,
         )
     # Cast columns to same type as input
-    for name, dtype in model.original_dtypes.iteritems():
+    for name, dtype in model.original_dtypes.items():
         # Can create a bug if a column is object but contains int and float values,
         # first, we force the value type of the first value of the original df
         if dtype in ["object", "category"]:

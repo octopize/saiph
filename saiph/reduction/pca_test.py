@@ -131,3 +131,24 @@ def test_transform_vs_coord() -> None:
     df_transformed = transform(df, model)
 
     assert_frame_equal(coord, df_transformed)
+
+
+def test_dummy_pca() -> None:
+    df = pd.read_csv("~/dev/dummies.csv")
+
+    print('The data:')
+    print(df.head())
+
+    print('dtypes:', df.dtypes)
+    print("PCA with all variables")
+    coord, model = fit_transform(df)
+    print(coord)
+
+    print("PCA after dropping var1___0 ")
+    df = df.drop(columns = ['var1___0'])
+    coord, model = fit_transform(df)
+    print(coord)
+
+    # df_transformed = transform(df, model)
+
+    # assert_frame_equal(coord, df_transformed)

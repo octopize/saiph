@@ -22,11 +22,30 @@ from saiph.reduction.utils.common import (
 )
 from saiph.reduction.utils.svd import SVD
 
+def dummify(df: pd.DataFrame, drop_first: bool) -> pd.DataFrame:
+    """Dummifies the input data. If drop_first is True, remove one dummy for binomial vars only."""
+    if drop_first:
+        df_dummies = None
+        for c in df.columns:
+            drop = True
+            if len(df[c].unique()) > 2:
+                drop = False
+            tmp = pd.get_dummies(pd.DataFrame(df[c]).astype("category"), prefix_sep=DUMMIES_PREFIX_SEP, drop_first=drop)
+            if df_dummies is not None:
+                df_dummies = pd.concat([df_dummies, tmp], axis=1)
+            else:
+                df_dummies = tmp.copy()
+    else:
+        df_dummies = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP, drop_first=False)
+    return df_dummies
 
 def fit(
-    df: pd.DataFrame,
+    df: pd.DataFrame,    
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
+    *,
+    drop_first: bool,
+
 ) -> Model:
     """Fit a MCA model on data.
 
@@ -35,11 +54,13 @@ def fit(
         nf: Number of components to keep. default: min(df.shape)
         col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes). default: np.ones(df.shape[1])
-
+        drop_first: ...
     Returns:
         model: The model for transforming new data.
     """
-    nf = nf or min(pd.get_dummies(df).shape)
+    print('drop_first:', drop_first)
+
+    modality_count = {column: len(df[column].unique()) for column in df.columns}
 
     _col_weights = col_weights if col_weights is not None else np.ones(df.shape[1])
 
@@ -50,7 +71,10 @@ def fit(
 
     modality_numbers = []
     for column in df.columns:
-        modality_numbers += [len(df[column].unique())]
+        if drop_first and len(df[column].unique()) <= 2:
+            modality_numbers.append(len(df[column].unique())-1)
+        else:
+            modality_numbers.append(len(df[column].unique()))
 
     col_weights_dummies: NDArray[Any] = np.array(
         list(
@@ -60,12 +84,33 @@ def fit(
         )
     )
 
-    df_scale, _modalities, r, c = center(df)
+    nf = nf or min(len(df), sum(modality_numbers))
+
+    df_scale, _modalities, r, c = center(df, drop_first=drop_first)
+
     df_scale, T, D_c = _diag_compute(df_scale, r, c)
 
     # get the array gathering proportion of each modality among individual (N/n)
-    df_dummies = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df_dummies_full = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df_dummies = dummify(df=df, drop_first=drop_first)
+
+    print('df_dummies_full: ', df_dummies_full)
+    df_dummies_full.to_csv("../dummies.csv", index=False)  
+
+    print('df_dummies: ', len(df_dummies.columns))
+
+    dropped_categories = list(set(df_dummies_full.columns)-set(df_dummies.columns))
+    print('dropped_categories: ', dropped_categories)
+
     dummies_col_prop = len(df_dummies) / df_dummies.sum(axis=0)
+    print('dummies_col_prop: ', dummies_col_prop)
+
+    print('T:', T.shape)
+    print('col_weights_dummies:', col_weights_dummies.shape)
+    print('row_weights:', row_weights.shape)
+
+    print('T:', T)
+    print('col_weights_dummies:', col_weights_dummies)
 
     # apply the weights and compute the svd
     Z = ((T * col_weights_dummies).T * row_weights).T
@@ -98,6 +143,8 @@ def fit(
         row_weights=row_weights,
         dummies_col_prop=dummies_col_prop,
         modalities_types=modalities_types,
+        drop_first=drop_first,
+        dropped_categories = dropped_categories
     )
 
     return model
@@ -107,7 +154,9 @@ def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
-) -> Tuple[pd.DataFrame, Model]:
+    *,
+    drop_first: bool
+   ):
     """Fit a MCA model on data and return transformed data.
 
     Parameters:
@@ -120,13 +169,14 @@ def fit_transform(
         model: The model for transforming new data.
         coord: The transformed data.
     """
-    model = fit(df, nf, col_weights)
+    model = fit(df, nf, col_weights, drop_first=drop_first)
     coord = transform(df, model)
     return coord, model
 
 
 def center(
     df: pd.DataFrame,
+    drop_first: bool
 ) -> Tuple[pd.DataFrame, NDArray[Any], NDArray[Any], NDArray[Any]]:
     """Center data and compute modalities.
 
@@ -143,7 +193,7 @@ def center(
         row_sum: Sums line by line
         column_sum: Sums column by column
     """
-    df_scale = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df_scale = dummify(df=df, drop_first=drop_first)
     _modalities = df_scale.columns.values
 
     # scale data
@@ -164,7 +214,7 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         df_scaled: The scaled DataFrame.
     """
-    df_scaled = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df_scaled = dummify(df=df, drop_first=model.drop_first)
     if model._modalities is not None:
         for mod in model._modalities:
             if mod not in df_scaled:
@@ -174,6 +224,8 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     # scale
     df_scaled /= df_scaled.sum().sum()
     df_scaled /= np.array(np.sum(df_scaled, axis=1))[:, None]
+    df_scaled = df_scaled.fillna(0.0) # Needed when drop_first=True
+
     return df_scaled
 
 
@@ -203,6 +255,7 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
         coord: Coordinates of the dataframe in the fitted space.
     """
     df_scaled = scaler(model, df)
+    print('df_scaled: ', df_scaled)
     coord = df_scaled @ model.D_c @ model.V.T
     coord.columns = get_projected_column_names(model.nf)
     return coord
@@ -226,7 +279,7 @@ def get_variable_contributions(
         raise ValueError(
             "Model has not been fitted. Call fit() to create a Model instance."
         )
-    df = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df = dummify(df=df, drop_first=model.drop_first)
 
     centered_df = df / df.sum().sum()
 

@@ -9,6 +9,7 @@ from saiph.exception import InvalidParameterException
 from saiph.models import Model
 from saiph.reduction import DUMMIES_PREFIX_SEP
 from saiph.reduction.utils.common import get_dummies_mapping
+from sklearn.preprocessing import MinMaxScaler, normalize
 
 
 def inverse_transform(
@@ -88,12 +89,17 @@ def inverse_transform(
         inverse_coord_quali = inverse_data.set_axis(
             model.dummy_categorical, axis="columns"
         )
-
+        print('before-divide: ', inverse_coord_quali)
         descaled_values_quali = inverse_coord_quali.divide(model.dummies_col_prop)
+
+        print('model.dummy_categorical: ', model.dummy_categorical)
+        print('model.dropped_categories: ', model.dropped_categories)
+        print('dummies_col_prop: ', model.dummies_col_prop)
         inverse = undummify(
             descaled_values_quali,
             get_dummies_mapping(model.original_categorical, model.dummy_categorical),
             use_max_modalities=use_max_modalities,
+            dropped_categories=model.dropped_categories,
             seed=seed,
         )
     # Cast columns to same type as input
@@ -117,6 +123,8 @@ def undummify(
     dummies_mapping: Dict[str, List[str]],
     *,
     use_max_modalities: bool = True,
+    dropped_categories: Optional[List[str]] = None,
+    # rescale: bool = False,
     seed: Optional[int] = None,
 ) -> pd.DataFrame:
     """Return undummified dataframe from the dummy dataframe.
@@ -126,6 +134,8 @@ def undummify(
         dummies_mapping: mapping between categorical columns and dummies columns.
         use_max_modalities: True to select the modality with the highest probability.
                             False for a weighted random selection. default: True
+        
+        dropped_modalities: ...
         seed: seed to fix randomness if use_max_modalities = False. default: None
 
     Returns:
@@ -136,10 +146,42 @@ def undummify(
 
     def get_suffix(string: str) -> str:
         return string.split(DUMMIES_PREFIX_SEP)[1]
-
+    
     for original_column, dummy_columns in dummies_mapping.items():
+        single_category = dummy_df[dummy_columns].copy()
+
+        print('single_category 00: ', single_category.iloc[0])
+
+        # if rescale:
+        #     single_category = single_category.div(single_category.sum(axis=1), axis=0)
+        #     scaler = MinMaxScaler()
+        #     print('single_category-shape', single_category.shape)
+        #     scaled_X = scaler.fit_transform(single_category)
+        #     print('scaled_X: ', scaled_X)
+        #     print('scaled_X: ', type(scaled_X))
+        #     normalized_X = normalize(scaled_X, norm='l1', axis=1, copy=True)
+        #     # print('normalized_X: ', normalized_X)
+
+
+        # print('single_category rescaled: ', single_category.iloc[0])
+        extra_col = None
+        if dropped_categories:
+            tmp = [c for c in dropped_categories if c.startswith(original_column+DUMMIES_PREFIX_SEP)]
+            extra_col = None
+            if len(tmp) > 0:
+                extra_col = tmp[0]
+        if extra_col:
+            single_category[extra_col] =  1 - single_category.sum(axis="columns")
+
+        # if original_column == 'Class':
+        #     print('single_category: ', single_category)
+        # print(original_column)
+        # print('single_category: ', single_category.iloc[0])
+        # print(np.sum(single_category, axis=1))
+
+        cum_probability = single_category.cumsum(axis=1)
+        print('cum_probability: ', set(cum_probability[cum_probability.columns[-1]]))
         # Handle a single category with all the possible modalities
-        single_category = dummy_df[dummy_columns]
         if use_max_modalities:
             # select modalities with highest probability
             chosen_modalities = single_category.idxmax(axis="columns")
@@ -163,8 +205,13 @@ def get_random_weighted_columns(
         column_labels: selected column labels
     """
     # Example for 1 row:  [0.1, 0.3, 0.6] --> [0.1, 0.4, 1.0]
+    # print('df: ', df)
     cum_probability = df.cumsum(axis=1)
+    # print('cum_probability: ', cum_probability)
+    # print('cum_probability: ', set(cum_probability[cum_probability.columns[-1]]))
+
     random_probability = random_gen.random((cum_probability.shape[0], 1))
+
     # [0.342] < [0.1, 0.4, 1.0] --> [False, True, True] --> idx: 1
     column_labels = (random_probability < cum_probability).idxmax(axis=1)
 

@@ -68,3 +68,6 @@ class Model:
     cos2: Optional[pd.DataFrame] = None
     # Proportion of individuals taking each modality.
     dummies_col_prop: Optional[NDArray[np.float_]] = None  # MCA only
+
+    dropped_categories: List[str] = None
+    drop_first: bool = None

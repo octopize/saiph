@@ -58,6 +58,39 @@ def test_undummify(
     )
 
     df = undummify(dummy_df, mapping, use_max_modalities=use_max_modalities, seed=321)
+    print('undummified_df: ', df)
+
+    assert_frame_equal(df, expected)
+
+
+@pytest.mark.parametrize(
+    "use_max_modalities, expected",
+    [
+        (
+            True,
+            pd.DataFrame(
+                [["wrench", "orange"], ["hammer", "apple"]], columns=["tool", "fruit"]
+            ),
+        ),
+        (
+            False,
+            pd.DataFrame(
+                [["wrench", "orange"], ["wrench", "apple"]], columns=["tool", "fruit"]
+            ),
+        ),
+    ],
+)
+def test_undummify_dropped_modality(
+    mapping: Dict[str, List[str]], use_max_modalities: bool, expected: pd.DataFrame
+) -> None:
+    """Test undummify a disjunctive table with different use_max_modalities."""
+    dummy_df = pd.DataFrame(
+        [[0.3, 0.99], [0.51, 0.2]],
+        columns=["tool___hammer", "fruit___orange"],
+    )
+
+    df = undummify(dummy_df, mapping, use_max_modalities=use_max_modalities, seed=321)
+    print('undummified_df: ', df)
 
     assert_frame_equal(df, expected)
 

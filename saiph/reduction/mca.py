@@ -69,7 +69,7 @@ def fit(
 
     # apply the weights and compute the svd
     Z = ((T * col_weights_dummies).T * row_weights).T
-    U, s, V = SVD(Z)
+    U, s, V = SVD(Z, nf=nf)
 
     explained_var, explained_var_ratio = get_explained_variance(
         s, df_dummies.shape[0], nf

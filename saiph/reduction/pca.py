@@ -41,7 +41,7 @@ def fit(
 
     # apply weights and compute svd
     Z = ((df_centered * _col_weights).T * row_w).T
-    U, s, V = SVD(Z)
+    U, s, V = SVD(Z, nf=nf)
 
     U = ((U.T) / np.sqrt(row_w)).T
     V = V / np.sqrt(_col_weights)

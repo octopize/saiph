@@ -9,8 +9,8 @@ from sklearn.utils import extmath
 
 def get_svd(
     df: pd.DataFrame,
-    nf:int,
-    svd_flip: bool = True,
+    nf:int=None,
+    svd_flip: bool=True,
     seed:int=None
 ) -> Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]:
     """Compute Singular Value Decomposition.
@@ -18,7 +18,7 @@ def get_svd(
     Arguments
     ---------
         df: Matrix to decompose, shape (m, n)
-        nf: target number of dimensions to retain (number of singular values)
+        nf: target number of dimensions to retain (number of singular values). Default `None`
         svd_flip: Whether to use svd_flip on U and V or not. Default `True`
         seed: random seed. Default `None`
 
@@ -28,7 +28,7 @@ def get_svd(
         S: vector of the singular values, shape (l,)
         Vt: unitary matrix having right singular vectors as rows, shape (l,n)
     """
-    if nf != min(pd.get_dummies(df).shape):
+    if nf is not None:
         # Randomized SVD
         U, S, Vt = get_direct_randomized_svd(df, q=2, l=nf, seed=seed)
 

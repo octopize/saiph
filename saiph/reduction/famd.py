@@ -421,7 +421,7 @@ def compute_continuous_cos2(
 def _compute_svd(
     model: Model, weighted: NDArray[np.float_], min_nf: int
 ) -> Tuple[NDArray[np.float_], NDArray[np.float_], NDArray[np.float_]]:
-    U, s, V = SVD(weighted.T, svd_flip=False)
+    U, s, V = get_svd(weighted.T, svd_flip=False)
 
     # Only keep first nf components
     U = U[:, :min_nf]

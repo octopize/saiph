@@ -265,7 +265,7 @@ def _compute_svd(
     weighted: pd.DataFrame, min_nf: int, col_sum: pd.DataFrame
 ) -> Tuple[pd.DataFrame, NDArray[np.float_]]:
 
-    U, s, V = SVD(weighted.T, svd_flip=False)
+    U, s, V = get_svd(weighted.T, svd_flip=False)
 
     U = U[:, :min_nf]
     V = V.T[:, :min_nf]

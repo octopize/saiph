@@ -21,7 +21,7 @@ from saiph.reduction.utils.common import (
     row_division,
     row_multiplication,
 )
-from saiph.reduction.utils.svd import SVD
+from saiph.reduction.utils.svd import get_svd
 
 
 def center(
@@ -118,16 +118,16 @@ def fit(
     Z = df_scaled.multiply(col_weights).T.multiply(row_w).T
 
     # compute the svd
-    _U, s, _V = SVD(Z.todense(), nf=nf) if isinstance(Z, scipy.sparse.spmatrix) else SVD(Z, nf=nf)
+    _U, S, _Vt = get_svd(Z.todense(), nf=nf) if isinstance(Z, scipy.sparse.spmatrix) else get_svd(Z, nf=nf)
 
     U = ((_U.T) / np.sqrt(row_w)).T
-    V = _V / np.sqrt(col_weights)
+    Vt = _Vt / np.sqrt(col_weights)
 
-    explained_var, explained_var_ratio = get_explained_variance(s, df.shape[0], nf)
+    explained_var, explained_var_ratio = get_explained_variance(S, df.shape[0], nf)
 
     U = U[:, :nf]
-    s = s[:nf]
-    V = V[:nf, :]
+    S = S[:nf]
+    Vt = Vt[:nf, :]
 
     model = Model(
         original_dtypes=df.dtypes,
@@ -135,11 +135,11 @@ def fit(
         original_continuous=quanti,
         dummy_categorical=dummy_categorical,
         U=U,
-        V=V,
-        s=s,
+        V=Vt,
+        s=S,
         explained_var=explained_var,
         explained_var_ratio=explained_var_ratio,
-        variable_coord=pd.DataFrame(V.T),
+        variable_coord=pd.DataFrame(Vt.T),
         mean=mean,
         std=std,
         prop=prop,

@@ -20,7 +20,7 @@ from saiph.reduction.utils.common import (
     row_division,
     row_multiplication,
 )
-from saiph.reduction.utils.svd import SVD
+from saiph.reduction.utils.svd import get_svd
 
 
 def fit(
@@ -69,15 +69,15 @@ def fit(
 
     # apply the weights and compute the svd
     Z = ((T * col_weights_dummies).T * row_weights).T
-    U, s, V = SVD(Z, nf=nf)
+    U, S, Vt = get_svd(Z, nf=nf)
 
     explained_var, explained_var_ratio = get_explained_variance(
-        s, df_dummies.shape[0], nf
+        S, df_dummies.shape[0], nf
     )
 
     U = U[:, :nf]
-    s = s[:nf]
-    V = V[:nf, :]
+    S = S[:nf]
+    Vt = Vt[:nf, :]
 
     model = Model(
         original_dtypes=df.dtypes,
@@ -85,10 +85,10 @@ def fit(
         original_continuous=[],
         dummy_categorical=df_dummies.columns.to_list(),
         U=U,
-        V=V,
+        V=Vt,
         explained_var=explained_var,
         explained_var_ratio=explained_var_ratio,
-        variable_coord=pd.DataFrame(D_c @ V.T),
+        variable_coord=pd.DataFrame(D_c @ Vt.T),
         _modalities=_modalities,
         D_c=D_c,
         type="mca",

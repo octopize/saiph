@@ -7,7 +7,7 @@ from scipy import linalg
 from sklearn.utils import extmath
 
 
-def SVD(
+def get_svd(
     df: pd.DataFrame,
     nf:int,
     svd_flip: bool = True,
@@ -15,39 +15,49 @@ def SVD(
 ) -> Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]:
     """Compute Singular Value Decomposition.
 
-    Parameters:
-        df: Matrix to decompose.
-        svd_flip: Whether to use svd_flip on U and V or not.
+    Arguments
+    ---------
+        df: Matrix to decompose, shape (m, n)
+        nf: target number of dimensions to retain (number of singular values)
+        svd_flip: Whether to use svd_flip on U and V or not. Default `True`
+        seed: random seed. Default `None`
 
-    Returns:
-        U: Unitary matrix having left singular vectors as columns.
-        s: The singular values.
-        V: Unitary matrix having right singular vectors as rows.
+    Returns
+    -------
+        U: unitary matrix having left singular vectors as columns, shape (m,l)
+        S: vector of the singular values, shape (l,)
+        Vt: unitary matrix having right singular vectors as rows, shape (l,n)
     """
     if nf != min(pd.get_dummies(df).shape):
         # Randomized SVD
-        U, s, V = direct_svd(df, q=2, l=nf, seed=seed)
+        U, S, Vt = get_direct_randomized_svd(df, q=2, l=nf, seed=seed)
 
     else:
         # Full SVD
-        U, s, V = linalg.svd(df, full_matrices=False)
+        U, S, Vt = linalg.svd(df, full_matrices=False)
 
     if svd_flip:
-        U, V = extmath.svd_flip(U, V)
+        U, Vt = extmath.svd_flip(U, Vt)
   
-    return U, s, V
+    return U, S, Vt
 
 
 
-def randomized_subspace_iteration(A, q:int=1, l:int=None, seed:int=None):
-    """Algorithm 4.4 page 27
-    q is the exponent of the power method
-    l the target number of retained dimensions
-    A is the input matrix 
-    Q the matrix whose range approximates the range of A
+def get_randomized_subspace_iteration(A, l:int, q:int=2, seed:int=None):
+    """Generate a subspace for more efficient SVD compuation using random methods.
+    
+    From http://arxiv.org/abs/0909.4061, algorithm 4.4 page 27
 
-    A: m x n
-    Q: m x l
+    Arguments
+    ---------
+        A: input matrix, shape (m, n)
+        l: target number of retained dimensions, l<min(m,n)
+        q: exponent of the power method. Higher this exponent, the more precise will be the SVD, but more complex to compute. Default `2`
+        seed: random seed. Default `None`
+        
+    Returns
+    -------
+        Q: matrix whose range approximates the range of A, shape (m, l)
     """
     m, n = A.shape
     np.random.seed(seed)
@@ -66,19 +76,23 @@ def randomized_subspace_iteration(A, q:int=1, l:int=None, seed:int=None):
     return Q
 
 
-def direct_svd(A, q:int=1, l:int=None, seed:int=None):
-    """Algorithm 5.1 page 29
-    q is the exponent of the power method
-    l the target number of retained dimensions
-    A is the input matrix 
-    Q the matrix whose range approximates the range of A
+def get_direct_randomized_svd(A, l:int, q:int=2, seed:int=None):
+    """Compute a fixed-rank SVD approximation using random methods.
+    
+    From http://arxiv.org/abs/0909.4061, algorithm 5.1 page 29
 
-    A: (m, n)
-    Q: (m, l)
+    Arguments
+    ---------
+        A: input matrix, shape (m, n)
+        l: target number of retained dimensions, l<min(m,n)
+        q: exponent of the power method. Higher this exponent, the more precise will be the SVD, but more complex to compute.
+        seed: random seed. Default `None`
 
-    U: (m, l)
-    S: (l,)
-    V: (l, n)
+    Returns
+    -------
+        U: unitary matrix having left singular vectors as columns, shape (m,l)
+        S: vector of the singular values, shape (l,)
+        Vt: unitary matrix having right singular vectors as rows, shape (l,n)
     """
     if A.shape[1] > A.shape[0]:
         A = A.transpose()
@@ -86,7 +100,8 @@ def direct_svd(A, q:int=1, l:int=None, seed:int=None):
     else:
         is_transposed = False
 
-    Q = randomized_subspace_iteration(A, q=q, l=l, seed=seed)
+    # Q: matrix whose range approximates the range of A, shape (m, l)
+    Q = get_randomized_subspace_iteration(A, q=q, l=l, seed=seed)
 
     B = Q.transpose() @ A
     Utilde, S, Vt = np.linalg.svd(B, full_matrices=False)

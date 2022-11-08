@@ -1,4 +1,4 @@
-from typing import Any, Tuple
+from typing import Any, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -9,9 +9,9 @@ from sklearn.utils import extmath
 
 def get_svd(
     df: pd.DataFrame,
-    nf:int=None,
-    svd_flip: bool=True,
-    seed:int=None
+    nf: Optional[int] = None,
+    svd_flip: bool = True,
+    seed: Optional[int] = None,
 ) -> Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]:
     """Compute Singular Value Decomposition.
 
@@ -28,7 +28,7 @@ def get_svd(
         S: vector of the singular values, shape (l,)
         Vt: unitary matrix having right singular vectors as rows, shape (l,n)
     """
-    if nf is not None:
+    if nf is not None and nf != np.min(df.shape):
         # Randomized SVD
         U, S, Vt = get_direct_randomized_svd(df, q=2, l=nf, seed=seed)
 
@@ -38,14 +38,15 @@ def get_svd(
 
     if svd_flip:
         U, Vt = extmath.svd_flip(U, Vt)
-  
+
     return U, S, Vt
 
 
-
-def get_randomized_subspace_iteration(A, l:int, q:int=2, seed:int=None):
+def get_randomized_subspace_iteration(
+    A: NDArray[np.float_], l: int, q: int = 2, seed: Optional[int] = None
+) -> NDArray[np.float_]:
     """Generate a subspace for more efficient SVD compuation using random methods.
-    
+
     From http://arxiv.org/abs/0909.4061, algorithm 4.4 page 27
 
     Arguments
@@ -54,7 +55,7 @@ def get_randomized_subspace_iteration(A, l:int, q:int=2, seed:int=None):
         l: target number of retained dimensions, l<min(m,n)
         q: exponent of the power method. Higher this exponent, the more precise will be the SVD, but more complex to compute. Default `2`
         seed: random seed. Default `None`
-        
+
     Returns
     -------
         Q: matrix whose range approximates the range of A, shape (m, l)
@@ -76,9 +77,11 @@ def get_randomized_subspace_iteration(A, l:int, q:int=2, seed:int=None):
     return Q
 
 
-def get_direct_randomized_svd(A, l:int, q:int=2, seed:int=None):
+def get_direct_randomized_svd(
+    A: NDArray[np.float_], l: int, q: int = 2, seed: Optional[int] = None
+) -> Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]:
     """Compute a fixed-rank SVD approximation using random methods.
-    
+
     From http://arxiv.org/abs/0909.4061, algorithm 5.1 page 29
 
     Arguments

@@ -63,8 +63,8 @@ def get_randomized_subspace_iteration(
         Q: matrix whose range approximates the range of A, shape (m, l)
     """
     m, n = A.shape
-    np.random.seed(seed)
-    omega = np.random.normal(loc=0, scale=1, size=(n, l))
+    random_gen = np.random.default_rng(seed=seed)
+    omega = random_gen.normal(loc=0, scale=1, size=(n, l))
 
     # Initialization
     Y = A @ omega

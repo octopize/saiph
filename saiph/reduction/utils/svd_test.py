@@ -19,7 +19,7 @@ def matrix() -> pd.DataFrame:
     return A
 
 
-def test_full_svd(test_matrix: pd.DataFrame) -> None:
+def test_full_svd(matrix: pd.DataFrame) -> None:
     expected_U: NDArray[np.float_] = np.array(
         [
             [0.21483724, 0.88723069, -0.40824829],
@@ -42,7 +42,7 @@ def test_full_svd(test_matrix: pd.DataFrame) -> None:
 
     # Should return a full SVD using scipy implementation
     U, S, Vt = get_svd(
-        test_matrix, nf=np.min(pd.get_dummies(test_matrix).shape), seed=2
+        matrix, nf=np.min(pd.get_dummies(matrix).shape), seed=2
     )
 
     assert_array_almost_equal(U, expected_U, decimal=6)
@@ -50,7 +50,7 @@ def test_full_svd(test_matrix: pd.DataFrame) -> None:
     assert_array_almost_equal(Vt, expected_Vt, decimal=6)
 
 
-def test_randomized_subspace(test_matrix: pd.DataFrame) -> None:
+def test_randomized_subspace(matrix: pd.DataFrame) -> None:
     expected_Q: NDArray[np.float_] = np.array(
         [
             [-0.21483746, 0.88723063],
@@ -59,12 +59,12 @@ def test_randomized_subspace(test_matrix: pd.DataFrame) -> None:
         ]
     )
 
-    Q = get_randomized_subspace_iteration(test_matrix, q=2, l=2, seed=2)
+    Q = get_randomized_subspace_iteration(matrix, q=2, l=2, seed=2)
 
     assert_array_almost_equal(Q, expected_Q, decimal=6)
 
 
-def test_direct_svd(test_matrix: pd.DataFrame) -> None:
+def test_direct_randomized_svd(matrix: pd.DataFrame) -> None:
 
     expected_U: NDArray[np.float_] = np.array(
         [[0.21483724, 0.88723069], [0.52058739, 0.24964395], [0.82633754, -0.38794278]]
@@ -76,7 +76,7 @@ def test_direct_svd(test_matrix: pd.DataFrame) -> None:
         [[0.47967118, 0.57236779, 0.66506441], [-0.77669099, -0.07568647, 0.62531805]]
     )
 
-    U, S, Vt = get_direct_randomized_svd(test_matrix, q=2, l=2, seed=2)
+    U, S, Vt = get_direct_randomized_svd(matrix, q=2, l=2, seed=2)
 
     assert_array_almost_equal(U, expected_U, decimal=6)
     assert_array_almost_equal(S, expected_S, decimal=6)

@@ -48,7 +48,8 @@ def get_randomized_subspace_iteration(
 ) -> NDArray[np.float_]:
     """Generate a subspace for more efficient SVD compuation using random methods.
 
-    From http://arxiv.org/abs/0909.4061, algorithm 4.4 page 27
+    From https://arxiv.org/abs/0909.4061, algorithm 4.4 page 27
+    (Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions. Halko, Nathan and Martinsson, Per-Gunnar and Tropp, Joel A.)
 
     Arguments
     ---------
@@ -66,7 +67,7 @@ def get_randomized_subspace_iteration(
     omega = np.random.normal(loc=0, scale=1, size=(n, l))
 
     # Initialization
-    Y = A @ Omega
+    Y = A @ omega
     Q, _ = np.linalg.qr(Y)
 
     # Iteration
@@ -84,6 +85,7 @@ def get_direct_randomized_svd(
     """Compute a fixed-rank SVD approximation using random methods.
 
     From https://arxiv.org/abs/0909.4061, algorithm 5.1 page 29
+    (Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions. Halko, Nathan and Martinsson, Per-Gunnar and Tropp, Joel A.)
 
     Arguments
     ---------

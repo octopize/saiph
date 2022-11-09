@@ -10,6 +10,7 @@ from sklearn.utils import extmath
 def get_svd(
     df: pd.DataFrame,
     nf: Optional[int] = None,
+    *,
     svd_flip: bool = True,
     seed: Optional[int] = None,
 ) -> Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]:

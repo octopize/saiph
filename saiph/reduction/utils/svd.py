@@ -63,7 +63,7 @@ def get_randomized_subspace_iteration(
     """
     m, n = A.shape
     np.random.seed(seed)
-    Omega = np.random.normal(loc=0, scale=1, size=(n, l))
+    omega = np.random.normal(loc=0, scale=1, size=(n, l))
 
     # Initialization
     Y = A @ Omega

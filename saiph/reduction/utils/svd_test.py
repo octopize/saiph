@@ -13,7 +13,7 @@ from saiph.reduction.utils.svd import (
 
 # Matrix to decompose
 @pytest.fixture
-def test_matrix() -> pd.DataFrame:
+def matrix() -> pd.DataFrame:
     A: NDArray[np.float_] = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
     A = pd.DataFrame(A)
     return A

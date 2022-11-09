@@ -83,7 +83,7 @@ def get_direct_randomized_svd(
 ) -> Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]:
     """Compute a fixed-rank SVD approximation using random methods.
 
-    From http://arxiv.org/abs/0909.4061, algorithm 5.1 page 29
+    From https://arxiv.org/abs/0909.4061, algorithm 5.1 page 29
 
     Arguments
     ---------

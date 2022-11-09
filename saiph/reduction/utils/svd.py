@@ -44,7 +44,7 @@ def get_svd(
 
 
 def get_randomized_subspace_iteration(
-    A: NDArray[np.float_], l: int, q: int = 2, seed: Optional[int] = None
+    A: NDArray[np.float_], l: int, *, q: int = 2, seed: Optional[int] = None
 ) -> NDArray[np.float_]:
     """Generate a subspace for more efficient SVD compuation using random methods.
 

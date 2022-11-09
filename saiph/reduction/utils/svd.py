@@ -70,7 +70,7 @@ def get_randomized_subspace_iteration(
     Q, _ = np.linalg.qr(Y)
 
     # Iteration
-    for i in range(q):
+    for _ in range(q):
         Ytilde = A.transpose() @ Q
         Qtilde, _ = np.linalg.qr(Ytilde)
         Y = A @ Qtilde

@@ -31,7 +31,9 @@ def get_svd(
     """
     if nf is not None and nf != np.min(df.shape):
         # Randomized SVD
-        U, S, Vt = get_direct_randomized_svd(df, q=2, l=nf, seed=seed)
+        U, S, Vt = get_direct_randomized_svd(
+            df, q=2, l_retained_dimensions=nf, seed=seed
+        )
 
     else:
         # Full SVD
@@ -44,18 +46,24 @@ def get_svd(
 
 
 def get_randomized_subspace_iteration(
-    A: NDArray[np.float_], l: int, *, q: int = 2, seed: Optional[int] = None
+    A: NDArray[np.float_],
+    l_retained_dimensions: int,
+    *,
+    q: int = 2,
+    seed: Optional[int] = None,
 ) -> NDArray[np.float_]:
     """Generate a subspace for more efficient SVD compuation using random methods.
 
     From https://arxiv.org/abs/0909.4061, algorithm 4.4 page 27
-    (Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions. Halko, Nathan and Martinsson, Per-Gunnar and Tropp, Joel A.)
+    (Finding structure with randomness: Probabilistic algorithms for constructing approximate
+    matrix decompositions. Halko, Nathan and Martinsson, Per-Gunnar and Tropp, Joel A.)
 
     Arguments
     ---------
         A: input matrix, shape (m, n)
-        l: target number of retained dimensions, l<min(m,n)
-        q: exponent of the power method. The higher this exponent, the more precise will be the SVD, but more complex to compute. Default `2`
+        l_retained_dimensions: target number of retained dimensions, l<min(m,n)
+        q: exponent of the power method. The higher this exponent, the more precise will be
+            the SVD, but more complex to compute. Default `2`
         seed: random seed. Default `None`
 
     Returns
@@ -64,7 +72,7 @@ def get_randomized_subspace_iteration(
     """
     m, n = A.shape
     random_gen = np.random.default_rng(seed=seed)
-    omega = random_gen.normal(loc=0, scale=1, size=(n, l))
+    omega = random_gen.normal(loc=0, scale=1, size=(n, l_retained_dimensions))
 
     # Initialization
     Y = A @ omega
@@ -80,18 +88,23 @@ def get_randomized_subspace_iteration(
 
 
 def get_direct_randomized_svd(
-    A: NDArray[np.float_], l: int, q: int = 2, seed: Optional[int] = None
+    A: NDArray[np.float_],
+    l_retained_dimensions: int,
+    q: int = 2,
+    seed: Optional[int] = None,
 ) -> Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]:
     """Compute a fixed-rank SVD approximation using random methods.
 
     From https://arxiv.org/abs/0909.4061, algorithm 5.1 page 29
-    (Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions. Halko, Nathan and Martinsson, Per-Gunnar and Tropp, Joel A.)
+    (Finding structure with randomness: Probabilistic algorithms for constructing approximate
+    matrix decompositions. Halko, Nathan and Martinsson, Per-Gunnar and Tropp, Joel A.)
 
     Arguments
     ---------
         A: input matrix, shape (m, n)
-        l: target number of retained dimensions, l<min(m,n)
-        q: exponent of the power method. Higher this exponent, the more precise will be the SVD, but more complex to compute.
+        l_retained_dimensions: target number of retained dimensions, l<min(m,n)
+        q: exponent of the power method. Higher this exponent, the more precise will be
+        the SVD, but more complex to compute.
         seed: random seed. Default `None`
 
     Returns
@@ -107,7 +120,9 @@ def get_direct_randomized_svd(
         is_transposed = False
 
     # Q: matrix whose range approximates the range of A, shape (m, l)
-    Q = get_randomized_subspace_iteration(A, q=q, l=l, seed=seed)
+    Q = get_randomized_subspace_iteration(
+        A, q=q, l_retained_dimensions=l_retained_dimensions, seed=seed
+    )
 
     B = Q.transpose() @ A
     Utilde, S, Vt = np.linalg.svd(B, full_matrices=False)

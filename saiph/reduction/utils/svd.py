@@ -54,7 +54,7 @@ def get_randomized_subspace_iteration(
     ---------
         A: input matrix, shape (m, n)
         l: target number of retained dimensions, l<min(m,n)
-        q: exponent of the power method. Higher this exponent, the more precise will be the SVD, but more complex to compute. Default `2`
+        q: exponent of the power method. The higher this exponent, the more precise will be the SVD, but more complex to compute. Default `2`
         seed: random seed. Default `None`
 
     Returns

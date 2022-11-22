@@ -31,6 +31,7 @@ def get_svd(
     """
     if nf is not None and nf != np.min(df.shape):
         # Randomized SVD
+        print('Randomized SVD')
         U, S, Vt = get_direct_randomized_svd(
             df, q=2, l_retained_dimensions=nf, seed=seed
         )
@@ -76,6 +77,7 @@ def get_randomized_subspace_iteration(
 
     # Initialization
     Y = A @ omega
+    del omega
     Q, _ = np.linalg.qr(Y)
 
     # Iteration
@@ -84,6 +86,7 @@ def get_randomized_subspace_iteration(
         Qtilde, _ = np.linalg.qr(Ytilde)
         Y = A @ Qtilde
         Q, _ = np.linalg.qr(Y)
+        del Y, Ytilde, Qtilde
     return Q
 
 
@@ -125,8 +128,11 @@ def get_direct_randomized_svd(
     )
 
     B = Q.transpose() @ A
+    # del Q
     Utilde, S, Vt = np.linalg.svd(B, full_matrices=False)
+    del B
     U = Q @ Utilde
+    del Utilde
 
     if is_transposed:
         U_bis = U

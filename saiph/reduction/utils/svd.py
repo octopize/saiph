@@ -31,7 +31,6 @@ def get_svd(
     """
     if nf is not None and nf != np.min(df.shape):
         # Randomized SVD
-        print('Randomized SVD')
         U, S, Vt = get_direct_randomized_svd(
             df, q=2, l_retained_dimensions=nf, seed=seed
         )

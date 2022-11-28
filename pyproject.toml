@@ -14,7 +14,6 @@ scipy = "^1.7"
 scikit-learn = "^1.0"
 toolz = "^0.11.2"
 matplotlib = {version = "^3.5.2", optional = true}
-memory-profiler = "^0.61.0"
 
 [tool.poetry.extras]
 matplotlib = ["matplotlib"]

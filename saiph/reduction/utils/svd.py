@@ -85,7 +85,7 @@ def get_randomized_subspace_iteration(
         Qtilde, _ = np.linalg.qr(Ytilde)
         Y = A @ Qtilde
         Q, _ = np.linalg.qr(Y)
-        del Y, Ytilde, Qtilde
+    del Y, Ytilde, Qtilde
     return Q
 
 

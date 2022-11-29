@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ def get_svd(
     *,
     svd_flip: bool = True,
     seed: Optional[int] = None,
-) -> Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]:
+) -> Tuple[NDArray[np.float_], NDArray[np.float_], NDArray[np.float_]]:
     """Compute Singular Value Decomposition.
 
     Arguments
@@ -92,7 +92,7 @@ def get_direct_randomized_svd(
     l_retained_dimensions: int,
     q: int = 2,
     seed: Optional[int] = None,
-) -> Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]:
+) -> Tuple[NDArray[np.float_], NDArray[np.float_], NDArray[np.float_]]:
     """Compute a fixed-rank SVD approximation using random methods.
 
     From https://arxiv.org/abs/0909.4061, algorithm 5.1 page 29

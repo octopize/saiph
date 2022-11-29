@@ -19,6 +19,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
+    seed: Optional[int] = None,
 ) -> Model:
     """Fit a PCA model on data.
 
@@ -41,7 +42,7 @@ def fit(
 
     # apply weights and compute svd
     Z = ((df_centered * _col_weights).T * row_w).T
-    U, S, Vt = get_svd(Z, nf=nf)
+    U, S, Vt = get_svd(Z, nf=nf, seed=seed)
 
     U = ((U.T) / np.sqrt(row_w)).T
     Vt = Vt / np.sqrt(_col_weights)
@@ -79,6 +80,7 @@ def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
+    seed: Optional[int] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a PCA model on data and return transformed data.
 
@@ -92,7 +94,7 @@ def fit_transform(
         model: The model for transforming new data.
         coord: The transformed data.
     """
-    model = fit(df, nf, col_weights)
+    model = fit(df, nf, col_weights, seed=seed)
     coord = transform(df, model)
     return coord, model
 

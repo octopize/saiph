@@ -86,6 +86,7 @@ def fit(
             NDArray[Any],
         ],
     ] = center,
+    seed: Optional[int] = None,
 ) -> Model:
     """Fit a FAMD model on data.
 
@@ -119,9 +120,9 @@ def fit(
 
     # compute the svd
     _U, S, _Vt = (
-        get_svd(Z.todense(), nf=nf)
+        get_svd(Z.todense(), nf=nf, seed=seed)
         if isinstance(Z, scipy.sparse.spmatrix)
-        else get_svd(Z, nf=nf)
+        else get_svd(Z, nf=nf, seed=seed)
     )
 
     U = ((_U.T) / np.sqrt(row_w)).T
@@ -163,6 +164,7 @@ def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
+    seed: Optional[int] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a FAMD model on data and return transformed data.
 
@@ -176,7 +178,7 @@ def fit_transform(
         coord: The transformed data.
         model: The model for transforming new data.
     """
-    model = fit(df, nf, col_weights)
+    model = fit(df, nf, col_weights, seed=seed)
     coord = transform(df, model)
     return coord, model
 

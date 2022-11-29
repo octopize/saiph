@@ -127,11 +127,12 @@ def get_direct_randomized_svd(
     )
 
     B = Q.transpose() @ A
-    # del Q
+
     Utilde, S, Vt = np.linalg.svd(B, full_matrices=False)
     del B
+
     U = Q @ Utilde
-    del Utilde
+    del Utilde, Q
 
     if is_transposed:
         U_bis = U

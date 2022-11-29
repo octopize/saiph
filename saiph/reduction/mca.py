@@ -27,6 +27,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
+    seed: Optional[int] = None,
 ) -> Model:
     """Fit a MCA model on data.
 
@@ -69,7 +70,7 @@ def fit(
 
     # apply the weights and compute the svd
     Z = ((T * col_weights_dummies).T * row_weights).T
-    U, S, Vt = get_svd(Z, nf=nf)
+    U, S, Vt = get_svd(Z, nf=nf, seed=seed)
 
     explained_var, explained_var_ratio = get_explained_variance(
         S, df_dummies.shape[0], nf
@@ -107,6 +108,7 @@ def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
+    seed: Optional[int] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a MCA model on data and return transformed data.
 
@@ -120,7 +122,7 @@ def fit_transform(
         model: The model for transforming new data.
         coord: The transformed data.
     """
-    model = fit(df, nf, col_weights)
+    model = fit(df, nf, col_weights, seed=seed)
     coord = transform(df, model)
     return coord, model
 

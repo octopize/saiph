@@ -76,7 +76,6 @@ def get_randomized_subspace_iteration(
 
     # Initialization
     Y = A @ omega
-    del omega
     Q, _ = np.linalg.qr(Y)
 
     # Iteration
@@ -85,7 +84,6 @@ def get_randomized_subspace_iteration(
         Qtilde, _ = np.linalg.qr(Ytilde)
         Y = A @ Qtilde
         Q, _ = np.linalg.qr(Y)
-    del Y, Ytilde, Qtilde
     return Q
 
 
@@ -129,10 +127,8 @@ def get_direct_randomized_svd(
     B = Q.transpose() @ A
 
     Utilde, S, Vt = np.linalg.svd(B, full_matrices=False)
-    del B
 
     U = Q @ Utilde
-    del Utilde, Q
 
     if is_transposed:
         U_bis = U

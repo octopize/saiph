@@ -10,10 +10,6 @@ from saiph.reduction.utils.svd import (
     get_svd,
 )
 
-"""
-This file assert that 
-"""
-
 
 # Matrix to decompose
 @pytest.fixture

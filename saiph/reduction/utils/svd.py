@@ -52,7 +52,7 @@ def get_randomized_subspace_iteration(
     q: int = 2,
     seed: Optional[int] = None,
 ) -> NDArray[np.float_]:
-    """Generate a subspace for more efficient SVD compuation using random methods.
+    """Generate a subspace for more efficient SVD computation using random methods.
 
     From https://arxiv.org/abs/0909.4061, algorithm 4.4 page 27
     (Finding structure with randomness: Probabilistic algorithms for constructing approximate

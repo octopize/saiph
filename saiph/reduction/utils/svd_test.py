@@ -123,10 +123,13 @@ def test_randomized_and_full_svd_allclose(matrix: pd.DataFrame) -> None:
 
 
 def test_usage_of_randomized_svd(matrix: pd.DataFrame) -> None:
-    """If this test fail, it could be either:
-    - the randomized SVD comportement has changed;
-    - `get_svd` returns a full-rank SVD using `scipy` implementation rather than lower-rank randomized SVD."""
+    """Test that `get_svd` returns a randomized svd when nf smaller than dim(matrix).
 
+    If this test fail, it could be either:
+    - the randomized SVD comportement has changed;
+    - `get_svd` returns a full-rank SVD using `scipy` implementation rather
+        than lower-rank randomized SVD.
+    """
     expected_U: NDArray[np.float_] = np.array(
         [[0.21483724, 0.88723069], [0.52058739, 0.24964395], [0.82633754, -0.38794278]]
     )

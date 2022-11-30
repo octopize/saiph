@@ -95,6 +95,7 @@ def get_direct_randomized_svd(
     seed: Optional[int] = None,
 ) -> Tuple[NDArray[np.float_], NDArray[np.float_], NDArray[np.float_]]:
     """Compute a fixed-rank SVD approximation using random methods.
+
     The computation of the randomized SVD is generally faster than a regular SVD when we retain
     a smaller number of dimensions than the dimension of the matrix.
 

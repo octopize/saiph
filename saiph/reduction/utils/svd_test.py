@@ -83,18 +83,18 @@ def test_direct_randomized_svd(matrix: pd.DataFrame) -> None:
 
 def test_randomized_and_full_svd_allclose(matrix: pd.DataFrame) -> None:
 
-    # Number of retained dimensions
+    # nf is the number of retained dimensions
     for nf in range(np.min(pd.get_dummies(matrix).shape)):
 
         # Test for nf = [1, ..., dim(matrix)]
         nf += 1
 
-        # Return a lower-rank=2 randomized SVD
+        # Return a lower-rank=nf randomized SVD
         U_randomized, S_randomized, Vt_randomized = get_direct_randomized_svd(
             matrix, q=2, l_retained_dimensions=nf, seed=2
         )
 
-        # Compute full-rank=3 SVD using scipy implementation, then truncated with nf=2
+        # Compute full-rank=dim(matrix) SVD using scipy implementation, then truncated with to nf
         U_full, S_full, Vt_full = get_svd(
             matrix, nf=np.min(pd.get_dummies(matrix).shape), seed=2
         )
@@ -102,7 +102,7 @@ def test_randomized_and_full_svd_allclose(matrix: pd.DataFrame) -> None:
         S_full = S_full[:nf]
         Vt_full = Vt_full[:nf, :]
 
-        # We take the absolute value because the SVD has several solutions
+        # We take the absolute value because two SVD with opposite signs are equivalent
         U_randomized = np.abs(U_randomized)
         S_randomized = np.abs(S_randomized)
         Vt_randomized = np.abs(Vt_randomized)
@@ -113,3 +113,26 @@ def test_randomized_and_full_svd_allclose(matrix: pd.DataFrame) -> None:
         assert_array_almost_equal(U_randomized, U_full, decimal=6)
         assert_array_almost_equal(S_randomized, S_full, decimal=6)
         assert_array_almost_equal(Vt_randomized, Vt_full, decimal=6)
+
+
+def test_usage_of_randomized_svd(matrix: pd.DataFrame) -> None:
+    """If this test fail, it could be either:
+    - the randomized SVD comportement has changed;
+    - `get_svd` returns a full-rank SVD using `scipy` implementation rather than lower-rank randomized SVD."""
+
+    expected_U: NDArray[np.float_] = np.array(
+        [[0.21483724, 0.88723069], [0.52058739, 0.24964395], [0.82633754, -0.38794278]]
+    )
+
+    expected_S: NDArray[np.float_] = np.array([16.84810335, 1.06836951])
+
+    expected_Vt: NDArray[np.float_] = np.array(
+        [[0.47967118, 0.57236779, 0.66506441], [-0.77669099, -0.07568647, 0.62531805]]
+    )
+
+    # Should return a lower-rank=2 randomized SVD
+    U, S, Vt = get_svd(matrix, nf=2, seed=2)
+
+    assert_array_almost_equal(U, expected_U, decimal=8)
+    assert_array_almost_equal(S, expected_S, decimal=8)
+    assert_array_almost_equal(Vt, expected_Vt, decimal=8)

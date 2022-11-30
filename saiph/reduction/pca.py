@@ -12,13 +12,14 @@ from saiph.reduction.utils.common import (
     get_projected_column_names,
     get_uniform_row_weights,
 )
-from saiph.reduction.utils.svd import SVD
+from saiph.reduction.utils.svd import get_svd
 
 
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
+    seed: Optional[int] = None,
 ) -> Model:
     """Fit a PCA model on data.
 
@@ -34,23 +35,24 @@ def fit(
     nf = nf or min(df.shape)
     _col_weights = col_weights if col_weights is not None else np.ones(df.shape[1])
 
-    # set row weights
+    # Set row weights
     row_w = get_uniform_row_weights(len(df))
 
     df_centered, mean, std = center(df)
 
-    # apply weights and compute svd
+    # Apply weights and compute svd
     Z = ((df_centered * _col_weights).T * row_w).T
-    U, s, V = SVD(Z)
+    U, S, Vt = get_svd(Z, nf=nf, seed=seed)
 
     U = ((U.T) / np.sqrt(row_w)).T
-    V = V / np.sqrt(_col_weights)
+    Vt = Vt / np.sqrt(_col_weights)
 
-    explained_var, explained_var_ratio = get_explained_variance(s, df.shape[0], nf)
+    explained_var, explained_var_ratio = get_explained_variance(S, df.shape[0], nf)
 
+    # Retain only the nf higher singular values
     U = U[:, :nf]
-    s = s[:nf]
-    V = V[:nf, :]
+    S = S[:nf]
+    Vt = Vt[:nf, :]
 
     model = Model(
         original_dtypes=df.dtypes,
@@ -58,10 +60,10 @@ def fit(
         original_continuous=df.columns.to_list(),
         dummy_categorical=[],
         U=U,
-        V=V,
+        V=Vt,
         explained_var=explained_var,
         explained_var_ratio=explained_var_ratio,
-        variable_coord=pd.DataFrame(V.T),
+        variable_coord=pd.DataFrame(Vt.T),
         mean=mean,
         std=std,
         type="pca",
@@ -79,6 +81,7 @@ def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
+    seed: Optional[int] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a PCA model on data and return transformed data.
 
@@ -92,7 +95,7 @@ def fit_transform(
         model: The model for transforming new data.
         coord: The transformed data.
     """
-    model = fit(df, nf, col_weights)
+    model = fit(df, nf, col_weights, seed=seed)
     coord = transform(df, model)
     return coord, model
 

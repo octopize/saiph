@@ -89,7 +89,7 @@ TYPES = {
     str: "string",
     np.str_: "string",
     bool: "bool",
-    np.bool_: "bool", 
+    np.bool_: "bool",
 }
 
 

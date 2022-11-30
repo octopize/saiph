@@ -21,7 +21,7 @@ from saiph.reduction.utils.common import (
     row_division,
     row_multiplication,
 )
-from saiph.reduction.utils.svd import SVD
+from saiph.reduction.utils.svd import get_svd
 
 
 def center(
@@ -86,6 +86,7 @@ def fit(
             NDArray[Any],
         ],
     ] = center,
+    seed: Optional[int] = None,
 ) -> Model:
     """Fit a FAMD model on data.
 
@@ -101,7 +102,7 @@ def fit(
     nf = nf or min(pd.get_dummies(df).shape)
     _col_weights = np.ones(df.shape[1]) if col_weights is None else col_weights
 
-    # select the categorical and continuous columns
+    # Select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.to_list()
     dummy_categorical = pd.get_dummies(
@@ -114,20 +115,25 @@ def fit(
 
     df_scaled, mean, std, prop, _modalities = center(df, quanti, quali)
 
-    # apply the weights
+    # Apply the weights
     Z = df_scaled.multiply(col_weights).T.multiply(row_w).T
 
-    # compute the svd
-    _U, s, _V = SVD(Z.todense()) if isinstance(Z, scipy.sparse.spmatrix) else SVD(Z)
+    # Compute the svd
+    _U, S, _Vt = (
+        get_svd(Z.todense(), nf=nf, seed=seed)
+        if isinstance(Z, scipy.sparse.spmatrix)
+        else get_svd(Z, nf=nf, seed=seed)
+    )
 
     U = ((_U.T) / np.sqrt(row_w)).T
-    V = _V / np.sqrt(col_weights)
+    Vt = _Vt / np.sqrt(col_weights)
 
-    explained_var, explained_var_ratio = get_explained_variance(s, df.shape[0], nf)
+    explained_var, explained_var_ratio = get_explained_variance(S, df.shape[0], nf)
 
+    # Retain only the nf higher singular values
     U = U[:, :nf]
-    s = s[:nf]
-    V = V[:nf, :]
+    S = S[:nf]
+    Vt = Vt[:nf, :]
 
     model = Model(
         original_dtypes=df.dtypes,
@@ -135,11 +141,11 @@ def fit(
         original_continuous=quanti,
         dummy_categorical=dummy_categorical,
         U=U,
-        V=V,
-        s=s,
+        V=Vt,
+        s=S,
         explained_var=explained_var,
         explained_var_ratio=explained_var_ratio,
-        variable_coord=pd.DataFrame(V.T),
+        variable_coord=pd.DataFrame(Vt.T),
         mean=mean,
         std=std,
         prop=prop,
@@ -159,6 +165,7 @@ def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
+    seed: Optional[int] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a FAMD model on data and return transformed data.
 
@@ -172,7 +179,7 @@ def fit_transform(
         coord: The transformed data.
         model: The model for transforming new data.
     """
-    model = fit(df, nf, col_weights)
+    model = fit(df, nf, col_weights, seed=seed)
     coord = transform(df, model)
     return coord, model
 
@@ -421,7 +428,7 @@ def compute_continuous_cos2(
 def _compute_svd(
     model: Model, weighted: NDArray[np.float_], min_nf: int
 ) -> Tuple[NDArray[np.float_], NDArray[np.float_], NDArray[np.float_]]:
-    U, s, V = SVD(weighted.T, svd_flip=False)
+    U, s, V = get_svd(weighted.T, svd_flip=False)
 
     # Only keep first nf components
     U = U[:, :min_nf]

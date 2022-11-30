@@ -20,13 +20,14 @@ from saiph.reduction.utils.common import (
     row_division,
     row_multiplication,
 )
-from saiph.reduction.utils.svd import SVD
+from saiph.reduction.utils.svd import get_svd
 
 
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
+    seed: Optional[int] = None,
 ) -> Model:
     """Fit a MCA model on data.
 
@@ -45,7 +46,7 @@ def fit(
 
     modalities_types = get_modalities_types(df)
 
-    # initiate row and columns weights
+    # Initiate row and columns weights
     row_weights = get_uniform_row_weights(len(df))
 
     modality_numbers = []
@@ -63,21 +64,22 @@ def fit(
     df_scale, _modalities, r, c = center(df)
     df_scale, T, D_c = _diag_compute(df_scale, r, c)
 
-    # get the array gathering proportion of each modality among individual (N/n)
+    # Get the array gathering proportion of each modality among individual (N/n)
     df_dummies = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
     dummies_col_prop = len(df_dummies) / df_dummies.sum(axis=0)
 
-    # apply the weights and compute the svd
+    # Apply the weights and compute the svd
     Z = ((T * col_weights_dummies).T * row_weights).T
-    U, s, V = SVD(Z)
+    U, S, Vt = get_svd(Z, nf=nf, seed=seed)
 
     explained_var, explained_var_ratio = get_explained_variance(
-        s, df_dummies.shape[0], nf
+        S, df_dummies.shape[0], nf
     )
 
+    # Retain only the nf higher singular values
     U = U[:, :nf]
-    s = s[:nf]
-    V = V[:nf, :]
+    S = S[:nf]
+    Vt = Vt[:nf, :]
 
     model = Model(
         original_dtypes=df.dtypes,
@@ -85,10 +87,10 @@ def fit(
         original_continuous=[],
         dummy_categorical=df_dummies.columns.to_list(),
         U=U,
-        V=V,
+        V=Vt,
         explained_var=explained_var,
         explained_var_ratio=explained_var_ratio,
-        variable_coord=pd.DataFrame(D_c @ V.T),
+        variable_coord=pd.DataFrame(D_c @ Vt.T),
         _modalities=_modalities,
         D_c=D_c,
         type="mca",
@@ -107,6 +109,7 @@ def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
+    seed: Optional[int] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a MCA model on data and return transformed data.
 
@@ -120,7 +123,7 @@ def fit_transform(
         model: The model for transforming new data.
         coord: The transformed data.
     """
-    model = fit(df, nf, col_weights)
+    model = fit(df, nf, col_weights, seed=seed)
     coord = transform(df, model)
     return coord, model
 
@@ -265,7 +268,7 @@ def _compute_svd(
     weighted: pd.DataFrame, min_nf: int, col_sum: pd.DataFrame
 ) -> Tuple[pd.DataFrame, NDArray[np.float_]]:
 
-    U, s, V = SVD(weighted.T, svd_flip=False)
+    U, s, V = get_svd(weighted.T, svd_flip=False)
 
     U = U[:, :min_nf]
     V = V.T[:, :min_nf]

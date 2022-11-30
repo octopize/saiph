@@ -171,7 +171,7 @@ def test_get_variable_contributions_same_as_factomineR(iris_df: pd.DataFrame) ->
     expected_cos2 = pd.read_csv(cos2_path)
 
     np.testing.assert_array_almost_equal(contributions, expected_contributions)
-    np.testing.assert_array_almost_equal(cos2, expected_cos2)
+    np.testing.assert_array_almost_equal(cos2, expected_cos2, decimal=4)
 
 
 def test_get_variable_contributions(mixed_df: pd.DataFrame) -> None:

@@ -46,7 +46,7 @@ def fit(
 
     modalities_types = get_modalities_types(df)
 
-    # initiate row and columns weights
+    # Initiate row and columns weights
     row_weights = get_uniform_row_weights(len(df))
 
     modality_numbers = []
@@ -64,11 +64,11 @@ def fit(
     df_scale, _modalities, r, c = center(df)
     df_scale, T, D_c = _diag_compute(df_scale, r, c)
 
-    # get the array gathering proportion of each modality among individual (N/n)
+    # Get the array gathering proportion of each modality among individual (N/n)
     df_dummies = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
     dummies_col_prop = len(df_dummies) / df_dummies.sum(axis=0)
 
-    # apply the weights and compute the svd
+    # Apply the weights and compute the svd
     Z = ((T * col_weights_dummies).T * row_weights).T
     U, S, Vt = get_svd(Z, nf=nf, seed=seed)
 
@@ -76,6 +76,7 @@ def fit(
         S, df_dummies.shape[0], nf
     )
 
+    # Retain only the nf higher singular values
     U = U[:, :nf]
     S = S[:nf]
     Vt = Vt[:nf, :]

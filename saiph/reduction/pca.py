@@ -35,12 +35,12 @@ def fit(
     nf = nf or min(df.shape)
     _col_weights = col_weights if col_weights is not None else np.ones(df.shape[1])
 
-    # set row weights
+    # Set row weights
     row_w = get_uniform_row_weights(len(df))
 
     df_centered, mean, std = center(df)
 
-    # apply weights and compute svd
+    # Apply weights and compute svd
     Z = ((df_centered * _col_weights).T * row_w).T
     U, S, Vt = get_svd(Z, nf=nf, seed=seed)
 
@@ -49,6 +49,7 @@ def fit(
 
     explained_var, explained_var_ratio = get_explained_variance(S, df.shape[0], nf)
 
+    # Retain only the nf higher singular values
     U = U[:, :nf]
     S = S[:nf]
     Vt = Vt[:nf, :]

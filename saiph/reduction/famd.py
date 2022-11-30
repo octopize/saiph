@@ -102,7 +102,7 @@ def fit(
     nf = nf or min(pd.get_dummies(df).shape)
     _col_weights = np.ones(df.shape[1]) if col_weights is None else col_weights
 
-    # select the categorical and continuous columns
+    # Select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.to_list()
     dummy_categorical = pd.get_dummies(
@@ -115,10 +115,10 @@ def fit(
 
     df_scaled, mean, std, prop, _modalities = center(df, quanti, quali)
 
-    # apply the weights
+    # Apply the weights
     Z = df_scaled.multiply(col_weights).T.multiply(row_w).T
 
-    # compute the svd
+    # Compute the svd
     _U, S, _Vt = (
         get_svd(Z.todense(), nf=nf, seed=seed)
         if isinstance(Z, scipy.sparse.spmatrix)
@@ -130,6 +130,7 @@ def fit(
 
     explained_var, explained_var_ratio = get_explained_variance(S, df.shape[0], nf)
 
+    # Retain only the nf higher singular values
     U = U[:, :nf]
     S = S[:nf]
     Vt = Vt[:nf, :]

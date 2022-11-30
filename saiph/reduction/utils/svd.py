@@ -29,14 +29,14 @@ def get_svd(
         S: vector of the singular values, shape (l,)
         Vt: unitary matrix having right singular vectors as rows, shape (l,n)
     """
-    if nf is not None and nf != np.min(df.shape):
-        # Randomized SVD
+    if nf is not None and nf < 0.8 * np.min(df.shape):
+        # Compute a truncated SVD using randomized methods, for faster computations
         U, S, Vt = get_direct_randomized_svd(
             df, q=2, l_retained_dimensions=nf, seed=seed
         )
 
     else:
-        # Full SVD
+        # Compute a regular full SVD
         U, S, Vt = linalg.svd(df, full_matrices=False)
 
     if svd_flip:
@@ -94,6 +94,8 @@ def get_direct_randomized_svd(
     seed: Optional[int] = None,
 ) -> Tuple[NDArray[np.float_], NDArray[np.float_], NDArray[np.float_]]:
     """Compute a fixed-rank SVD approximation using random methods.
+    The computation of the randomized SVD is generally faster than a regular SVD when we retain
+    a smaller number of dimensions than the dimension of the matrix.
 
     From https://arxiv.org/abs/0909.4061, algorithm 5.1 page 29
     (Finding structure with randomness: Probabilistic algorithms for constructing approximate

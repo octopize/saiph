@@ -79,3 +79,37 @@ def test_direct_randomized_svd(matrix: pd.DataFrame) -> None:
     assert_array_almost_equal(U, expected_U, decimal=6)
     assert_array_almost_equal(S, expected_S, decimal=6)
     assert_array_almost_equal(Vt, expected_Vt, decimal=6)
+
+
+def test_randomized_and_full_svd_allclose(matrix: pd.DataFrame) -> None:
+
+    # Number of retained dimensions
+    for nf in range(np.min(pd.get_dummies(matrix).shape)):
+
+        # Test for nf = [1, ..., dim(matrix)]
+        nf += 1
+
+        # Return a lower-rank=2 randomized SVD
+        U_randomized, S_randomized, Vt_randomized = get_direct_randomized_svd(
+            matrix, q=2, l_retained_dimensions=nf, seed=2
+        )
+
+        # Compute full-rank=3 SVD using scipy implementation, then truncated with nf=2
+        U_full, S_full, Vt_full = get_svd(
+            matrix, nf=np.min(pd.get_dummies(matrix).shape), seed=2
+        )
+        U_full = U_full[:, :nf]
+        S_full = S_full[:nf]
+        Vt_full = Vt_full[:nf, :]
+
+        # We take the absolute value because the SVD has several solutions
+        U_randomized = np.abs(U_randomized)
+        S_randomized = np.abs(S_randomized)
+        Vt_randomized = np.abs(Vt_randomized)
+        U_full = np.abs(U_full)
+        S_full = np.abs(S_full)
+        Vt_full = np.abs(Vt_full)
+
+        assert_array_almost_equal(U_randomized, U_full, decimal=6)
+        assert_array_almost_equal(S_randomized, S_full, decimal=6)
+        assert_array_almost_equal(Vt_randomized, Vt_full, decimal=6)

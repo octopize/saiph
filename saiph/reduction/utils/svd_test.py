@@ -47,15 +47,12 @@ def test_full_svd(matrix: pd.DataFrame) -> None:
     assert_array_almost_equal(S, expected_S, decimal=6)
     assert_array_almost_equal(Vt, expected_Vt, decimal=6)
 
-
     # Should also return a full SVD using scipy implementation
     U, S, Vt = get_svd(matrix, nf=None, seed=2)
 
     assert_array_almost_equal(U, expected_U, decimal=6)
     assert_array_almost_equal(S, expected_S, decimal=6)
     assert_array_almost_equal(Vt, expected_Vt, decimal=6)
-
-    
 
 
 def test_randomized_subspace(matrix: pd.DataFrame) -> None:

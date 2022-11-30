@@ -19,7 +19,8 @@ def get_svd(
     Arguments
     ---------
         df: Matrix to decompose, shape (m, n)
-        nf: target number of dimensions to retain (number of singular values). Default `None`
+        nf: target number of dimensions to retain (number of singular values). Default `None`.
+            It keeps the `nf` higher singular values and nf associated singular vectors.
         svd_flip: Whether to use svd_flip on U and V or not. Default `True`
         seed: random seed. Default `None`
 
@@ -115,11 +116,10 @@ def get_direct_randomized_svd(
         S: vector of the singular values, shape (l,)
         Vt: unitary matrix having right singular vectors as rows, shape (l,n)
     """
+    is_transposed = False
     if A.shape[1] > A.shape[0]:
         A = A.transpose()
         is_transposed = True
-    else:
-        is_transposed = False
 
     # Q: matrix whose range approximates the range of A, shape (m, l)
     Q = get_randomized_subspace_iteration(

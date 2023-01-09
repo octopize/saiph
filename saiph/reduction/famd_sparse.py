@@ -18,6 +18,9 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
+    seed: Optional[
+        int
+    ] = None,  # Even if not used, a fit function accepts a seed argument (typecheck)
 ) -> Model:
     """Fit a FAMD model on sparse data.
 

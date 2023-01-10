@@ -36,6 +36,7 @@ jobs:
       with:
         path: .venv
         key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install --no-interaction --no-root --extras "matplotlib"
@@ -43,9 +44,14 @@ jobs:
     - name: Install app
       run: poetry install --no-interaction
 
+    - name: Typecheck
+      run: make typecheck
+
     - name: Lint
       run: make lint
+
     - name: Build docs
       run: make docs
+
     - name: Run tests
       run: make test

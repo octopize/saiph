@@ -1,3 +1,5 @@
+from typing import cast
+
 import numpy as np
 import pandas as pd
 from numpy.testing import assert_allclose, assert_array_equal
@@ -22,6 +24,10 @@ def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
     df = mixed_df2.iloc[:, 0:3]
 
     result, model = fit_transform(df)
+    model.mean = cast(pd.Series, model.mean)
+    model.std = cast(pd.Series, model.std)
+    model.prop = cast(pd.Series, model.prop)
+    model.s = cast(NDArray[np.float_], model.s)
 
     expected_result = pd.DataFrame(
         {

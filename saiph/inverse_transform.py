@@ -1,9 +1,10 @@
 """Inverse transform coordinates."""
 import ast
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, cast
 
 import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
 
 from saiph.exception import InvalidParameterException
 from saiph.models import Model
@@ -59,6 +60,7 @@ def inverse_transform(
     # Descale regarding projection type
     # FAMD
     if model.type == "famd":
+        model.prop = cast(pd.Series, model.prop)
         descaled_values_quanti = (scaled_values_quanti * model.std) + model.mean
         descaled_values_quali = (scaled_values_quali * np.sqrt(model.prop)) + model.prop
         del scaled_values_quali
@@ -82,6 +84,8 @@ def inverse_transform(
     else:
         del scaled_values_quali
         del scaled_values_quanti
+        model.D_c = cast(NDArray[np.float_], model.D_c)
+
         # As we are not scaling MCA such as FAMD categorical, the descale is
         # not the same. Doing the same as FAMD is incoherent.
         inverse_data = coord @ (model.D_c @ model.V.T).T

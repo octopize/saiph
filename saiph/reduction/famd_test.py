@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -28,6 +28,9 @@ def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
     df = mixed_df2.iloc[:, 0:3]
 
     result, model = fit_transform(df)
+    model.mean = cast(pd.Series, model.mean)
+    model.std = cast(pd.Series, model.std)
+    model.s = cast(NDArray[np.float_], model.s)
 
     expected_result = pd.DataFrame(
         {

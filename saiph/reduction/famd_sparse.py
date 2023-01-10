@@ -1,6 +1,6 @@
 """FAMD projection module."""
 import sys
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, cast
 
 import numpy as np
 import pandas as pd
@@ -18,6 +18,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
+    seed: Optional[int] = None,
 ) -> Model:
     """Fit a FAMD model on sparse data.
 
@@ -114,6 +115,7 @@ def scaler_sparse(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         df_scaled: The scaled DataFrame.
     """
+    model.prop = cast(pd.Series, model.prop)
     df_quanti = df[model.original_continuous]
     df_quanti = (df_quanti - model.mean) / model.std
     df_quanti = scipy.sparse.csr_matrix(df_quanti)

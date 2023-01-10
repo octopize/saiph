@@ -18,9 +18,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
-    seed: Optional[
-        int
-    ] = None,
+    seed: Optional[int] = None,
 ) -> Model:
     """Fit a FAMD model on sparse data.
 

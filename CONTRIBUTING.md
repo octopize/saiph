@@ -18,7 +18,7 @@ git add pyproject.toml saiph/__init__.py
 git commit -am "chore: release version $VERSION"
 
 # 4. Tag
-git tag $VERSION
+git tag -s saiph-v$VERSION -m "Release saiph version $VERSION"
 
 # 4. Push
 git push && git push --tags

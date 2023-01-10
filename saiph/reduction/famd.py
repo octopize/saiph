@@ -1,7 +1,7 @@
 """FAMD projection module."""
 import sys
 from itertools import chain, repeat
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple, cast
 
 import numpy as np
 import pandas as pd
@@ -222,6 +222,8 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         df_scaled: The scaled DataFrame.
     """
+    model.prop = cast(pd.Series, model.prop)
+
     df_quanti = df[model.original_continuous]
     df_quanti = (df_quanti - model.mean) / model.std
 

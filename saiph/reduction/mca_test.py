@@ -1,3 +1,5 @@
+from typing import cast
+
 import numpy as np
 import pandas as pd
 from numpy.testing import assert_allclose
@@ -23,6 +25,7 @@ def test_fit() -> None:
     )
 
     result, model = fit_transform(df)
+    model.D_c = cast(NDArray[np.float_], model.D_c)
 
     expected_result = pd.DataFrame(
         {
@@ -67,6 +70,7 @@ def test_fit_zero() -> None:
     )
 
     result, model = fit_transform(df)
+    model.D_c = cast(NDArray[np.float_], model.D_c)
 
     expected_result = pd.DataFrame(
         {

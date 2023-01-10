@@ -1,3 +1,5 @@
+from typing import cast
+
 import numpy as np
 import pandas as pd
 from numpy.testing import assert_allclose
@@ -16,6 +18,8 @@ def test_fit_scale() -> None:
     )
 
     result, model = fit_transform(df)
+    model.mean = cast(pd.Series, model.mean)
+    model.std = cast(pd.Series, model.std)
 
     expected_result = pd.DataFrame(
         {
@@ -46,6 +50,8 @@ def test_fit_zero() -> None:
     )
 
     result, model = fit_transform(df)
+    model.mean = cast(pd.Series, model.mean)
+    model.std = cast(pd.Series, model.std)
 
     expected_result = pd.DataFrame(
         {

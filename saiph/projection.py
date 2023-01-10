@@ -1,5 +1,5 @@
 """Project any dataframe and compute stats."""
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union, cast
 
 import numpy as np
 import pandas as pd
@@ -71,11 +71,14 @@ def fit(
     elif sparse:
         _fit = famd_sparse.fit
     else:
-        _fit = famd.fit
+        # TODO if famd_sparse is removed:
+        # remove param center from famd.fit and no need to ignore type
+        _fit = famd.fit  # type: ignore
 
     model = _fit(df, _nf, _col_weights)
 
     if quanti.size == 0:
+        model.D_c = cast(NDArray[np.float_], model.D_c)
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
     else:
         model.variable_coord = pd.DataFrame(model.V.T)

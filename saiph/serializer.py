@@ -56,12 +56,7 @@ class NumpyPandasEncoder(json.JSONEncoder):
                 "str" if str(obj.index.dtype) == "object" else str(obj.index.dtype)
             )
 
-            return dict(
-                __series__=data,
-                dtype=str(obj.dtype),
-                index_type=index_type,
-                index_inferred_type=obj.index.inferred_type,
-            )
+            return dict(__series__=data, dtype=str(obj.dtype), index_type=index_type)
 
         if isinstance(obj, pd.DataFrame):
             # orient='table' includes dtypes but doesn't work
@@ -96,9 +91,7 @@ class NumpyPandasEncoder(json.JSONEncoder):
                 dtypes=dtypes,
                 value_types=value_types,
                 index_type=index_type,
-                index_inferred_type=obj.index.inferred_type,
                 columns_type=columns_type,
-                columns_inferred_type=str(obj.columns.inferred_type),
             )
 
         super().default(obj)

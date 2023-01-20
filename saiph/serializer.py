@@ -4,6 +4,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+from toolz.dicttoolz import keymap, valmap
 
 from saiph.models import Model
 
@@ -11,7 +12,7 @@ from saiph.models import Model
 class ModelJSONSerializer:
 
     # !Make sure to update the version if you change NumpyPandasEncoder or ModelJSONSerializer
-    VERSION = "1.0"
+    VERSION = "2.0"
 
     @classmethod
     def dumps(self, model: Model) -> str:
@@ -22,6 +23,15 @@ class ModelJSONSerializer:
     @classmethod
     def loads(self, raw_model: Union[str, bytes]) -> Model:
         model_dict = json.loads(raw_model, object_hook=numpy_pandas_json_obj_hook)
+
+        major_version = model_dict["__version__"].split(".")[0]
+        current_major_version = self.VERSION.split(".")[0]
+        if major_version != current_major_version:
+            raise ValueError(
+                f"""Saved Model JSON version ({model_dict["__version__"]}) is incompatible """
+                f"""with the current serializer version ({self.VERSION})."""
+            )
+
         return Model(**model_dict["data"])
 
 
@@ -38,12 +48,58 @@ class NumpyPandasEncoder(json.JSONEncoder):
 
         if isinstance(obj, pd.Series):
             data = obj.to_json(orient="index", default_handler=str)
-            return dict(__series__=data, dtype=str(obj.dtype))
+
+            # We cast to string and not to object, to transform the
+            # 'inferred_type' property (read-only) to string
+            # If we don't it remains at integer when using an index with `'0'`
+            index_type = (
+                "str" if str(obj.index.dtype) == "object" else str(obj.index.dtype)
+            )
+
+            return dict(
+                __series__=data,
+                dtype=str(obj.dtype),
+                index_type=index_type,
+                index_inferred_type=obj.index.inferred_type,
+            )
 
         if isinstance(obj, pd.DataFrame):
             # orient='table' includes dtypes but doesn't work
+            dtypes = valmap(str, obj.dtypes.to_dict())
+
+            # value_types is the type of a single cell in a column,
+            # which can be different from dtypes, especially when the dtype is 'object'
+            # or when we have nan-values together with integer values or stringified integers
+            value_types = {}
+            for col in obj.columns:
+                non_null_series = obj[col].dropna()
+                value_types[col] = (
+                    type(non_null_series.values[0]).__name__
+                    if not non_null_series.empty
+                    else "float"
+                )
             data = obj.to_json(orient="index", default_handler=str)
-            return dict(__frame__=data)
+
+            # We cast to string and not to object, to transform the
+            # 'inferred_type' property (read-only) to string
+            # If we don't it remains at integer when decoding and using
+            # an index or column with `'0'`
+            index_type = (
+                "str" if str(obj.index.dtype) == "object" else str(obj.index.dtype)
+            )
+            columns_type = (
+                "str" if str(obj.columns.dtype) == "object" else str(obj.columns.dtype)
+            )
+
+            return dict(
+                __frame__=data,
+                dtypes=dtypes,
+                value_types=value_types,
+                index_type=index_type,
+                index_inferred_type=obj.index.inferred_type,
+                columns_type=columns_type,
+                columns_inferred_type=str(obj.columns.inferred_type),
+            )
 
         super().default(obj)
 
@@ -62,17 +118,31 @@ def numpy_pandas_json_obj_hook(json_dict):
     # Pandas Series
     if isinstance(json_dict, dict) and "__series__" in json_dict:
         data = json_dict["__series__"]
-        return pd.read_json(data, orient="index", typ="series").astype(
-            json_dict["dtype"]
+        series = pd.read_json(
+            data, orient="index", typ="series", dtype=json_dict["dtype"]
         )
+        series.index = series.index.astype(json_dict["index_type"])
+        return series
 
     # Pandas dataframes
     if isinstance(json_dict, dict) and "__frame__" in json_dict:
         data = json_dict["__frame__"]
-        # We could include dtypes, but ATM we have columns with integers
-        # labels (0, 1, 2, ..), and JSON transforms them to string
-        # with makes converting the dtypes not possible ('0' != 0).
-        # Omitting the dtype still provides the right dtype.
-        return pd.read_json(data, orient="index", typ="frame")
+        value_types = json_dict["value_types"]
+        dtypes = json_dict["dtypes"]
+        df = pd.read_json(data, orient="index", typ="frame")
+
+        df.index = df.index.astype(json_dict["index_type"])
+        df.columns = df.columns.astype(json_dict["columns_type"])
+
+        if json_dict["columns_type"] == "int64":
+            # Integer columns names are saved as string in the json,
+            # and pandas treats the name `'0'` differently that `0`.
+            dtypes = keymap(int, json_dict["dtypes"])
+            value_types = keymap(int, json_dict["value_types"])
+
+        df = df.astype(value_types)
+        df = df.astype(dtypes)
+
+        return df
 
     return json_dict

@@ -18,7 +18,7 @@ notebook:  ## Run the notebook
 .PHONY: notebook
 
 docs:  ## Build docs
-	poetry export -f requirements.txt --output $(DOCS_REQUIREMENTS) --with dev --extras matplotlib --without-hashes 
+	poetry export -f requirements.txt --output $(DOCS_REQUIREMENTS) --with doc --extras matplotlib --without-hashes 
 	cat $(DOCS_REQUIREMENTS) | grep 'matplotlib\|sphinx-gallery'  > docs/tmp.txt
 	mv docs/tmp.txt $(DOCS_REQUIREMENTS)
 

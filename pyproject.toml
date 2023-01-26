@@ -20,10 +20,8 @@ pydantic = "^1.10.4"
 matplotlib = ["matplotlib"]
 
 
-[tool.poetry.dev-dependencies]
-Sphinx = "^4.2"
+[tool.poetry.group.dev.dependencies]
 ipykernel = "^6.4"
-sphinx-rtd-theme = "^1.0"
 jupyter = "^1.0"
 isort = "^5.9"
 pytest = "^6.2"
@@ -49,7 +47,12 @@ pytest-benchmark = "^3.4.1"
 doubles = "^1.5.3"
 ipdb = "^0.13.9"
 bandit = "^1.7.4"
-sphinx-gallery = "^0.10.1"
+
+[tool.poetry.group.doc.dependencies]
+Sphinx = "<6"
+sphinx-rtd-theme = "^1.1.1"
+sphinx-gallery = "^0.11.1"
+matplotlib = "^3.5.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

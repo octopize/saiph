@@ -13,6 +13,10 @@ install:  ## Install the stack
 
 .PHONY: install
 
+prepare-release: ## Prepare a new release of saiph
+	poetry run python release.py --bump-type patch
+.PHONY: prepare-release
+
 notebook:  ## Run the notebook
 	poetry run jupyter notebook
 .PHONY: notebook

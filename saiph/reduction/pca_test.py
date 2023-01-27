@@ -132,6 +132,7 @@ def test_transform() -> None:
 
 
 def test_transform_vs_coord() -> None:
+    # stest 
     df = pd.DataFrame({0: [-2.0, 7.0, -4.5], 1: [6.0, 2.0, 7.0], 2: [5.0, 10.0, -14.5]})
     coord, model = fit_transform(df)
     df_transformed = transform(df, model)

@@ -26,15 +26,17 @@ jobs:
       with:
         version: 1.3.2
         virtualenvs-create: true
-        virtualenvs-in-project: true
+        virtualenvs-in-project: false
         installer-parallel: true
+        virtualenvs-path: ~/.venv
+
 
     # install deps (use cache if poetry.lock did not change)
     - name: Load cached venv
       id: cached-poetry-dependencies
       uses: actions/cache@v3
       with:
-        path: .venv
+        path: ~/.venv
         key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
 
     - name: Install dependencies

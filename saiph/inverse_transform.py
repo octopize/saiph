@@ -63,6 +63,7 @@ def inverse_transform(
         model.prop = cast(pd.Series, model.prop)
         descaled_values_quanti = (scaled_values_quanti * model.std) + model.mean
         descaled_values_quali = (scaled_values_quali * np.sqrt(model.prop)) + model.prop
+
         del scaled_values_quali
         del scaled_values_quanti
         undummy = undummify(
@@ -167,8 +168,11 @@ def get_random_weighted_columns(
         column_labels: selected column labels
     """
     # Example for 1 row:  [0.1, 0.3, 0.6] --> [0.1, 0.4, 1.0]
-    cum_probability = df.cumsum(axis=1)
+    # probabilities needs to be normalized before draw
+    normalized_df = df.div(df.sum(axis=1), axis=0)
+    cum_probability = normalized_df.cumsum(axis=1)
     random_probability = random_gen.random((cum_probability.shape[0], 1))
+
     # [0.342] < [0.1, 0.4, 1.0] --> [False, True, True] --> idx: 1
     column_labels = (random_probability < cum_probability).idxmax(axis=1)
 

@@ -32,7 +32,12 @@ def test_get_random_weighted_columns(weights: List[float], expected_index: int) 
 
 
 def test_normalization() -> None:
-    """Verify that the last modality can be sampled when its cumulated sum is greater than 1."""
+    """Verify that the last modality can be sampled when its cumulated sum is greater than 1.
+
+    This test will fail if the values are not normalized first because the last modality would
+    have no chance to be drawn.
+
+    """
     df = pd.DataFrame(data=[[0.5, 0.5, 0.5]])
     result = get_random_weighted_columns(df, np.random.default_rng(4))
     assert result.values[0] == 2

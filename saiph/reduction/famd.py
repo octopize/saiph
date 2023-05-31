@@ -231,6 +231,8 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     df_quali = pd.get_dummies(
         df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
     )
+    # Here we add a column with 0 if the modality is not present in the dataset but
+    # was used to train the saiph model
     if model._modalities is not None:
         for mod in model._modalities:
             if mod not in df_quali:

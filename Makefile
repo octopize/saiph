@@ -9,7 +9,7 @@ DOCS_REQUIREMENTS := docs/requirements.txt
 
 install:  ## Install the stack
 	pre-commit install --hook-type commit-msg
-	poetry lock --no-update && poetry install --extras "matplotlib" --sync
+	poetry lock --no-update && poetry install --extras "matplotlib" --sync --no-ansi
 
 .PHONY: install
 

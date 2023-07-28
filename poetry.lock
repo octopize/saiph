@@ -739,27 +739,6 @@ files = [
 devel = ["colorama", "json-spec", "jsonschema", "pylint", "pytest", "pytest-benchmark", "pytest-cache", "validictory"]
 
 [[package]]
-name = "filprofiler"
-version = "2023.1.0"
-description = "A memory profiler for data batch processing applications."
-optional = false
-python-versions = ">=3.7"
-files = []
-develop = false
-
-[package.dependencies]
-threadpoolctl = "*"
-
-[package.extras]
-dev = ["auditwheel", "black", "blosc", "cython", "flake8", "ipykernel", "ipython", "jinja2 (<3.1)", "nbconvert", "numexpr", "numpy", "pampy", "psutil", "pytest", "towncrier", "twine", "wheel"]
-
-[package.source]
-type = "git"
-url = "https://github.com/pythonspeed/filprofiler.git"
-reference = "HEAD"
-resolved_reference = "7a51d82757495578edd61b9279720fbad7d9723e"
-
-[[package]]
 name = "flake8"
 version = "4.0.1"
 description = "the modular source code checker: pep8 pyflakes and co"
@@ -3612,4 +3591,4 @@ matplotlib = ["matplotlib"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12"
-content-hash = "c206d8cfd94436db0fab29a13985d8657331b217e0b743b58156de76f73b4589"
+content-hash = "daf27d1b8bf52f7d836a3783506c7279ac6018368c837fa6ff2fcfdd1d03aa53"

@@ -1,17 +1,17 @@
 # type: ignore
-import json
-from typing import Any
+from typing import Any, Union
 
 import numpy as np
 import pandas as pd
 import pytest
+from numpy.typing import NDArray
 
 from saiph.conftest import check_equality, check_model_equality
 from saiph.projection import fit
 from saiph.serializer import (
     ModelJSONSerializer,
-    NumpyPandasEncoder,
-    numpy_pandas_json_obj_hook,
+    numpy_pandas_json_decoding_hook,
+    numpy_pandas_json_encoding_hook,
 )
 
 
@@ -44,10 +44,12 @@ from saiph.serializer import (
         np.array([[np.nan], [np.nan]]),
     ],
 )
-def test_encode_decode_single_items(item: Any) -> None:
-    """Verify that we encode dataframes and arrays separately."""
-    encoded = json.dumps(item, cls=NumpyPandasEncoder)
-    decoded = json.loads(encoded, object_hook=numpy_pandas_json_obj_hook)
+def test_encode_decode_single_items(
+    item: Union[pd.DataFrame, pd.Series, NDArray[Any]]
+) -> None:
+    """Verify that we can encode dataframes and arrays separately."""
+    encoded = numpy_pandas_json_encoding_hook(item)
+    decoded = numpy_pandas_json_decoding_hook(object, encoded)
     check_equality(decoded, item)
 
 

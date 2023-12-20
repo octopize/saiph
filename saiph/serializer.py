@@ -60,7 +60,7 @@ def numpy_pandas_json_encoding_hook(obj: Any) -> Any:
 
         # We cast to string and not to object, to transform the
         # 'inferred_type' property (read-only) to string
-        # If we don't it remains at integer when using an index with `'0'`
+        # If we don't it remains an integer when using an index with `'0'`
         index_type = "str" if str(obj.index.dtype) == "object" else str(obj.index.dtype)
 
         return dict(__series__=data, dtype=str(obj.dtype), index_type=index_type)

@@ -15,6 +15,7 @@ scikit-learn = "^1.0"
 toolz = "^0.11.2"
 matplotlib = {version = "^3.5.2", optional = true}
 pydantic = "^2"
+msgspec = "^0.18.5"
 
 [tool.poetry.extras]
 matplotlib = ["matplotlib"]

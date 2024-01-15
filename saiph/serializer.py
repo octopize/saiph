@@ -21,7 +21,7 @@ class ModelJSONSerializer:
     VERSION = "2.0"
 
     @classmethod
-    def dumps(self, model: Model) -> str:
+    def dumps(self, model: Model) -> bytes:
         to_encode = SerializedModel(data=model, __version__=self.VERSION)
         encoder = msgspec.json.Encoder(enc_hook=numpy_pandas_json_encoding_hook)
         encoded_model = encoder.encode(to_encode)

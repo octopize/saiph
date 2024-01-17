@@ -12,7 +12,7 @@ def get_svd(
     nf: Optional[int] = None,
     *,
     svd_flip: bool = True,
-    seed: Optional[int] = None,
+    random_gen: np.random.Generator = np.random.default_rng(),
 ) -> Tuple[NDArray[np.float_], NDArray[np.float_], NDArray[np.float_]]:
     """Compute Singular Value Decomposition.
 
@@ -33,7 +33,7 @@ def get_svd(
     if nf is not None and nf < 0.8 * np.min(df.shape):
         # Compute a truncated SVD using randomized methods, for faster computations
         U, S, Vt = get_direct_randomized_svd(
-            df, q=2, l_retained_dimensions=nf, seed=seed
+            df, q=2, l_retained_dimensions=nf, random_gen=random_gen
         )
 
     else:
@@ -51,7 +51,7 @@ def get_randomized_subspace_iteration(
     l_retained_dimensions: int,
     *,
     q: int = 2,
-    seed: Optional[int] = None,
+    random_gen: np.random.Generator = np.random.default_rng(),
 ) -> NDArray[np.float_]:
     """Generate a subspace for more efficient SVD computation using random methods.
 
@@ -72,7 +72,6 @@ def get_randomized_subspace_iteration(
         Q: matrix whose range approximates the range of A, shape (m, l)
     """
     m, n = A.shape
-    random_gen = np.random.default_rng(seed=seed)
     omega = random_gen.normal(loc=0, scale=1, size=(n, l_retained_dimensions))
 
     # Initialization
@@ -92,7 +91,7 @@ def get_direct_randomized_svd(
     A: NDArray[np.float_],
     l_retained_dimensions: int,
     q: int = 2,
-    seed: Optional[int] = None,
+    random_gen: np.random.Generator = np.random.default_rng(),
 ) -> Tuple[NDArray[np.float_], NDArray[np.float_], NDArray[np.float_]]:
     """Compute a fixed-rank SVD approximation using random methods.
 
@@ -124,7 +123,7 @@ def get_direct_randomized_svd(
 
     # Q: matrix whose range approximates the range of A, shape (m, l)
     Q = get_randomized_subspace_iteration(
-        A, q=q, l_retained_dimensions=l_retained_dimensions, seed=seed
+        A, q=q, l_retained_dimensions=l_retained_dimensions, random_gen=random_gen
     )
 
     B = Q.transpose() @ A

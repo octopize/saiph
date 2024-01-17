@@ -41,14 +41,18 @@ def test_full_svd(matrix: pd.DataFrame) -> None:
     )
 
     # Should return a full SVD using scipy implementation
-    U, S, Vt = get_svd(matrix, nf=np.min(pd.get_dummies(matrix).shape), seed=2)
+    U, S, Vt = get_svd(
+        matrix,
+        nf=np.min(pd.get_dummies(matrix).shape),
+        random_gen=np.random.default_rng(2),
+    )
 
     assert_array_almost_equal(U, expected_U, decimal=6)
     assert_array_almost_equal(S, expected_S, decimal=6)
     assert_array_almost_equal(Vt, expected_Vt, decimal=6)
 
     # Should also return a full SVD using scipy implementation
-    U, S, Vt = get_svd(matrix, nf=None, seed=2)
+    U, S, Vt = get_svd(matrix, nf=None, random_gen=np.random.default_rng(2))
 
     assert_array_almost_equal(U, expected_U, decimal=6)
     assert_array_almost_equal(S, expected_S, decimal=6)
@@ -64,7 +68,9 @@ def test_randomized_subspace(matrix: pd.DataFrame) -> None:
         ]
     )
 
-    Q = get_randomized_subspace_iteration(matrix, q=2, l_retained_dimensions=2, seed=2)
+    Q = get_randomized_subspace_iteration(
+        matrix, q=2, l_retained_dimensions=2, random_gen=np.random.default_rng(2)
+    )
 
     assert_array_almost_equal(Q, expected_Q, decimal=6)
 
@@ -81,7 +87,9 @@ def test_direct_randomized_svd(matrix: pd.DataFrame) -> None:
         [[0.47967118, 0.57236779, 0.66506441], [-0.77669099, -0.07568647, 0.62531805]]
     )
 
-    U, S, Vt = get_direct_randomized_svd(matrix, q=2, l_retained_dimensions=2, seed=2)
+    U, S, Vt = get_direct_randomized_svd(
+        matrix, q=2, l_retained_dimensions=2, random_gen=np.random.default_rng(2)
+    )
 
     assert_array_almost_equal(U, expected_U, decimal=6)
     assert_array_almost_equal(S, expected_S, decimal=6)
@@ -98,12 +106,14 @@ def test_randomized_and_full_svd_allclose(matrix: pd.DataFrame) -> None:
 
         # Return a lower-rank=nf randomized SVD
         U_randomized, S_randomized, Vt_randomized = get_direct_randomized_svd(
-            matrix, q=2, l_retained_dimensions=nf, seed=2
+            matrix, q=2, l_retained_dimensions=nf, random_gen=np.random.default_rng(2)
         )
 
         # Compute full-rank=dim(matrix) SVD using scipy implementation, then truncated with to nf
         U_full, S_full, Vt_full = get_svd(
-            matrix, nf=np.min(pd.get_dummies(matrix).shape), seed=2
+            matrix,
+            nf=np.min(pd.get_dummies(matrix).shape),
+            random_gen=np.random.default_rng(2),
         )
         U_full = U_full[:, :nf]
         S_full = S_full[:nf]
@@ -126,7 +136,7 @@ def test_usage_of_randomized_svd(matrix: pd.DataFrame) -> None:
     """Test that `get_svd` returns a randomized svd when nf smaller than dim(matrix).
 
     If this test fail, it could be either:
-    - the randomized SVD comportement has changed;
+    - the randomized SVD behavior has changed;
     - `get_svd` returns a full-rank SVD using `scipy` implementation rather
         than lower-rank randomized SVD.
     """
@@ -141,7 +151,7 @@ def test_usage_of_randomized_svd(matrix: pd.DataFrame) -> None:
     )
 
     # Should return a lower-rank=2 randomized SVD
-    U, S, Vt = get_svd(matrix, nf=2, seed=2)
+    U, S, Vt = get_svd(matrix, nf=2, random_gen=np.random.default_rng(2))
 
     assert_array_almost_equal(U, expected_U, decimal=8)
     assert_array_almost_equal(S, expected_S, decimal=8)

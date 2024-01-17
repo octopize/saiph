@@ -1,7 +1,7 @@
 """FAMD projection module."""
 import sys
 from itertools import chain, repeat
-from typing import Any, Callable, List, Optional, Tuple, cast
+from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
 import numpy as np
 import pandas as pd
@@ -86,7 +86,7 @@ def fit(
             NDArray[Any],
         ],
     ] = center,
-    seed: Optional[int] = None,
+    seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Model:
     """Fit a FAMD model on data.
 
@@ -101,6 +101,10 @@ def fit(
     """
     nf = nf or min(pd.get_dummies(df).shape)
     _col_weights = np.ones(df.shape[1]) if col_weights is None else col_weights
+    # If seed is None or int, we fit a Generator, else we use the one provided.
+    random_gen = (
+        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
+    )
 
     # Select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
@@ -120,9 +124,9 @@ def fit(
 
     # Compute the svd
     _U, S, _Vt = (
-        get_svd(Z.todense(), nf=nf, seed=seed)
+        get_svd(Z.todense(), nf=nf, random_gen=random_gen)
         if isinstance(Z, scipy.sparse.spmatrix)
-        else get_svd(Z, nf=nf, seed=seed)
+        else get_svd(Z, nf=nf, random_gen=random_gen)
     )
 
     U = ((_U.T) / np.sqrt(row_w)).T
@@ -134,7 +138,8 @@ def fit(
     U = U[:, :nf]
     S = S[:nf]
     Vt = Vt[:nf, :]
-
+    # we use the random generator to generate a new seed for the model
+    new_seed = int(random_gen.integers(0, 2**32 - 1))
     model = Model(
         original_dtypes=df.dtypes,
         original_categorical=quali,
@@ -156,6 +161,7 @@ def fit(
         column_weights=col_weights,
         row_weights=row_w,
         modalities_types=modalities_types,
+        seed=new_seed,
     )
 
     return model
@@ -165,7 +171,7 @@ def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
-    seed: Optional[int] = None,
+    seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a FAMD model on data and return transformed data.
 
@@ -179,7 +185,11 @@ def fit_transform(
         coord: The transformed data.
         model: The model for transforming new data.
     """
-    model = fit(df, nf, col_weights, seed=seed)
+    # If seed is None or int, we fit a Generator, else we use the one provided.
+    random_gen = (
+        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
+    )
+    model = fit(df, nf, col_weights, seed=random_gen)
     coord = transform(df, model)
     return coord, model
 

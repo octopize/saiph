@@ -1,6 +1,6 @@
 """Inverse transform coordinates."""
 import ast
-from typing import Dict, List, Optional, cast
+from typing import Dict, List, cast
 
 import numpy as np
 import pandas as pd
@@ -18,7 +18,6 @@ def inverse_transform(
     *,
     use_approximate_inverse: bool = False,
     use_max_modalities: bool = True,
-    seed: Optional[int] = None,
 ) -> pd.DataFrame:
     """Return original format dataframe from coordinates.
 
@@ -30,12 +29,13 @@ def inverse_transform(
         use_max_modalities: for each variable, it assigns to the individual
             the modality with the highest proportion (True)
             or a random modality weighted by their proportion (False). default: True
-        seed: seed to fix randomness if use_max_modalities = False. default: None
 
     Returns:
         inverse: coordinates transformed into original space.
             Retains shape, encoding and structure.
     """
+    random_gen = np.random.default_rng(model.seed)
+
     # Check dimension size regarding N
     n_dimensions = len(model.dummy_categorical) + len(model.original_continuous)
     n_records = len(coord)
@@ -70,7 +70,7 @@ def inverse_transform(
             descaled_values_quali,
             get_dummies_mapping(model.original_categorical, model.dummy_categorical),
             use_max_modalities=use_max_modalities,
-            seed=seed,
+            random_gen=random_gen,
         )
         inverse = pd.concat([descaled_values_quanti, undummy], axis=1).round(12)
 
@@ -99,7 +99,7 @@ def inverse_transform(
             descaled_values_quali,
             get_dummies_mapping(model.original_categorical, model.dummy_categorical),
             use_max_modalities=use_max_modalities,
-            seed=seed,
+            random_gen=random_gen,
         )
     # Cast columns to same type as input
     for name, dtype in model.original_dtypes.items():
@@ -122,7 +122,7 @@ def undummify(
     dummies_mapping: Dict[str, List[str]],
     *,
     use_max_modalities: bool = True,
-    seed: Optional[int] = None,
+    random_gen: np.random.Generator = np.random.default_rng(),
 ) -> pd.DataFrame:
     """Return undummified dataframe from the dummy dataframe.
 
@@ -137,7 +137,6 @@ def undummify(
         inverse_quali: undummify df of categorical variable
     """
     inverse_quali = pd.DataFrame()
-    random_gen = np.random.default_rng(seed)
 
     def get_suffix(string: str) -> str:
         return string.split(DUMMIES_PREFIX_SEP)[1]

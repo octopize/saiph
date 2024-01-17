@@ -1,6 +1,6 @@
 """PCA projection module."""
 import sys
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -19,7 +19,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
-    seed: Optional[int] = None,
+    seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Model:
     """Fit a PCA model on data.
 
@@ -34,6 +34,9 @@ def fit(
     """
     nf = nf or min(df.shape)
     _col_weights = col_weights if col_weights is not None else np.ones(df.shape[1])
+    random_gen = (
+        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
+    )
 
     # Set row weights
     row_w = get_uniform_row_weights(len(df))
@@ -42,7 +45,7 @@ def fit(
 
     # Apply weights and compute svd
     Z = ((df_centered * _col_weights).T * row_w).T
-    U, S, Vt = get_svd(Z, nf=nf, seed=seed)
+    U, S, Vt = get_svd(Z, nf=nf, random_gen=random_gen)
 
     U = ((U.T) / np.sqrt(row_w)).T
     Vt = Vt / np.sqrt(_col_weights)
@@ -54,6 +57,8 @@ def fit(
     S = S[:nf]
     Vt = Vt[:nf, :]
 
+    # we use the random generator to generate a new seed for the model
+    new_seed = int(random_gen.integers(0, 2**32 - 1))
     model = Model(
         original_dtypes=df.dtypes,
         original_categorical=[],
@@ -72,6 +77,7 @@ def fit(
         column_weights=_col_weights,
         row_weights=row_w,
         modalities_types={},
+        seed=new_seed,
     )
 
     return model

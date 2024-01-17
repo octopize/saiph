@@ -68,3 +68,5 @@ class Model:
     cos2: Optional[pd.DataFrame] = None
     # Proportion of individuals taking each modality.
     dummies_col_prop: Optional[NDArray[np.float_]] = None  # MCA only
+
+    seed: Optional[int] = None

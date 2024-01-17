@@ -69,7 +69,12 @@ def test_undummify(
         columns=["tool___hammer", "tool___wrench", "fruit___apple", "fruit___orange"],
     )
 
-    df = undummify(dummy_df, mapping, use_max_modalities=use_max_modalities, seed=321)
+    df = undummify(
+        dummy_df,
+        mapping,
+        use_max_modalities=use_max_modalities,
+        random_gen=np.random.default_rng(321),
+    )
 
     assert_frame_equal(df, expected)
 
@@ -107,9 +112,9 @@ def test_inverse_transform_with_ponderation() -> None:
         "cont1": 1,
         "cont2": 1,
     }
-    coord, model = fit_transform(df, col_weights=col_weights)
+    coord, model = fit_transform(df, col_weights=col_weights, seed=5)
     result = inverse_transform(
-        coord, model, use_approximate_inverse=True, use_max_modalities=False, seed=46
+        coord, model, use_approximate_inverse=True, use_max_modalities=False
     )
     assert_frame_equal(result, inverse_expected)
 
@@ -132,7 +137,7 @@ def test_inverse_transform_deterministic() -> None:
     }
     coord, model = fit_transform(df, col_weights=col_weights)
     result = inverse_transform(
-        coord, model, use_approximate_inverse=True, use_max_modalities=True, seed=46
+        coord, model, use_approximate_inverse=True, use_max_modalities=True
     )
     assert_frame_equal(result, inverse_expected)
 

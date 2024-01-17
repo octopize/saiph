@@ -1,6 +1,6 @@
 """FAMD projection module."""
 import sys
-from typing import Any, List, Optional, Tuple, cast
+from typing import Any, List, Optional, Tuple, Union, cast
 
 import numpy as np
 import pandas as pd
@@ -18,7 +18,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
-    seed: Optional[int] = None,
+    seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Model:
     """Fit a FAMD model on sparse data.
 
@@ -31,13 +31,17 @@ def fit(
     Returns:
         model: The model for transforming new data.
     """
-    return fit_famd(df, nf, col_weights, center=center_sparse)
+    random_gen = (
+        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
+    )
+    return fit_famd(df, nf, col_weights, center=center_sparse, seed=random_gen)
 
 
 def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
+    seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a FAMD model on data and return transformed data.
 
@@ -51,7 +55,11 @@ def fit_transform(
         coord: The transformed data.
         model: The model for transforming new data.
     """
-    model = fit(df, nf, col_weights)
+    random_gen = (
+        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
+    )
+
+    model = fit(df, nf, col_weights, seed=random_gen)
     coord = transform(df, model)
     return coord, model
 

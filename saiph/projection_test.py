@@ -29,7 +29,6 @@ def test_transform_then_inverse_PCA(iris_quanti_df: pd.DataFrame) -> None:
 
 
 def test_transform_then_inverse_MCA(quali_df: pd.DataFrame) -> None:
-
     df = quali_df
     transformed, model = fit_transform(df)
     un_transformed = inverse_transform(transformed, model)
@@ -285,7 +284,7 @@ def test_transform_then_inverse_value_type(dtypes: str) -> None:
     df = df.astype(dtypes)
 
     coord, model = fit_transform(df)
-    result = inverse_transform(coord, model, seed=46)
+    result = inverse_transform(coord, model)
 
     assert_frame_equal(df, result)
 
@@ -405,3 +404,51 @@ def test_fit_checks_col_weights_parameter(
 ) -> None:
     """Verify that fit checks col_weights parameter and fails when it needs to."""
     fit(quali_df, col_weights=col_weights)
+
+
+@pytest.mark.parametrize(
+    "starting_seed, stored_seed",
+    [
+        (1, 2032329982),
+        (np.random.default_rng(1), 2032329982),  # same stored_seed as seed=1
+        (2, 3597359296),  # different than seed=1
+    ],
+)
+def test_fit_pca_works_with_different_arguments_for_seed_and_stores_them_in_model(
+    starting_seed: Any, stored_seed: int
+) -> None:
+    """Verify that fit works with different arguments for seed and stores them in model."""
+    model = fit(df_pca, seed=starting_seed)
+    assert model.seed == stored_seed
+
+
+@pytest.mark.parametrize(
+    "starting_seed, stored_seed",
+    [
+        (1, 2032329982),
+        (np.random.default_rng(1), 2032329982),  # same stored_seed as seed=1
+        (2, 3597359296),  # different than seed=1
+    ],
+)
+def test_fit_famd_works_with_different_arguments_for_seed_and_stores_them_in_model(
+    starting_seed: Any, stored_seed: int
+) -> None:
+    """Verify that fit works with different arguments for seed and stores them in model."""
+    model = fit(df_famd, seed=starting_seed)
+    assert model.seed == stored_seed
+
+
+@pytest.mark.parametrize(
+    "starting_seed, stored_seed",
+    [
+        (1, 2032329982),
+        (np.random.default_rng(1), 2032329982),  # same stored_seed as seed=1
+        (2, 3597359296),  # different than seed=1
+    ],
+)
+def test_fit_mca_works_with_different_arguments_for_seed_and_stores_them_in_model(
+    starting_seed: Any, stored_seed: int
+) -> None:
+    """Verify that fit works with different arguments for seed and stores them in model."""
+    model = fit(df_mca, seed=starting_seed)
+    assert model.seed == stored_seed

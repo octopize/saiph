@@ -79,15 +79,22 @@ def test_undummify(
 
     assert_frame_equal(df, expected)
 
+
 def test_undummify_when_dummies_prefix_is_in_variable_name() -> None:
     column_name = f"tool{DUMMIES_SEPARATOR}"
-    
+
     dummy_df = pd.DataFrame(
         [[0.3, 0.7], [0.51, 0.49]],
-        columns=[f"{column_name}{DUMMIES_SEPARATOR}hammer", f"{column_name}{DUMMIES_SEPARATOR}wrench"],
+        columns=[
+            f"{column_name}{DUMMIES_SEPARATOR}hammer",
+            f"{column_name}{DUMMIES_SEPARATOR}wrench",
+        ],
     )
     mapping = {
-        column_name: [f"{column_name}{DUMMIES_SEPARATOR}hammer", f"{column_name}{DUMMIES_SEPARATOR}wrench"],
+        column_name: [
+            f"{column_name}{DUMMIES_SEPARATOR}hammer",
+            f"{column_name}{DUMMIES_SEPARATOR}wrench",
+        ],
     }
 
     df = undummify(

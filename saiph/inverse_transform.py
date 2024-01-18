@@ -149,7 +149,9 @@ def undummify(
             chosen_modalities = single_category.idxmax(axis="columns")
         else:
             chosen_modalities = get_random_weighted_columns(single_category, random_gen)
-        inverse_quali[original_column] = list(map(lambda x: get_suffix(x, original_column), chosen_modalities))
+        inverse_quali[original_column] = list(
+            map(lambda x: get_suffix(x, original_column), chosen_modalities)
+        )
 
     return inverse_quali
 

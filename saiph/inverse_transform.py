@@ -138,7 +138,7 @@ def undummify(
     """
     inverse_quali = pd.DataFrame()
 
-    def get_suffix(string: str, original_column: str) -> str:
+    def get_modality_from_dummy_variable(string: str, original_column: str) -> str:
         return string.removeprefix(original_column + DUMMIES_SEPARATOR)
 
     for original_column, dummy_columns in dummies_mapping.items():
@@ -150,7 +150,10 @@ def undummify(
         else:
             chosen_modalities = get_random_weighted_columns(single_category, random_gen)
         inverse_quali[original_column] = list(
-            map(lambda x: get_suffix(x, original_column), chosen_modalities)
+            map(
+                lambda x: get_modality_from_dummy_variable(x, original_column),
+                chosen_modalities,
+            )
         )
 
     return inverse_quali

@@ -9,7 +9,7 @@ import scipy
 from numpy.typing import NDArray
 
 from saiph.models import Model
-from saiph.reduction import DUMMIES_PREFIX_SEP
+from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.utils.common import (
     column_multiplication,
     get_dummies_mapping,
@@ -57,7 +57,7 @@ def center(
 
     # scale the categorical data
     df_quali = pd.get_dummies(
-        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        df[quali].astype("category"), prefix_sep=DUMMIES_SEPARATOR
     )
     # .mean() is the same as counting 0s and 1s
     # This will only work if we stick with pd.get_dummies to encode the modalities
@@ -110,7 +110,7 @@ def fit(
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.to_list()
     dummy_categorical = pd.get_dummies(
-        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        df[quali].astype("category"), prefix_sep=DUMMIES_SEPARATOR
     ).columns.to_list()
     modalities_types = get_modalities_types(df[quali])
 
@@ -239,7 +239,7 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
 
     # scale
     df_quali = pd.get_dummies(
-        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_SEPARATOR
     )
     # Here we add a column with 0 if the modality is not present in the dataset but
     # was used to train the saiph model
@@ -389,7 +389,7 @@ def compute_categorical_cos2(
 
     mapping = get_dummies_mapping(model.original_categorical, model.dummy_categorical)
     dummy = pd.get_dummies(
-        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_SEPARATOR
     )
     # Compute the categorical cos2 for each original column
     all_category_cos = {}

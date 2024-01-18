@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 
 from saiph.exception import InvalidParameterException
 from saiph.models import Model
-from saiph.reduction import DUMMIES_PREFIX_SEP, famd, famd_sparse, mca, pca
+from saiph.reduction import DUMMIES_SEPARATOR, famd, famd_sparse, mca, pca
 from saiph.reduction.utils.common import get_projected_column_names
 
 
@@ -48,7 +48,7 @@ def fit(
                 f"got {unknown_variables} instead."
             )
 
-    _nf = nf if nf else min(pd.get_dummies(df, prefix_sep=DUMMIES_PREFIX_SEP).shape)
+    _nf = nf if nf else min(pd.get_dummies(df, prefix_sep=DUMMIES_SEPARATOR).shape)
     # If seed is None or int, we fit a Generator, else we use the one provided.
     random_gen = (
         seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
@@ -248,7 +248,7 @@ def get_variable_correlation(
     if has_some_quali:
         df_quali = pd.get_dummies(
             df[model.original_categorical].astype("category"),
-            prefix_sep=DUMMIES_PREFIX_SEP,
+            prefix_sep=DUMMIES_SEPARATOR,
         )
         bind = pd.concat([df_quanti, df_quali], axis=1)
     else:

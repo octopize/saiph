@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 from scipy.sparse import csr_matrix
 
 from saiph.models import Model
-from saiph.reduction import DUMMIES_PREFIX_SEP
+from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.famd import fit as fit_famd
 from saiph.reduction.famd import transform as transform_famd
 
@@ -102,7 +102,7 @@ def center_sparse(
 
     # scale the categorical data
     df_quali = pd.get_dummies(
-        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        df[quali].astype("category"), prefix_sep=DUMMIES_SEPARATOR
     )
     _modalities = df_quali.columns
     df_quali = csr_matrix(df_quali)
@@ -130,7 +130,7 @@ def scaler_sparse(model: Model, df: pd.DataFrame) -> pd.DataFrame:
 
     # scale
     df_quali = pd.get_dummies(
-        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_SEPARATOR
     )
     if model._modalities is not None:
         for mod in model._modalities:

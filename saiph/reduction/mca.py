@@ -7,7 +7,7 @@ import pandas as pd
 from numpy.typing import NDArray
 
 from saiph.models import Model
-from saiph.reduction import DUMMIES_PREFIX_SEP
+from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.utils.common import (
     column_multiplication,
     diag,
@@ -68,7 +68,7 @@ def fit(
     df_scale, T, D_c = _diag_compute(df_scale, r, c)
 
     # Get the array gathering proportion of each modality among individual (N/n)
-    df_dummies = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df_dummies = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_SEPARATOR)
     dummies_col_prop = (len(df_dummies) / df_dummies.sum(axis=0)).to_numpy()
 
     # Apply the weights and compute the svd
@@ -156,7 +156,7 @@ def center(
         row_sum: Sums line by line
         column_sum: Sums column by column
     """
-    df_scale = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df_scale = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_SEPARATOR)
     _modalities = df_scale.columns.values
 
     # scale data
@@ -177,7 +177,7 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         df_scaled: The scaled DataFrame.
     """
-    df_scaled = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df_scaled = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_SEPARATOR)
     if model._modalities is not None:
         for mod in model._modalities:
             if mod not in df_scaled:
@@ -239,7 +239,7 @@ def get_variable_contributions(
         raise ValueError(
             "Model has not been fitted. Call fit() to create a Model instance."
         )
-    df = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_SEPARATOR)
 
     centered_df = df / df.sum().sum()
 

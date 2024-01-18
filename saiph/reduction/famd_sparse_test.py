@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 from pandas._testing.asserters import assert_series_equal
 from pandas.testing import assert_frame_equal
 
-from saiph.reduction import DUMMIES_PREFIX_SEP
+from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.famd_sparse import (
     center_sparse,
     fit,
@@ -56,10 +56,10 @@ def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
     assert np.array_equal(
         model._modalities,  # type: ignore
         [
-            f"tool{DUMMIES_PREFIX_SEP}hammer",
-            f"tool{DUMMIES_PREFIX_SEP}toaster",
-            f"score{DUMMIES_PREFIX_SEP}aa",
-            f"score{DUMMIES_PREFIX_SEP}ab",
+            f"tool{DUMMIES_SEPARATOR}hammer",
+            f"tool{DUMMIES_SEPARATOR}toaster",
+            f"score{DUMMIES_SEPARATOR}aa",
+            f"score{DUMMIES_SEPARATOR}ab",
         ],
     )
     assert model.D_c is None
@@ -75,10 +75,10 @@ def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
     assert np.array_equal(
         model._modalities,  # type: ignore
         [
-            f"tool{DUMMIES_PREFIX_SEP}hammer",
-            f"tool{DUMMIES_PREFIX_SEP}toaster",
-            f"score{DUMMIES_PREFIX_SEP}aa",
-            f"score{DUMMIES_PREFIX_SEP}ab",
+            f"tool{DUMMIES_SEPARATOR}hammer",
+            f"tool{DUMMIES_SEPARATOR}toaster",
+            f"score{DUMMIES_SEPARATOR}aa",
+            f"score{DUMMIES_SEPARATOR}ab",
         ],
     )
 

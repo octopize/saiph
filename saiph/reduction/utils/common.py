@@ -7,7 +7,7 @@ import scipy
 from numpy.typing import NDArray
 from toolz import concat
 
-from saiph.reduction import DUMMIES_PREFIX_SEP
+from saiph.reduction import DUMMIES_SEPARATOR
 
 
 def get_projected_column_names(n: int) -> List[str]:
@@ -73,7 +73,7 @@ def get_dummies_mapping(
         {
             col: list(
                 filter(
-                    lambda c: c.startswith(f"{col}{DUMMIES_PREFIX_SEP}"), dummy_columns
+                    lambda c: c.startswith(f"{col}{DUMMIES_SEPARATOR}"), dummy_columns
                 )
             )
             for col in columns

@@ -13,6 +13,7 @@ from saiph.inverse_transform import (
     undummify,
 )
 from saiph.projection import fit, fit_transform
+from saiph.reduction import DUMMIES_SEPARATOR
 
 
 @pytest.mark.parametrize(
@@ -74,6 +75,36 @@ def test_undummify(
         mapping,
         use_max_modalities=use_max_modalities,
         random_gen=np.random.default_rng(321),
+    )
+
+    assert_frame_equal(df, expected)
+
+
+def test_undummify_when_dummies_prefix_is_in_variable_name() -> None:
+    column_name = f"tool{DUMMIES_SEPARATOR}"
+
+    dummy_df = pd.DataFrame(
+        [[0.3, 0.7], [0.51, 0.49]],
+        columns=[
+            f"{column_name}{DUMMIES_SEPARATOR}hammer",
+            f"{column_name}{DUMMIES_SEPARATOR}wrench",
+        ],
+    )
+    mapping = {
+        column_name: [
+            f"{column_name}{DUMMIES_SEPARATOR}hammer",
+            f"{column_name}{DUMMIES_SEPARATOR}wrench",
+        ],
+    }
+
+    df = undummify(
+        dummy_df,
+        mapping,
+        use_max_modalities=True,
+    )
+
+    expected = pd.DataFrame(
+        [["wrench"], ["hammer"]], columns=[f"tool{DUMMIES_SEPARATOR}"]
     )
 
     assert_frame_equal(df, expected)

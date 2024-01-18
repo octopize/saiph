@@ -6,7 +6,7 @@ from numpy.testing import assert_allclose
 from numpy.typing import NDArray
 from pandas.testing import assert_frame_equal, assert_series_equal
 
-from saiph.reduction import DUMMIES_PREFIX_SEP
+from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.mca import (
     fit,
     fit_transform,
@@ -47,9 +47,9 @@ def test_fit() -> None:
     assert np.array_equal(
         model._modalities,  # type: ignore
         [
-            f"tool{DUMMIES_PREFIX_SEP}hammer",
-            f"tool{DUMMIES_PREFIX_SEP}toaster",
-            f"score{DUMMIES_PREFIX_SEP}aa",
+            f"tool{DUMMIES_SEPARATOR}hammer",
+            f"tool{DUMMIES_SEPARATOR}toaster",
+            f"score{DUMMIES_SEPARATOR}aa",
         ],
     )
     assert_allclose(
@@ -87,7 +87,7 @@ def test_fit_zero() -> None:
     assert pd.isna(model.explained_var_ratio).all()
     assert np.array_equal(
         model._modalities,  # type: ignore
-        [f"tool{DUMMIES_PREFIX_SEP}toaster", f"score{DUMMIES_PREFIX_SEP}aa"],
+        [f"tool{DUMMIES_SEPARATOR}toaster", f"score{DUMMIES_SEPARATOR}aa"],
     )
     assert_allclose(
         model.D_c,
@@ -211,7 +211,7 @@ def test_get_variable_contributions_exploded_parameter(mixed_df: pd.DataFrame) -
     contributions_exploded = get_variable_contributions(model, df, explode=True)
     contributions_not_exploded = get_variable_contributions(model, df, explode=False)
     dummies = filter(
-        lambda name: f"{variable}{DUMMIES_PREFIX_SEP}" in name,
+        lambda name: f"{variable}{DUMMIES_SEPARATOR}" in name,
         contributions_exploded.index,
     )
     assert_series_equal(

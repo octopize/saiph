@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 
 from saiph.exception import InvalidParameterException
 from saiph.models import Model
-from saiph.reduction import DUMMIES_PREFIX_SEP
+from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.utils.common import get_dummies_mapping
 
 
@@ -138,8 +138,8 @@ def undummify(
     """
     inverse_quali = pd.DataFrame()
 
-    def get_suffix(string: str) -> str:
-        return string.split(DUMMIES_PREFIX_SEP)[1]
+    def get_modality_from_dummy_variable(string: str, original_column: str) -> str:
+        return string.removeprefix(original_column + DUMMIES_SEPARATOR)
 
     for original_column, dummy_columns in dummies_mapping.items():
         # Handle a single category with all the possible modalities
@@ -149,7 +149,12 @@ def undummify(
             chosen_modalities = single_category.idxmax(axis="columns")
         else:
             chosen_modalities = get_random_weighted_columns(single_category, random_gen)
-        inverse_quali[original_column] = list(map(get_suffix, chosen_modalities))
+        inverse_quali[original_column] = list(
+            map(
+                lambda x: get_modality_from_dummy_variable(x, original_column),
+                chosen_modalities,
+            )
+        )
 
     return inverse_quali
 

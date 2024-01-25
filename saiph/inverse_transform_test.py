@@ -13,6 +13,7 @@ from saiph.inverse_transform import (
     undummify,
 )
 from saiph.projection import fit, fit_transform
+from saiph.reduction import DUMMIES_SEPARATOR
 
 
 @pytest.mark.parametrize(
@@ -69,7 +70,42 @@ def test_undummify(
         columns=["tool___hammer", "tool___wrench", "fruit___apple", "fruit___orange"],
     )
 
-    df = undummify(dummy_df, mapping, use_max_modalities=use_max_modalities, seed=321)
+    df = undummify(
+        dummy_df,
+        mapping,
+        use_max_modalities=use_max_modalities,
+        random_gen=np.random.default_rng(321),
+    )
+
+    assert_frame_equal(df, expected)
+
+
+def test_undummify_when_dummies_prefix_is_in_variable_name() -> None:
+    column_name = f"tool{DUMMIES_SEPARATOR}"
+
+    dummy_df = pd.DataFrame(
+        [[0.3, 0.7], [0.51, 0.49]],
+        columns=[
+            f"{column_name}{DUMMIES_SEPARATOR}hammer",
+            f"{column_name}{DUMMIES_SEPARATOR}wrench",
+        ],
+    )
+    mapping = {
+        column_name: [
+            f"{column_name}{DUMMIES_SEPARATOR}hammer",
+            f"{column_name}{DUMMIES_SEPARATOR}wrench",
+        ],
+    }
+
+    df = undummify(
+        dummy_df,
+        mapping,
+        use_max_modalities=True,
+    )
+
+    expected = pd.DataFrame(
+        [["wrench"], ["hammer"]], columns=[f"tool{DUMMIES_SEPARATOR}"]
+    )
 
     assert_frame_equal(df, expected)
 
@@ -107,9 +143,9 @@ def test_inverse_transform_with_ponderation() -> None:
         "cont1": 1,
         "cont2": 1,
     }
-    coord, model = fit_transform(df, col_weights=col_weights)
+    coord, model = fit_transform(df, col_weights=col_weights, seed=5)
     result = inverse_transform(
-        coord, model, use_approximate_inverse=True, use_max_modalities=False, seed=46
+        coord, model, use_approximate_inverse=True, use_max_modalities=False
     )
     assert_frame_equal(result, inverse_expected)
 
@@ -132,7 +168,7 @@ def test_inverse_transform_deterministic() -> None:
     }
     coord, model = fit_transform(df, col_weights=col_weights)
     result = inverse_transform(
-        coord, model, use_approximate_inverse=True, use_max_modalities=True, seed=46
+        coord, model, use_approximate_inverse=True, use_max_modalities=True
     )
     assert_frame_equal(result, inverse_expected)
 

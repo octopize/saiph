@@ -1,7 +1,7 @@
 """FAMD projection module."""
 import sys
 from itertools import chain, repeat
-from typing import Any, Callable, List, Optional, Tuple, cast
+from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
 import numpy as np
 import pandas as pd
@@ -9,7 +9,7 @@ import scipy
 from numpy.typing import NDArray
 
 from saiph.models import Model
-from saiph.reduction import DUMMIES_PREFIX_SEP
+from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.utils.common import (
     column_multiplication,
     get_dummies_mapping,
@@ -57,7 +57,7 @@ def center(
 
     # scale the categorical data
     df_quali = pd.get_dummies(
-        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        df[quali].astype("category"), prefix_sep=DUMMIES_SEPARATOR
     )
     # .mean() is the same as counting 0s and 1s
     # This will only work if we stick with pd.get_dummies to encode the modalities
@@ -86,7 +86,7 @@ def fit(
             NDArray[Any],
         ],
     ] = center,
-    seed: Optional[int] = None,
+    seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Model:
     """Fit a FAMD model on data.
 
@@ -101,12 +101,16 @@ def fit(
     """
     nf = nf or min(pd.get_dummies(df).shape)
     _col_weights = np.ones(df.shape[1]) if col_weights is None else col_weights
+    # If seed is None or int, we fit a Generator, else we use the one provided.
+    random_gen = (
+        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
+    )
 
     # Select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.to_list()
     dummy_categorical = pd.get_dummies(
-        df[quali].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        df[quali].astype("category"), prefix_sep=DUMMIES_SEPARATOR
     ).columns.to_list()
     modalities_types = get_modalities_types(df[quali])
 
@@ -120,9 +124,9 @@ def fit(
 
     # Compute the svd
     _U, S, _Vt = (
-        get_svd(Z.todense(), nf=nf, seed=seed)
+        get_svd(Z.todense(), nf=nf, random_gen=random_gen)
         if isinstance(Z, scipy.sparse.spmatrix)
-        else get_svd(Z, nf=nf, seed=seed)
+        else get_svd(Z, nf=nf, random_gen=random_gen)
     )
 
     U = ((_U.T) / np.sqrt(row_w)).T
@@ -134,7 +138,8 @@ def fit(
     U = U[:, :nf]
     S = S[:nf]
     Vt = Vt[:nf, :]
-
+    # we use the random generator to generate a new seed for the model
+    new_seed = int(random_gen.integers(0, 2**32 - 1))
     model = Model(
         original_dtypes=df.dtypes,
         original_categorical=quali,
@@ -156,6 +161,7 @@ def fit(
         column_weights=col_weights,
         row_weights=row_w,
         modalities_types=modalities_types,
+        seed=new_seed,
     )
 
     return model
@@ -165,7 +171,7 @@ def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
-    seed: Optional[int] = None,
+    seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a FAMD model on data and return transformed data.
 
@@ -179,7 +185,11 @@ def fit_transform(
         coord: The transformed data.
         model: The model for transforming new data.
     """
-    model = fit(df, nf, col_weights, seed=seed)
+    # If seed is None or int, we fit a Generator, else we use the one provided.
+    random_gen = (
+        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
+    )
+    model = fit(df, nf, col_weights, seed=random_gen)
     coord = transform(df, model)
     return coord, model
 
@@ -229,7 +239,7 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
 
     # scale
     df_quali = pd.get_dummies(
-        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_SEPARATOR
     )
     # Here we add a column with 0 if the modality is not present in the dataset but
     # was used to train the saiph model
@@ -379,7 +389,7 @@ def compute_categorical_cos2(
 
     mapping = get_dummies_mapping(model.original_categorical, model.dummy_categorical)
     dummy = pd.get_dummies(
-        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_PREFIX_SEP
+        df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_SEPARATOR
     )
     # Compute the categorical cos2 for each original column
     all_category_cos = {}

@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 
 from saiph.exception import InvalidParameterException
 from saiph.models import Model
-from saiph.reduction import DUMMIES_PREFIX_SEP, famd, famd_sparse, mca, pca
+from saiph.reduction import DUMMIES_SEPARATOR, famd, famd_sparse, mca, pca
 from saiph.reduction.utils.common import get_projected_column_names
 
 
@@ -16,6 +16,7 @@ def fit(
     nf: Optional[int] = None,
     col_weights: Optional[Dict[str, Union[int, float]]] = None,
     sparse: bool = False,
+    seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Model:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
@@ -31,9 +32,6 @@ def fit(
     Returns:
         model: The model for transforming new data.
     """
-    if isinstance(nf, str):
-        raise ValueError("nf=all is deprecated. Use None instead.")
-
     if nf is not None and (nf <= 0 or nf > min(pd.get_dummies(df).shape)):
         raise InvalidParameterException(
             "Expected number of components to be in "
@@ -50,7 +48,11 @@ def fit(
                 f"got {unknown_variables} instead."
             )
 
-    _nf = nf if nf else min(pd.get_dummies(df, prefix_sep=DUMMIES_PREFIX_SEP).shape)
+    _nf = nf if nf else min(pd.get_dummies(df, prefix_sep=DUMMIES_SEPARATOR).shape)
+    # If seed is None or int, we fit a Generator, else we use the one provided.
+    random_gen = (
+        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
+    )
 
     # Convert col weights from dict to ndarray
     _col_weights: NDArray[np.float_] = np.ones(df.shape[1])
@@ -75,7 +77,7 @@ def fit(
         # remove param center from famd.fit and no need to ignore type
         _fit = famd.fit  # type: ignore
 
-    model = _fit(df, _nf, _col_weights)
+    model = _fit(df, _nf, _col_weights, seed=random_gen)
 
     if quanti.size == 0:
         model.D_c = cast(NDArray[np.float_], model.D_c)
@@ -89,6 +91,7 @@ def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[Dict[str, Union[int, float]]] = None,
+    seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
@@ -104,7 +107,11 @@ def fit_transform(
     Returns:
         model: The model for transforming new data.
     """
-    model = fit(df, nf=nf, col_weights=col_weights)
+    # If seed is None or int, we fit a Generator, else we use the one provided.
+    random_gen = (
+        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
+    )
+    model = fit(df, nf=nf, col_weights=col_weights, seed=random_gen)
     coord = transform(df, model)
     return coord, model
 
@@ -241,7 +248,7 @@ def get_variable_correlation(
     if has_some_quali:
         df_quali = pd.get_dummies(
             df[model.original_categorical].astype("category"),
-            prefix_sep=DUMMIES_PREFIX_SEP,
+            prefix_sep=DUMMIES_SEPARATOR,
         )
         bind = pd.concat([df_quanti, df_quali], axis=1)
     else:

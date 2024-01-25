@@ -1,13 +1,13 @@
 """MCA projection module."""
 from itertools import chain, repeat
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
 from saiph.models import Model
-from saiph.reduction import DUMMIES_PREFIX_SEP
+from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.utils.common import (
     column_multiplication,
     diag,
@@ -27,7 +27,7 @@ def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
-    seed: Optional[int] = None,
+    seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Model:
     """Fit a MCA model on data.
 
@@ -43,6 +43,9 @@ def fit(
     nf = nf or min(pd.get_dummies(df).shape)
 
     _col_weights = col_weights if col_weights is not None else np.ones(df.shape[1])
+    random_gen = (
+        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
+    )
 
     modalities_types = get_modalities_types(df)
 
@@ -65,12 +68,12 @@ def fit(
     df_scale, T, D_c = _diag_compute(df_scale, r, c)
 
     # Get the array gathering proportion of each modality among individual (N/n)
-    df_dummies = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
-    dummies_col_prop = len(df_dummies) / df_dummies.sum(axis=0)
+    df_dummies = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_SEPARATOR)
+    dummies_col_prop = (len(df_dummies) / df_dummies.sum(axis=0)).to_numpy()
 
     # Apply the weights and compute the svd
     Z = ((T * col_weights_dummies).T * row_weights).T
-    U, S, Vt = get_svd(Z, nf=nf, seed=seed)
+    U, S, Vt = get_svd(Z, nf=nf, random_gen=random_gen)
 
     explained_var, explained_var_ratio = get_explained_variance(
         S, df_dummies.shape[0], nf
@@ -80,6 +83,9 @@ def fit(
     U = U[:, :nf]
     S = S[:nf]
     Vt = Vt[:nf, :]
+
+    # we use the random generator to generate a new seed for the model
+    new_seed = int(random_gen.integers(0, 2**32 - 1))
 
     model = Model(
         original_dtypes=df.dtypes,
@@ -100,6 +106,7 @@ def fit(
         row_weights=row_weights,
         dummies_col_prop=dummies_col_prop,
         modalities_types=modalities_types,
+        seed=new_seed,
     )
 
     return model
@@ -109,7 +116,7 @@ def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
     col_weights: Optional[NDArray[np.float_]] = None,
-    seed: Optional[int] = None,
+    seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a MCA model on data and return transformed data.
 
@@ -123,7 +130,10 @@ def fit_transform(
         model: The model for transforming new data.
         coord: The transformed data.
     """
-    model = fit(df, nf, col_weights, seed=seed)
+    random_gen = (
+        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
+    )
+    model = fit(df, nf, col_weights, seed=random_gen)
     coord = transform(df, model)
     return coord, model
 
@@ -146,7 +156,7 @@ def center(
         row_sum: Sums line by line
         column_sum: Sums column by column
     """
-    df_scale = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df_scale = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_SEPARATOR)
     _modalities = df_scale.columns.values
 
     # scale data
@@ -167,7 +177,7 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         df_scaled: The scaled DataFrame.
     """
-    df_scaled = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df_scaled = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_SEPARATOR)
     if model._modalities is not None:
         for mod in model._modalities:
             if mod not in df_scaled:
@@ -229,7 +239,7 @@ def get_variable_contributions(
         raise ValueError(
             "Model has not been fitted. Call fit() to create a Model instance."
         )
-    df = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_PREFIX_SEP)
+    df = pd.get_dummies(df.astype("category"), prefix_sep=DUMMIES_SEPARATOR)
 
     centered_df = df / df.sum().sum()
 

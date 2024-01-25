@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from saiph.models import Model
-from saiph.reduction import DUMMIES_PREFIX_SEP
+from saiph.reduction import DUMMIES_SEPARATOR
 
 _iris_csv = pd.read_csv("tests/fixtures/iris.csv")
 _wbcd_csv = pd.read_csv("tests/fixtures/breast_cancer_wisconsin.csv")
@@ -127,7 +127,7 @@ def wbcd_supplemental_coord_mixed() -> pd.DataFrame:
 
 @pytest.fixture
 def mapping() -> Dict[str, List[str]]:
-    sep = DUMMIES_PREFIX_SEP
+    sep = DUMMIES_SEPARATOR
     return {
         "tool": [f"tool{sep}hammer", f"tool{sep}wrench"],
         "fruit": [f"fruit{sep}apple", f"fruit{sep}orange"],

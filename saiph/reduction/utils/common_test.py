@@ -6,7 +6,7 @@ import pytest
 from pandas.testing import assert_frame_equal
 from toolz import concat
 
-from saiph.reduction import DUMMIES_PREFIX_SEP
+from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.utils.common import (
     column_multiplication,
     get_dummies_mapping,
@@ -48,7 +48,7 @@ def test_row_division(df: pd.DataFrame) -> None:
 def test_get_dummies_mapping(
     quali_df: pd.DataFrame, mapping: Dict[str, List[str]]
 ) -> None:
-    dummy_columns = pd.get_dummies(quali_df, prefix_sep=DUMMIES_PREFIX_SEP).columns
+    dummy_columns = pd.get_dummies(quali_df, prefix_sep=DUMMIES_SEPARATOR).columns
     result = get_dummies_mapping(quali_df.columns, dummy_columns)
 
     assert result == mapping

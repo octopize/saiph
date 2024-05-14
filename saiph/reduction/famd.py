@@ -483,17 +483,23 @@ def _compute_cos2_single_category(
     -------
         cos2 of the single category
     """
+    _, n_cols = single_category_df.shape
     cos2 = []
+
     for coord_col in coords.columns:
-        # for each modality of the qualitative column
-        p = 0
-        for col in single_category_df.columns:
-            weighted_coords = coords[coord_col] * model.row_weights
+        weighted_coord = coords[coord_col].values * model.row_weights
+        p_values = np.zeros(n_cols)
+
+        for i, col in enumerate(single_category_df.columns):
             dummy_values = single_category_df[col].values
             if model.prop is not None:
-                p += (dummy_values * weighted_coords).sum() ** 2 / model.prop[col]
+                p_values[i] = (dummy_values * weighted_coord).sum() ** 2 / model.prop[
+                    col
+                ]
 
+        p = p_values.sum()
         cos2.append(p)
+
     all_weighted_coords = (coords.values**2).T * model.row_weights
     summed_weights = all_weighted_coords.sum(axis=1)
 

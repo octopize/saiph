@@ -96,8 +96,8 @@ def center_sparse(
     mean = np.mean(df_quanti, axis=0)
     df_quanti -= mean
     std = np.std(df_quanti, axis=0)
-    std[std <= sys.float_info.min] = 1
-    df_quanti /= std
+    std_without_zero = np.where(std <= sys.float_info.min, 1, std)
+    df_quanti /= std_without_zero
     df_quanti = csr_matrix(df_quanti)
 
     # scale the categorical data

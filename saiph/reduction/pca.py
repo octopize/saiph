@@ -126,8 +126,10 @@ def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
     df -= mean
 
     std = np.std(df, axis=0)
-    std[std <= sys.float_info.min] = 1
-    df /= std
+
+    # Remove zeros to avoid division by zero when a df contains a constant variable
+    std_without_zeros = np.where(std <= sys.float_info.min, 1, std)
+    df /= std_without_zeros
 
     return df, mean, std
 
@@ -142,10 +144,21 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         df: The scaled DataFrame.
     """
+    if model.std is None or model.mean is None:
+        raise ValueError(
+            "Expected model.std and model.mean to be not None,"
+            f"got {model.std} and {model.mean} instead."
+        )
     df_scaled = df.copy()
 
     df_scaled -= model.mean
-    df_scaled /= model.std
+
+    # Remove zeros to avoid division by zero when a df contains a constant variable
+    std_without_zeros = pd.Series(
+        np.where(model.std <= sys.float_info.min, 1, model.std), index=model.std.index
+    )
+    df_scaled /= std_without_zeros
+
     return df_scaled
 
 

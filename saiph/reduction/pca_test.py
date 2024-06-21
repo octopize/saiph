@@ -70,7 +70,9 @@ def test_fit_zero() -> None:
     assert pd.isnull(model.explained_var_ratio).all()
     assert_allclose(model.variable_coord, model.V.T, atol=0.01)
     assert_allclose(model.mean, [1.0, 2.0])
-    assert_allclose(model.std, [1.0, 1.0])
+    assert_allclose(
+        model.std, [0, 0]
+    )  # The standard deviation of a constant variable is zero
 
 
 def test_center_scaler() -> None:

@@ -52,8 +52,10 @@ def center(
     mean = np.mean(df_quanti, axis=0)
     df_quanti -= mean
     std = np.std(df_quanti, axis=0)
-    std[std <= sys.float_info.min] = 1
-    df_quanti /= std
+
+    # Remove zeros to avoid division by zero when a df contains a constant variable
+    std_without_zeros = np.where(std <= sys.float_info.min, 1, std)
+    df_quanti /= std_without_zeros
 
     # scale the categorical data
     df_quali = pd.get_dummies(
@@ -232,10 +234,20 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         df_scaled: The scaled DataFrame.
     """
+    if model.mean is None or model.std is None:
+        raise ValueError(
+            "Expected model to have mean and std attributes,",
+            f"got {model.mean} and {model.std} instead.",
+        )
     model.prop = cast(pd.Series, model.prop)
 
     df_quanti = df[model.original_continuous]
-    df_quanti = (df_quanti - model.mean) / model.std
+
+    # Remove zeros to avoid division by zero when a df contains a constant variable
+    std_without_zeros = pd.Series(
+        np.where(model.std <= sys.float_info.min, 1, model.std), index=model.std.index
+    )
+    df_quanti = (df_quanti - model.mean) / std_without_zeros
 
     # scale
     df_quali = pd.get_dummies(
@@ -341,10 +353,18 @@ def _compute_contributions(
     explode: bool = True,
 ) -> pd.DataFrame:
     # compute the contribution
-    raw_contributions = (U * s) ** 2 / eig
+    # Remove zeros to avoid division by zero when a df contains a constant variable
+    eig_without_zeros = np.where(eig <= sys.float_info.min, 1, eig)
+    raw_contributions = (U * s) ** 2 / eig_without_zeros
+
     raw_contributions = raw_contributions * model.column_weights[:, np.newaxis]
     summed_contributions: NDArray[np.float_] = np.array(raw_contributions.sum(axis=0))
-    raw_contributions /= summed_contributions
+
+    # Remove zeros to avoid division by zero when a df contains a constant variable
+    summed_contributions_without_zeros = np.where(
+        summed_contributions <= sys.float_info.min, 1, summed_contributions
+    )
+    raw_contributions /= summed_contributions_without_zeros
     raw_contributions *= 100
 
     contributions = pd.DataFrame(
@@ -428,7 +448,8 @@ def compute_continuous_cos2(
     dist2 = np.sum(weighted_values, axis=0)
     dist2 = np.where(np.abs(dist2 - 1) < 0.001, 1, np.sqrt(dist2))
 
-    cos2 = np.divide(U * s, dist2[:, np.newaxis]) ** 2
+    dist2_without_zeros = np.where(dist2[:, np.newaxis] == 0, 1, dist2[:, np.newaxis])
+    cos2 = np.divide(U * s, dist2_without_zeros) ** 2
     # FIXME: Why original_continuous, we have been computing cos2 for all the dummies for nothing?
     continuous_cos2 = pd.DataFrame(
         cos2[: len(model.original_continuous)],  # only keep continuous components
@@ -503,5 +524,11 @@ def _compute_cos2_single_category(
     all_weighted_coords = (coords.values**2).T * model.row_weights
     summed_weights = all_weighted_coords.sum(axis=1)
 
-    single_category_cos2: NDArray[np.float_] = np.array(cos2) / summed_weights
+    # Remove zeros to avoid division by zero when a df contains a constant variable
+    summed_weights_without_zeros = np.where(
+        summed_weights <= sys.float_info.min, 1, summed_weights
+    )
+    single_category_cos2: NDArray[np.float_] = (
+        np.array(cos2) / summed_weights_without_zeros
+    )
     return single_category_cos2

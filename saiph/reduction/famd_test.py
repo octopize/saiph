@@ -257,3 +257,20 @@ def test_get_variable_contributions_sum_is_100_with_col_weights_random_famd(
     contributions, _ = get_variable_contributions(model, mixed_df)
     summed_contributions = contributions.sum(axis=0)
     assert_series_equal(summed_contributions, pd.Series([100.0] * 3), check_index=False)
+
+
+def test_get_variable_contributions_with_constant_variable() -> None:
+    """Ensure it handles a constant variable in the df, hence with a null eigenvalue."""
+    df = pd.DataFrame(
+        {
+            "quantitative_var": [1, 2, 3, 4],
+            "quantitative_constant_var": [1, 1, 1, 1],
+            "qualitative_var": ["a", "b", "c", "d"],
+            "qualitative_constant_var": ["a", "a", "a", "a"],
+        }
+    )
+    _, model = fit_transform(df, nf=None)
+
+    contributions, _ = get_variable_contributions(model, df, explode=False)
+
+    assert np.isfinite(contributions).all().all()

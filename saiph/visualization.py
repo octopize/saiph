@@ -4,6 +4,7 @@ from typing import List, Optional, Tuple
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt  # type: ignore
+from matplotlib.patches import Circle  # type: ignore
 from numpy.typing import NDArray
 
 from saiph import transform
@@ -37,7 +38,7 @@ def plot_circle(
     figure_axis_size = 6
     explained_var_ratio = model.explained_var_ratio
 
-    circle1 = plt.Circle((0, 0), radius=1, color="k", fill=False)
+    circle1 = Circle((0, 0), radius=1, color="k", fill=False)
     fig = plt.gcf()
     fig.set_size_inches(5, 5)
     fig.gca().add_artist(circle1)
@@ -103,7 +104,7 @@ def plot_var_contribution(
     plt.figure(figsize=(12, 6))
     indices = range(len(values))
     plt.bar(indices, values, align="center")
-    plt.xticks(indices, names, rotation="horizontal")
+    plt.xticks(indices, names.astype(str).tolist(), rotation="horizontal")
 
     # setting labels and title
     plt.title(title)
@@ -139,7 +140,7 @@ def plot_explained_var(
     )
     plt.xticks(
         range(len(explained_percentage)),
-        range(1, len(explained_percentage) + 1),
+        [str(i) for i in range(1, len(explained_percentage) + 1)],
         rotation="horizontal",
     )
 

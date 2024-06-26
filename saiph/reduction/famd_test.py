@@ -196,8 +196,8 @@ def test_get_variable_contributions(mixed_df: pd.DataFrame) -> None:
 
     expected_cos2 = pd.DataFrame.from_dict(
         data={
-            "variable_1": [0.897214, 0.002786, 0],
-            "tool": [0.897214, 0.002786, 0.25],
+            "variable_1": [0.897214, 0.002786, 0.0],
+            "tool": [0.897214, 0.002786, 1.0],
         },
         orient="index",
         columns=get_projected_column_names(3),

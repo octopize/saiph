@@ -331,6 +331,7 @@ def get_variable_contributions(
     Returns:
         tuple of contributions and cos2.
     """
+    model.row_weights = get_uniform_row_weights(len(df))
     scaled_df = pd.DataFrame(scaler(model, df))
     weighted_df = column_multiplication(scaled_df, np.sqrt(model.column_weights))
     weighted_df = row_multiplication(weighted_df, np.sqrt(model.row_weights))
@@ -407,11 +408,7 @@ def compute_categorical_cos2(
     -------
         dataframe of categorical cos2
     """
-    if model.U is not None and model.s is not None:
-        model_coords = pd.DataFrame(
-            model.U[:, :min_nf] * model.s[:min_nf],
-            columns=get_projected_column_names(min_nf),
-        )
+    model_coords = transform(df=df, model=model)
 
     mapping = get_dummies_mapping(model.original_categorical, model.dummy_categorical)
     dummy = pd.get_dummies(
@@ -514,7 +511,7 @@ def _compute_cos2_single_category(
     """
     _, n_cols = single_category_df.shape
     cos2 = []
-
+    model.row_weights = get_uniform_row_weights(len(coords))
     for coord_col in coords.columns:
         weighted_coord = coords[coord_col].values * model.row_weights
         p_values = np.zeros(n_cols)

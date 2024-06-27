@@ -408,7 +408,12 @@ def compute_categorical_cos2(
     -------
         dataframe of categorical cos2
     """
-    model_coords = transform(df=df, model=model)
+    df_model = fit(df=df)
+    if df_model.U is not None and df_model.s is not None:
+        model_coords = pd.DataFrame(
+            df_model.U[:, :min_nf] * df_model.s[:min_nf],
+            columns=get_projected_column_names(min_nf),
+        )
 
     mapping = get_dummies_mapping(model.original_categorical, model.dummy_categorical)
     dummy = pd.get_dummies(

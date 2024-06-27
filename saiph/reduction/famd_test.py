@@ -209,6 +209,51 @@ def test_get_variable_contributions(mixed_df: pd.DataFrame) -> None:
     assert_frame_equal(cos2, expected_cos2, check_exact=False, atol=0.0001)
 
 
+def test_get_variable_contributions_with_model_fitted_on_other_df() -> None:
+    """Verify that the contributions and cos2 are the ones expected."""
+    df_to_fit_model = pd.DataFrame(
+        {
+            "variable_1": [1, 2, 3, 4],
+            "tool": ["hammer", "toaster", "hammer", "toaster"],
+        }
+    )
+    df_to_compute_contributions = pd.DataFrame(
+        {
+            "variable_1": [2, 2, 3, 1],
+            "tool": ["toaster", "toaster", "hammer", "hammer"],
+        }
+    )
+    _, model = fit_transform(df_to_fit_model, nf=3)
+
+    contributions, cos2 = get_variable_contributions(
+        model, df_to_compute_contributions, explode=False
+    )
+
+    expected_contributions = pd.DataFrame.from_dict(
+        data={
+            "variable_1": [0, 100, 0],
+            "tool": [100, 0, 0],
+        },
+        dtype=np.float_,
+        orient="index",
+        columns=get_projected_column_names(3),
+    )
+
+    expected_cos2 = pd.DataFrame.from_dict(
+        data={
+            "variable_1": [0.0, 1.0, 0.0],
+            "tool": [0.076393, 0.523607, 0.25],
+        },
+        orient="index",
+        columns=get_projected_column_names(3),
+    )
+
+    assert_frame_equal(
+        contributions, expected_contributions, check_exact=False, atol=0.0001
+    )
+    assert_frame_equal(cos2, expected_cos2, check_exact=False, atol=0.0001)
+
+
 @pytest.mark.parametrize("col_weights", [[2.0, 3.0], None])
 def test_get_variable_contributions_exploded_parameter(
     mixed_df: pd.DataFrame, col_weights: Any

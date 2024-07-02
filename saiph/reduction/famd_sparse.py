@@ -102,7 +102,9 @@ def center_sparse(
 
     # scale the categorical data
     df_quali = pd.get_dummies(
-        df[quali].astype("category"), prefix_sep=DUMMIES_SEPARATOR
+        df[quali].astype("category"),
+        prefix_sep=DUMMIES_SEPARATOR,
+        dtype=np.uint8,
     )
     _modalities = df_quali.columns
     df_quali = csr_matrix(df_quali)

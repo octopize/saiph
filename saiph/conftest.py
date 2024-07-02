@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Dict, List
 
 import numpy as np
@@ -150,11 +151,20 @@ def check_equality(
     expected: Any,
 ) -> None:
     """Check equality of dataframes, series and np.arrays."""
-    if isinstance(test, pd.DataFrame) and isinstance(expected, pd.DataFrame):
-        pd.testing.assert_frame_equal(test, expected)
-    elif isinstance(test, pd.Series) and isinstance(expected, pd.Series):
-        pd.testing.assert_series_equal(test, expected)
-    elif isinstance(test, np.ndarray) and isinstance(expected, np.ndarray):
-        np.testing.assert_array_equal(test, expected)
-    else:
-        assert test == expected
+    with warnings.catch_warnings():
+        # We ignore the warning about mismatched null-like values
+        # In a future update of pandas, this will raise when comparing
+        # None and np.nan (which is what we want)
+        warnings.filterwarnings(
+            action="ignore",
+            message="Mismatched null-like values None and nan found.",
+            category=FutureWarning,
+        )
+        if isinstance(test, pd.DataFrame) and isinstance(expected, pd.DataFrame):
+            pd.testing.assert_frame_equal(test, expected)
+        elif isinstance(test, pd.Series) and isinstance(expected, pd.Series):
+            pd.testing.assert_series_equal(test, expected)
+        elif isinstance(test, np.ndarray) and isinstance(expected, np.ndarray):
+            np.testing.assert_array_equal(test, expected)
+        else:
+            assert test == expected

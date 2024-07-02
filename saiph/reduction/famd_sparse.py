@@ -17,7 +17,7 @@ from saiph.reduction.famd import transform as transform_famd
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float64]] = None,
     seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Model:
     """Fit a FAMD model on sparse data.
@@ -40,7 +40,7 @@ def fit(
 def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float64]] = None,
     seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a FAMD model on data and return transformed data.
@@ -68,8 +68,8 @@ def center_sparse(
     df: pd.DataFrame, quanti: List[str], quali: List[str]
 ) -> Tuple[
     scipy.sparse.spmatrix,
-    NDArray[np.float_],
-    NDArray[np.float_],
+    NDArray[np.float64],
+    NDArray[np.float64],
     NDArray[Any],
     NDArray[Any],
 ]:

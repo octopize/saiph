@@ -30,7 +30,7 @@ def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
     result, model = fit_transform(df)
     model.mean = cast(pd.Series, model.mean)
     model.std = cast(pd.Series, model.std)
-    model.s = cast(NDArray[np.float_], model.s)
+    model.s = cast(NDArray[np.float64], model.s)
 
     expected_result = pd.DataFrame(
         {
@@ -38,16 +38,16 @@ def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
             "Dim. 2": [0.0, 0.0],
         }
     )
-    expected_v: NDArray[np.float_] = np.array(
+    expected_v: NDArray[np.float64] = np.array(
         [
             [0.57735, 0.408248, -0.408248, -0.408248, 0.408248],
             [0.816497, -0.288675, 0.288675, 0.288675, -0.288675],
         ]
     )
-    expected_s: NDArray[np.float_] = np.array([1.224745e00, 0.0])
-    expected_u: NDArray[np.float_] = np.array([[-1.0, 1.0], [1.0, 1.0]])
-    expected_explained_var: NDArray[np.float_] = np.array([1.5, 0.0])
-    expected_explained_var_ratio: NDArray[np.float_] = np.array([1.0, 0.0])
+    expected_s: NDArray[np.float64] = np.array([1.224745e00, 0.0])
+    expected_u: NDArray[np.float64] = np.array([[-1.0, 1.0], [1.0, 1.0]])
+    expected_explained_var: NDArray[np.float64] = np.array([1.5, 0.0])
+    expected_explained_var_ratio: NDArray[np.float64] = np.array([1.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
     assert_allclose(model.V, expected_v, atol=0.01)
@@ -189,7 +189,7 @@ def test_get_variable_contributions(mixed_df: pd.DataFrame) -> None:
             "variable_1": [50, 50, 0],
             "tool": [50, 50, 100],
         },
-        dtype=np.float_,
+        dtype=np.float64,
         orient="index",
         columns=get_projected_column_names(3),
     )

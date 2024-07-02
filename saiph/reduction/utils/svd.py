@@ -13,7 +13,7 @@ def get_svd(
     *,
     svd_flip: bool = True,
     random_gen: np.random.Generator = np.random.default_rng(),
-) -> Tuple[NDArray[np.float_], NDArray[np.float_], NDArray[np.float_]]:
+) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """Compute Singular Value Decomposition.
 
     Arguments
@@ -47,12 +47,12 @@ def get_svd(
 
 
 def get_randomized_subspace_iteration(
-    A: NDArray[np.float_],
+    A: NDArray[np.float64],
     l_retained_dimensions: int,
     *,
     q: int = 2,
     random_gen: np.random.Generator = np.random.default_rng(),
-) -> NDArray[np.float_]:
+) -> NDArray[np.float64]:
     """Generate a subspace for more efficient SVD computation using random methods.
 
     From https://arxiv.org/abs/0909.4061, algorithm 4.4 page 27
@@ -88,11 +88,11 @@ def get_randomized_subspace_iteration(
 
 
 def get_direct_randomized_svd(
-    A: NDArray[np.float_],
+    A: NDArray[np.float64],
     l_retained_dimensions: int,
     q: int = 2,
     random_gen: np.random.Generator = np.random.default_rng(),
-) -> Tuple[NDArray[np.float_], NDArray[np.float_], NDArray[np.float_]]:
+) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """Compute a fixed-rank SVD approximation using random methods.
 
     The computation of the randomized SVD is generally faster than a regular SVD when we retain

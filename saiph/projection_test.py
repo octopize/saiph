@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from typing import Any, Dict, List, Union
 
 import numpy as np
@@ -306,7 +307,7 @@ def test_get_variable_contribution_for_pca(quanti_df: pd.DataFrame) -> None:
             "variable_2": [33.497034, 16.502966, 33.465380],
             "variable_3": [33.005932, 66.994068, 33.069241],
         },
-        dtype=np.float_,
+        dtype=np.float64,
         orient="index",
         columns=get_projected_column_names(3),
     )
@@ -363,47 +364,47 @@ def test_stats_calls_correct_subfunction(
     # FIXME: Can't test PCA as it has no subfunction associated to it
 
 
-nf_invalid_parameter = pytest.mark.xfail(raises=InvalidParameterException, strict=True)
-
-
 @pytest.mark.parametrize(
-    "nf",
+    "nf,expectation",
     [
         # Invalid boundary
-        pytest.param(0, marks=nf_invalid_parameter),
-        pytest.param(5, marks=nf_invalid_parameter),
+        (0, pytest.raises(InvalidParameterException)),
+        (5, pytest.raises(InvalidParameterException)),
         # Valid boundary
-        pytest.param(4),
-        pytest.param(1),
-        pytest.param(None),
+        (4, nullcontext()),
+        (1, nullcontext()),
+        (None, nullcontext()),
     ],
 )
-def test_fit_checks_nf_parameter(quali_df: pd.DataFrame, nf: int) -> None:
+def test_fit_checks_nf_parameter(
+    quali_df: pd.DataFrame,
+    nf: int,
+    expectation: Any,
+) -> None:
     """Verify that fit checks nf parameter and fails when it needs to."""
-    fit(quali_df, nf=nf)
-
-
-col_weights_invalid_parameter = pytest.mark.xfail(
-    raises=InvalidParameterException, strict=True
-)
+    with expectation:
+        fit(quali_df, nf=nf)
 
 
 @pytest.mark.parametrize(
-    "col_weights",
+    "col_weights,expectation",
     [
         # Invalid
-        pytest.param({"col": 2}, marks=col_weights_invalid_parameter),
+        ({"col": 2}, pytest.raises(InvalidParameterException)),
         # Valid
-        pytest.param({"tool": 2, "fruit": 3}),
-        pytest.param({"fruit": 3}),
-        pytest.param(None),
+        ({"tool": 2, "fruit": 3}, nullcontext()),
+        ({"fruit": 3}, nullcontext()),
+        (None, nullcontext()),
     ],
 )
 def test_fit_checks_col_weights_parameter(
-    quali_df: pd.DataFrame, col_weights: Any
+    quali_df: pd.DataFrame,
+    col_weights: Any,
+    expectation: Any,
 ) -> None:
     """Verify that fit checks col_weights parameter and fails when it needs to."""
-    fit(quali_df, col_weights=col_weights)
+    with expectation:
+        fit(quali_df, col_weights=col_weights)
 
 
 @pytest.mark.parametrize(

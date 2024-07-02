@@ -18,7 +18,7 @@ from saiph.reduction.utils.svd import get_svd
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float64]] = None,
     seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Model:
     """Fit a PCA model on data.
@@ -86,7 +86,7 @@ def fit(
 def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float64]] = None,
     seed: Optional[int] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a PCA model on data and return transformed data.

@@ -41,11 +41,10 @@ def diag(arr: NDArray[Any], use_scipy: bool = False) -> NDArray[Any]:
 
 
 def get_explained_variance(
-    s: NDArray[np.float_],
+    s: NDArray[np.float64],
     nb_individuals: int,
     nf: int,
-) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
-
+) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
     all_variance = (s**2) / (nb_individuals - 1)
     variance = all_variance[:nf]
 
@@ -85,7 +84,7 @@ TYPES = {
     int: "int",
     np.int_: "int",
     float: "float",
-    np.float_: "float",
+    np.float64: "float",
     str: "string",
     np.str_: "string",
     bool: "bool",

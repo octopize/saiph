@@ -48,7 +48,11 @@ def test_row_division(df: pd.DataFrame) -> None:
 def test_get_dummies_mapping(
     quali_df: pd.DataFrame, mapping: Dict[str, List[str]]
 ) -> None:
-    dummy_columns = pd.get_dummies(quali_df, prefix_sep=DUMMIES_SEPARATOR).columns
+    dummy_columns = pd.get_dummies(
+        quali_df,
+        prefix_sep=DUMMIES_SEPARATOR,
+        dtype=np.uint8,
+    ).columns
     result = get_dummies_mapping(quali_df.columns, dummy_columns)
 
     assert result == mapping

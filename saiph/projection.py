@@ -249,6 +249,7 @@ def get_variable_correlation(
         df_quali = pd.get_dummies(
             df[model.original_categorical].astype("category"),
             prefix_sep=DUMMIES_SEPARATOR,
+            dtype=np.uint8,
         )
         bind = pd.concat([df_quanti, df_quali], axis=1)
     else:

@@ -1,5 +1,6 @@
 # type: ignore
 from dataclasses import dataclass
+from io import StringIO
 from typing import Any, Type, Union
 
 import msgspec
@@ -117,7 +118,7 @@ def numpy_pandas_json_decoding_hook(type: Type, json_dict: Any) -> Any:
     if "__series__" in json_dict:
         data = json_dict["__series__"]
         series = pd.read_json(
-            data, orient="index", typ="series", dtype=json_dict["dtype"]
+            StringIO(data), orient="index", typ="series", dtype=json_dict["dtype"]
         )
         series.index = series.index.astype(json_dict["index_type"])
         return series
@@ -127,7 +128,7 @@ def numpy_pandas_json_decoding_hook(type: Type, json_dict: Any) -> Any:
         data = json_dict["__frame__"]
         value_types = json_dict["value_types"]
         dtypes = json_dict["dtypes"]
-        df = pd.read_json(data, orient="index", typ="frame")
+        df = pd.read_json(StringIO(data), orient="index", typ="frame")
 
         df.index = df.index.astype(json_dict["index_type"])
         df.columns = df.columns.astype(json_dict["columns_type"])

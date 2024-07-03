@@ -229,6 +229,7 @@ def test_get_variable_contributions_sum_is_100_with_col_weights_random_mca(
     summed_contributions = contributions.sum(axis=0)
     assert_series_equal(summed_contributions, pd.Series([100.0] * 4), check_index=False)
 
+
 def test_reconstructed_df_from_model_equals_df(quali_df: pd.DataFrame) -> None:
     """Ensure that the reconstructed df from the model is equal to the original df."""
     df = quali_df

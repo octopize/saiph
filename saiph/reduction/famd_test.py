@@ -209,6 +209,7 @@ def test_get_variable_contributions(mixed_df: pd.DataFrame) -> None:
     )
     assert_frame_equal(cos2, expected_cos2, check_exact=False, atol=0.0001)
 
+
 @pytest.mark.parametrize("col_weights", [[2.0, 3.0], None])
 def test_get_variable_contributions_exploded_parameter(
     mixed_df: pd.DataFrame, col_weights: Any
@@ -274,6 +275,7 @@ def test_get_variable_contributions_with_constant_variable() -> None:
     contributions, _ = get_variable_contributions(model, df, explode=False)
 
     assert np.isfinite(contributions).all().all()
+
 
 def test_reconstructed_df_from_model_equals_df(mixed_df: pd.DataFrame) -> None:
     """Ensure that the reconstructed df from the model is equal to the original df."""

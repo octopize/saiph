@@ -178,6 +178,7 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     coord.columns = get_projected_column_names(model.nf)
     return coord
 
+
 def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     """Reconstruct the original DataFrame from the model.
 
@@ -190,10 +191,22 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
         df: The reconstructed DataFrame.
     """
     U = model.U
+    if model.s is None:
+        raise ValueError(
+            "Model has not been fitted. Call fit() to create a Model instance."
+        )
     S = model.s
     Vt = model.V
     row_w = model.row_weights
+    if model.mean is None:
+        raise ValueError(
+            "Model has not been fitted. Call fit() to create a Model instance."
+        )
     mean = model.mean
+    if model.std is None:
+        raise ValueError(
+            "Model has not been fitted. Call fit() to create a Model instance."
+        )
     std = model.std
     col_weights = model.column_weights
 

@@ -333,7 +333,7 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     """Reconstruct the original DataFrame from the model.
 
     Note: if nf < df.shape[1], reconstructed df will not be exactly the same.
-    
+
     Parameters:
         model: Model computed by fit.
 
@@ -341,11 +341,14 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
         df: The reconstructed DataFrame.
     """
     U = model.U
+    if model.s is None:
+        raise ValueError(
+            "Model has not been fitted. Call fit() to create a Model instance."
+        )
     S = model.s
     Vt = model.V
     row_w = model.row_weights
     col_weights = model.column_weights
-    prop = model.dummies_col_prop
     _modalities = model._modalities
     quali = model.original_categorical
 
@@ -363,7 +366,11 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     for var in quali:
         prefix = var + DUMMIES_SEPARATOR
         dummies = [col for col in df_reconstructed.columns if col.startswith(prefix)]
-        df_reconstructed[var] = df_reconstructed[dummies].idxmax(axis=1).apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
+        df_reconstructed[var] = (
+            df_reconstructed[dummies]
+            .idxmax(axis=1)
+            .apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
+        )
         df_reconstructed.drop(columns=dummies, inplace=True)
 
     # Ensure the column order matches the original dataframe

@@ -540,6 +540,7 @@ def _compute_cos2_single_category(
     )
     return single_category_cos2
 
+
 def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     """Reconstruct a DataFrame from a fitted model.
 
@@ -553,12 +554,28 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     """
     # Step 1: Extract the necessary components from the model
     U = model.U
+    if model.s is None:
+        raise ValueError(
+            "Model has not been fitted. Call fit() to create a Model instance."
+        )
     S = model.s
     Vt = model.V
     row_w = model.row_weights
     col_weights = model.column_weights
+    if model.mean is None:
+        raise ValueError(
+            "Model has not been fitted. Call fit() to create a Model instance."
+        )
     mean = model.mean.values
+    if model.std is None:
+        raise ValueError(
+            "Model has not been fitted. Call fit() to create a Model instance."
+        )
     std = model.std.values
+    if model.prop is None:
+        raise ValueError(
+            "Model has not been fitted. Call fit() to create a Model instance."
+        )
     prop = model.prop.values
     _modalities = model._modalities
     quanti = model.original_continuous
@@ -594,7 +611,9 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     for var in quali:
         prefix = var + DUMMIES_SEPARATOR
         dummies = [col for col in df.columns if col.startswith(prefix)]
-        df[var] = df[dummies].idxmax(axis=1).apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
+        df[var] = (
+            df[dummies].idxmax(axis=1).apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
+        )
         df.drop(columns=dummies, inplace=True)
 
     # Ensure the column order matches the original dataframe

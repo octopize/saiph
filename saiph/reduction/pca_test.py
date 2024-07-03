@@ -6,7 +6,14 @@ from numpy.testing import assert_allclose
 from numpy.typing import NDArray
 from pandas.testing import assert_frame_equal
 
-from saiph.reduction.pca import center, fit, fit_transform, reconstruct_df_from_model, scaler, transform
+from saiph.reduction.pca import (
+    center,
+    fit,
+    fit_transform,
+    reconstruct_df_from_model,
+    scaler,
+    transform,
+)
 
 
 def test_fit_scale() -> None:
@@ -139,6 +146,7 @@ def test_transform_vs_coord() -> None:
     df_transformed = transform(df, model)
 
     assert_frame_equal(coord, df_transformed)
+
 
 def test_reconstructed_df_from_model_equals_df() -> None:
     """Ensure that the reconstructed df from the model is equal to the original df."""

@@ -66,6 +66,7 @@ def fit(
         dummy_categorical=[],
         U=U,
         V=Vt,
+        s=S,
         explained_var=explained_var,
         explained_var_ratio=explained_var_ratio,
         variable_coord=pd.DataFrame(Vt.T),
@@ -176,3 +177,40 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
     coord = df_scaled @ model.V.T
     coord.columns = get_projected_column_names(model.nf)
     return coord
+
+def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
+    """Reconstruct the original DataFrame from the model.
+
+    Note: if nf < df.shape[1], reconstructed df will not be exactly the same.
+
+    Parameters:
+        model: Model computed by fit.
+
+    Returns:
+        df: The reconstructed DataFrame.
+    """
+    U = model.U
+    S = model.s
+    Vt = model.V
+    row_w = model.row_weights
+    mean = model.mean
+    std = model.std
+    col_weights = model.column_weights
+
+    Sigma = np.diag(S)
+
+    # Reconstruct the weighted and scaled matrix Z
+    Z = np.dot(U, np.dot(Sigma, Vt))
+
+    # Undo the row and column weighting
+    Z = Z / np.sqrt(row_w)[:, np.newaxis]
+    Z = Z / np.sqrt(col_weights)
+
+    # Rescale and shift to the original data distribution
+    df_reconstructed = (Z * std.values) + mean.values
+
+    # Convert to DataFrame and restore original column names and dtypes
+    df_reconstructed = pd.DataFrame(df_reconstructed, columns=model.original_continuous)
+    df_reconstructed = df_reconstructed.astype(model.original_dtypes)
+
+    return df_reconstructed

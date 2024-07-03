@@ -11,6 +11,7 @@ from saiph.reduction.mca import (
     fit,
     fit_transform,
     get_variable_contributions,
+    reconstruct_df_from_model,
     transform,
 )
 from saiph.reduction.utils.common import get_projected_column_names
@@ -227,3 +228,10 @@ def test_get_variable_contributions_sum_is_100_with_col_weights_random_mca(
     contributions = get_variable_contributions(model, quali_df)
     summed_contributions = contributions.sum(axis=0)
     assert_series_equal(summed_contributions, pd.Series([100.0] * 4), check_index=False)
+
+def test_reconstructed_df_from_model_equals_df(quali_df: pd.DataFrame) -> None:
+    """Ensure that the reconstructed df from the model is equal to the original df."""
+    df = quali_df
+    model = fit(df)
+    reconstructed_df = reconstruct_df_from_model(model)
+    assert_frame_equal(df, reconstructed_df, check_dtype=False)

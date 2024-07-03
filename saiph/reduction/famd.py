@@ -331,7 +331,6 @@ def get_variable_contributions(
     Returns:
         tuple of contributions and cos2.
     """
-    model.row_weights = get_uniform_row_weights(len(df))
     scaled_df = pd.DataFrame(scaler(model, df))
     weighted_df = column_multiplication(scaled_df, np.sqrt(model.column_weights))
     weighted_df = row_multiplication(weighted_df, np.sqrt(model.row_weights))
@@ -408,20 +407,11 @@ def compute_categorical_cos2(
     -------
         dataframe of categorical cos2
     """
-    # if categorical cos 2 is computed on a different df than the one used to fit the model
-    if model.U is not None and len(model.U) != len(df):
-        df_model = fit(df=df)
-        if df_model.U is not None and df_model.s is not None:
-            model_coords = pd.DataFrame(
-                df_model.U[:, :min_nf] * df_model.s[:min_nf],
-                columns=get_projected_column_names(min_nf),
-            )
-    else:
-        if model.U is not None and model.s is not None:
-            model_coords = pd.DataFrame(
-                model.U[:, :min_nf] * model.s[:min_nf],
-                columns=get_projected_column_names(min_nf),
-            )
+    if model.U is not None and model.s is not None:
+        model_coords = pd.DataFrame(
+            model.U[:, :min_nf] * model.s[:min_nf],
+            columns=get_projected_column_names(min_nf),
+        )
 
     mapping = get_dummies_mapping(model.original_categorical, model.dummy_categorical)
     dummy = pd.get_dummies(
@@ -524,7 +514,6 @@ def _compute_cos2_single_category(
     """
     _, n_cols = single_category_df.shape
     cos2 = []
-    model.row_weights = get_uniform_row_weights(len(coords))
     for coord_col in coords.columns:
         weighted_coord = coords[coord_col].values * model.row_weights
         p_values = np.zeros(n_cols)
@@ -550,3 +539,65 @@ def _compute_cos2_single_category(
         np.array(cos2) / summed_weights_without_zeros
     )
     return single_category_cos2
+
+def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
+    """Reconstruct a DataFrame from a fitted model.
+
+    Note: if nf < df.shape[1], reconstructed df will not be exactly the same.
+
+    Parameters:
+        model: Model computed by fit.
+
+    Returns:
+        df: The reconstructed DataFrame.
+    """
+    # Step 1: Extract the necessary components from the model
+    U = model.U
+    S = model.s
+    Vt = model.V
+    row_w = model.row_weights
+    col_weights = model.column_weights
+    mean = model.mean.values
+    std = model.std.values
+    prop = model.prop.values
+    _modalities = model._modalities
+    quanti = model.original_continuous
+    quali = model.original_categorical
+
+    # Step 2: Construct the diagonal matrix of singular values
+    Sigma = np.diag(S)
+
+    # Step 3: Reconstruct the weighted and scaled matrix Z
+    Z = np.dot(U, np.dot(Sigma, Vt))
+
+    # Step 4: Undo the row and column weighting
+    Z = Z / np.sqrt(row_w)[:, np.newaxis]
+    Z = Z / np.sqrt(col_weights)
+
+    # Step 5: Split Z back into quantitative and qualitative parts
+    n_quanti = len(quanti)
+    df_quanti_scaled = Z[:, :n_quanti]
+    df_quali_scaled = Z[:, n_quanti:]
+
+    # Step 6: Reverse the scaling for quantitative variables
+    df_quanti = df_quanti_scaled * std + mean
+
+    # Step 7: Reverse the scaling for qualitative variables
+    df_quali = df_quali_scaled * np.sqrt(prop) + prop
+
+    # Step 8: Combine quantitative and qualitative data
+    df_quali = pd.DataFrame(df_quali, columns=_modalities)
+    df_quanti = pd.DataFrame(df_quanti, columns=quanti)
+    df = pd.concat([df_quanti, df_quali], axis=1)
+
+    # Step 9: Reverse the dummy encoding for categorical variables
+    for var in quali:
+        prefix = var + DUMMIES_SEPARATOR
+        dummies = [col for col in df.columns if col.startswith(prefix)]
+        df[var] = df[dummies].idxmax(axis=1).apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
+        df.drop(columns=dummies, inplace=True)
+
+    # Ensure the column order matches the original dataframe
+    df = df[model.original_dtypes.index]
+
+    return df

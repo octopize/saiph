@@ -21,11 +21,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 # -- Project information -----------------------------------------------------
 
 project = "Saiph"
-copyright = "2022, Octopize"
+copyright = "2024, Octopize"
 author = "Octopize"
 
 # The full version, including alpha/beta/rc tags
-release = "1.4.0"
+release = "1.5.6"
 
 
 # -- General configuration ---------------------------------------------------

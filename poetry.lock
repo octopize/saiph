@@ -2238,9 +2238,9 @@ files = [
 
 [package.dependencies]
 numpy = [
+    {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
     {version = ">=1.22.4", markers = "python_version < \"3.11\""},
     {version = ">=1.23.2", markers = "python_version == \"3.11\""},
-    {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
 ]
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
@@ -2607,8 +2607,8 @@ files = [
 annotated-types = ">=0.4.0"
 pydantic-core = "2.20.0"
 typing-extensions = [
-    {version = ">=4.6.1", markers = "python_version < \"3.13\""},
     {version = ">=4.12.2", markers = "python_version >= \"3.13\""},
+    {version = ">=4.6.1", markers = "python_version < \"3.13\""},
 ]
 
 [package.extras]
@@ -3948,4 +3948,4 @@ matplotlib = ["matplotlib"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4.0"
-content-hash = "5c7317dec3e52212e0a6746c35944d02e575d480831b0ebc9900464bfe2ba7cc"
+content-hash = "64b84c2308a98ff0b698f0ae28ab1f4265eaa9bfee4cd126f0db252ab7276dd8"

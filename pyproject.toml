@@ -10,7 +10,7 @@ license = "Apache-2.0"
 python = ">=3.10,<4.0"
 pandas = ">=2.2.2"
 numpy = "^1"
-scipy = "^1.14.0"
+scipy = "^1.10.0"
 scikit-learn = "^1.0"
 toolz = "0.*"
 matplotlib = {version = "^3.5.2", optional = true}

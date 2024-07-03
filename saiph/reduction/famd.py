@@ -27,7 +27,7 @@ from saiph.reduction.utils.svd import get_svd
 def center(
     df: pd.DataFrame, quanti: List[str], quali: List[str]
 ) -> Tuple[
-    pd.DataFrame, NDArray[np.float_], NDArray[np.float_], NDArray[Any], NDArray[Any]
+    pd.DataFrame, NDArray[np.float64], NDArray[np.float64], NDArray[Any], NDArray[Any]
 ]:
     """Center data, scale it, compute modalities and proportions of each categorical.
 
@@ -79,13 +79,13 @@ def center(
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float64]] = None,
     center: Callable[
         [pd.DataFrame, List[str], List[str]],
         Tuple[
             pd.DataFrame,
-            NDArray[np.float_],
-            NDArray[np.float_],
+            NDArray[np.float64],
+            NDArray[np.float64],
             NDArray[Any],
             NDArray[Any],
         ],
@@ -176,7 +176,7 @@ def fit(
 def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float64]] = None,
     seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a FAMD model on data and return transformed data.
@@ -350,9 +350,9 @@ def get_variable_contributions(
 
 def _compute_contributions(
     model: Model,
-    s: NDArray[np.float_],
-    U: NDArray[np.float_],
-    eig: NDArray[np.float_],
+    s: NDArray[np.float64],
+    U: NDArray[np.float64],
+    eig: NDArray[np.float64],
     min_nf: int,
     column_names: List[str],
     *,
@@ -364,7 +364,7 @@ def _compute_contributions(
     raw_contributions = (U * s) ** 2 / eig_without_zeros
 
     raw_contributions = raw_contributions * model.column_weights[:, np.newaxis]
-    summed_contributions: NDArray[np.float_] = np.array(raw_contributions.sum(axis=0))
+    summed_contributions: NDArray[np.float64] = np.array(raw_contributions.sum(axis=0))
 
     # Remove zeros to avoid division by zero when a df contains a constant variable
     summed_contributions_without_zeros = np.where(
@@ -446,10 +446,10 @@ def compute_continuous_cos2(
     model: Model,
     scaled_df: pd.DataFrame,
     min_nf: int,
-    s: NDArray[np.float_],
-    U: NDArray[np.float_],
+    s: NDArray[np.float64],
+    U: NDArray[np.float64],
 ) -> pd.DataFrame:
-    squared_values: NDArray[np.float_] = scaled_df.values**2
+    squared_values: NDArray[np.float64] = scaled_df.values**2
 
     weighted_values = squared_values * model.row_weights[:, np.newaxis]
 
@@ -469,8 +469,8 @@ def compute_continuous_cos2(
 
 
 def _compute_svd(
-    model: Model, weighted: NDArray[np.float_], min_nf: int
-) -> Tuple[NDArray[np.float_], NDArray[np.float_], NDArray[np.float_]]:
+    model: Model, weighted: NDArray[np.float64], min_nf: int
+) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     U, s, V = get_svd(weighted.T, svd_flip=False)
 
     # Only keep first nf components
@@ -496,7 +496,7 @@ def _compute_svd(
 
 def _compute_cos2_single_category(
     single_category_df: pd.DataFrame, model: Model, coords: pd.DataFrame
-) -> NDArray[np.float_]:
+) -> NDArray[np.float64]:
     """Compute cos2 for a single original category.
 
     Parameters
@@ -536,7 +536,7 @@ def _compute_cos2_single_category(
     summed_weights_without_zeros = np.where(
         summed_weights <= sys.float_info.min, 1, summed_weights
     )
-    single_category_cos2: NDArray[np.float_] = (
+    single_category_cos2: NDArray[np.float64] = (
         np.array(cos2) / summed_weights_without_zeros
     )
     return single_category_cos2

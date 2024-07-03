@@ -25,7 +25,7 @@ def test_fit() -> None:
     )
 
     result, model = fit_transform(df)
-    model.D_c = cast(NDArray[np.float_], model.D_c)
+    model.D_c = cast(NDArray[np.float64], model.D_c)
 
     expected_result = pd.DataFrame(
         {
@@ -33,11 +33,11 @@ def test_fit() -> None:
             "Dim. 2": [-0.7, -0.7],
         }
     )
-    expected_v: NDArray[np.float_] = np.array(
+    expected_v: NDArray[np.float64] = np.array(
         [[-0.707107, 0.707107, -0.0], [-0.707107, -0.707107, 0.0]]
     )
-    expected_explained_var: NDArray[np.float_] = np.array([1.25000e-01, 3.85186e-34])
-    expected_explained_var_ratio: NDArray[np.float_] = np.array([1.0, 0.0])
+    expected_explained_var: NDArray[np.float64] = np.array([1.25000e-01, 3.85186e-34])
+    expected_explained_var_ratio: NDArray[np.float64] = np.array([1.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
 
@@ -70,7 +70,7 @@ def test_fit_zero() -> None:
     )
 
     result, model = fit_transform(df)
-    model.D_c = cast(NDArray[np.float_], model.D_c)
+    model.D_c = cast(NDArray[np.float64], model.D_c)
 
     expected_result = pd.DataFrame(
         {
@@ -78,8 +78,8 @@ def test_fit_zero() -> None:
             "Dim. 2": [0.7, 0.7],
         }
     )
-    expected_v: NDArray[np.float_] = np.array([[1.0, 0.0], [0.0, 1.0]])
-    expected_explained_var: NDArray[np.float_] = np.array([0.0, 0.0])
+    expected_v: NDArray[np.float64] = np.array([[1.0, 0.0], [0.0, 1.0]])
+    expected_explained_var: NDArray[np.float64] = np.array([0.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
     assert_allclose(model.V, expected_v, atol=0.01)
@@ -162,7 +162,6 @@ def test_transform_simple() -> None:
 
 
 def test_fit_transform_has_same_output_as_transform() -> None:
-
     df = pd.DataFrame(
         {
             "tool": ["toaster", "toaster"],
@@ -189,7 +188,7 @@ def test_get_variable_contributions(quali_df: pd.DataFrame) -> None:
             "fruit___apple": [12.5, 12.5, 2.843371],
             "fruit___orange": [37.5, 37.5, 0.947790],
         },
-        dtype=np.float_,
+        dtype=np.float64,
         orient="index",
         columns=get_projected_column_names(3),
     )

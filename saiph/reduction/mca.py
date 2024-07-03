@@ -26,7 +26,7 @@ from saiph.reduction.utils.svd import get_svd
 def fit(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float64]] = None,
     seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Model:
     """Fit a MCA model on data.
@@ -119,7 +119,7 @@ def fit(
 def fit_transform(
     df: pd.DataFrame,
     nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float_]] = None,
+    col_weights: Optional[NDArray[np.float64]] = None,
     seed: Optional[Union[int, np.random.Generator]] = None,
 ) -> Tuple[pd.DataFrame, Model]:
     """Fit a MCA model on data and return transformed data.
@@ -206,7 +206,7 @@ def _diag_compute(
     df_scale: pd.DataFrame, r: NDArray[Any], c: NDArray[Any]
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Compute diagonal matrices and scale data."""
-    eps: np.float_ = np.finfo(float).eps
+    eps: np.float64 = np.finfo(float).eps
     if df_scale.shape[0] >= 10000:
         D_r = diag(1 / (eps + np.sqrt(r)), use_scipy=True)
     else:
@@ -292,8 +292,7 @@ def get_variable_contributions(
 
 def _compute_svd(
     weighted: pd.DataFrame, min_nf: int, col_sum: pd.DataFrame
-) -> Tuple[pd.DataFrame, NDArray[np.float_]]:
-
+) -> Tuple[pd.DataFrame, NDArray[np.float64]]:
     U, s, V = get_svd(weighted.T, svd_flip=False)
 
     U = U[:, :min_nf]

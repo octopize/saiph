@@ -55,7 +55,7 @@ def fit(
     )
 
     # Convert col weights from dict to ndarray
-    _col_weights: NDArray[np.float_] = np.ones(df.shape[1])
+    _col_weights: NDArray[np.float64] = np.ones(df.shape[1])
 
     if col_weights is not None:
         for col in col_weights:
@@ -80,7 +80,7 @@ def fit(
     model = _fit(df, _nf, _col_weights, seed=random_gen)
 
     if quanti.size == 0:
-        model.D_c = cast(NDArray[np.float_], model.D_c)
+        model.D_c = cast(NDArray[np.float64], model.D_c)
         model.variable_coord = pd.DataFrame(model.D_c @ model.V.T)
     else:
         model.variable_coord = pd.DataFrame(model.V.T)

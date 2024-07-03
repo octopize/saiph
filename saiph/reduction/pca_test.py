@@ -27,9 +27,9 @@ def test_fit_scale() -> None:
             "Dim. 2": [0.0, 0.0],
         }
     )
-    expected_v: NDArray[np.float_] = np.array([[0.71, 0.71], [-0.71, 0.71]])
-    expected_explained_var: NDArray[np.float_] = np.array([1.0, 0.0])
-    expected_explained_var_ratio: NDArray[np.float_] = np.array([1.0, 0.0])
+    expected_v: NDArray[np.float64] = np.array([[0.71, 0.71], [-0.71, 0.71]])
+    expected_explained_var: NDArray[np.float64] = np.array([1.0, 0.0])
+    expected_explained_var_ratio: NDArray[np.float64] = np.array([1.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
 
@@ -59,8 +59,8 @@ def test_fit_zero() -> None:
             "Dim. 2": [0.0, 0.0],
         }
     )
-    expected_v: NDArray[np.float_] = np.array([[1.0, 0.0], [0.0, 1.0]])
-    expected_explained_var: NDArray[np.float_] = np.array([0.0, 0.0])
+    expected_v: NDArray[np.float64] = np.array([[1.0, 0.0], [0.0, 1.0]])
+    expected_explained_var: NDArray[np.float64] = np.array([0.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
 

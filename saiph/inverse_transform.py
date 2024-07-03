@@ -85,7 +85,7 @@ def inverse_transform(
     else:
         del scaled_values_quali
         del scaled_values_quanti
-        model.D_c = cast(NDArray[np.float_], model.D_c)
+        model.D_c = cast(NDArray[np.float64], model.D_c)
 
         # As we are not scaling MCA such as FAMD categorical, the descale is
         # not the same. Doing the same as FAMD is incoherent.

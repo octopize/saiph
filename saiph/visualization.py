@@ -3,8 +3,8 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt  # type: ignore
-from matplotlib.patches import Circle  # type: ignore
+from matplotlib import pyplot as plt
+from matplotlib.patches import Circle
 from numpy.typing import NDArray
 
 from saiph import transform
@@ -95,8 +95,8 @@ def plot_circle(
 
 
 def plot_var_contribution(
-    values: NDArray[np.float_],
-    names: NDArray[np.string_],
+    values: NDArray[np.float64],
+    names: NDArray[np.bytes_],
     title: str = "Variables contributions",
 ) -> None:
     """Plot the variable contributions for a given dimension."""
@@ -124,7 +124,7 @@ def plot_explained_var(
     """
     # explained_percentage
 
-    explained_percentage: NDArray[np.float_] = (
+    explained_percentage: NDArray[np.float64] = (
         np.cumsum(model.explained_var_ratio)
         if cumulative
         else model.explained_var_ratio
@@ -174,7 +174,7 @@ def plot_projections(
     y = transformed_data[y_name]
 
     # Set axes names and title
-    explained_percentage: NDArray[np.float_] = model.explained_var_ratio * 100
+    explained_percentage: NDArray[np.float64] = model.explained_var_ratio * 100
     x_title: str = f"{x_name} ({explained_percentage[dim_x]:.1f} % variance)"
     y_title: str = f"{y_name} ({explained_percentage[dim_y]:.1f} % variance)"
 

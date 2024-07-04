@@ -183,6 +183,8 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     """Reconstruct the original DataFrame from the model.
 
     Note: if nf < df.shape[1], reconstructed df will not be exactly the same.
+    The more nf < df.shape[1], the more the reconstructed df will differ.
+    the degree of difference is linked to the unused explained variance.
 
     Parameters:
         model: Model computed by fit.
@@ -190,30 +192,24 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     Returns:
         df: The reconstructed DataFrame.
     """
+    # Extract the necessary components from the model
+    if model.s is None or model.mean is None or model.std is None:
+        raise ValueError(
+            "Model has not been fitted. Call fit() to create a Model instance."
+        )
     U = model.U
-    if model.s is None:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
     S = model.s
-    Vt = model.V
+    V = model.V
     row_w = model.row_weights
-    if model.mean is None:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
     mean = model.mean
-    if model.std is None:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
     std = model.std
     col_weights = model.column_weights
 
+    # Construct the diagonal matrix of singular values
     Sigma = np.diag(S)
 
     # Reconstruct the weighted and scaled matrix Z
-    Z = np.dot(U, np.dot(Sigma, Vt))
+    Z = np.dot(U, np.dot(Sigma, V))
 
     # Undo the row and column weighting
     Z = Z / np.sqrt(row_w)[:, np.newaxis]
@@ -224,5 +220,14 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
 
     # Convert to DataFrame and restore original column names and dtypes
     df_reconstructed = pd.DataFrame(df_reconstructed, columns=model.original_continuous)
+
+    # Identify the columns that need to be converted to integers
+    int_columns = model.original_dtypes[model.original_dtypes == "int"].index.tolist()
+
+    # Round the values before because astype(int) truncates the decimals
+    df_reconstructed[int_columns] = df_reconstructed[int_columns].round()
+
+    # Convert the data types to the original types
+    df_reconstructed = df_reconstructed.astype(model.original_dtypes)
 
     return df_reconstructed

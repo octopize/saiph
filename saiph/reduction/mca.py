@@ -333,6 +333,8 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     """Reconstruct the original DataFrame from the model.
 
     Note: if nf < df.shape[1], reconstructed df will not be exactly the same.
+    The more nf < df.shape[1], the more the reconstructed df will differ.
+    the degree of difference is linked to the unused explained variance.
 
     Parameters:
         model: Model computed by fit.
@@ -340,13 +342,14 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     Returns:
         df: The reconstructed DataFrame.
     """
-    U = model.U
+    # Extract the necessary components from the model
     if model.s is None:
         raise ValueError(
             "Model has not been fitted. Call fit() to create a Model instance."
         )
+    U = model.U
     S = model.s
-    Vt = model.V
+    V = model.V
     row_w = model.row_weights
     col_weights = model.column_weights
     _modalities = model._modalities
@@ -356,7 +359,7 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     Sigma = np.diag(S)
 
     # Reconstruct the weighted and scaled matrix Z
-    Z = np.dot(U, np.dot(Sigma, Vt))
+    Z = np.dot(U, np.dot(Sigma, V))
 
     # Undo the row and column weighting
     Z = Z / np.sqrt(row_w)[:, np.newaxis]

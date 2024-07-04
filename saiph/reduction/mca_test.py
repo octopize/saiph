@@ -238,9 +238,9 @@ def test_reconstructed_df_from_model_equals_df_minimal(quali_df: pd.DataFrame) -
     assert_frame_equal(df, reconstructed_df, check_dtype=False)
 
 
-def test_reconstructed_df_from_model_equals_df() -> None:
+def test_reconstructed_df_from_weighted_model_equals_df() -> None:
     """Ensure that the reconstructed df from the model is equal to the original df."""
     df = pd.read_csv("./fixtures/wbcd.csv").astype(str)
-    model = fit(df)
+    model = fit(df, col_weights=[3, 1, 1, 1, 1, 1, 1, 1, 1, 1])  # type: ignore
     reconstructed_df = reconstruct_df_from_model(model)
     assert_frame_equal(df, reconstructed_df, check_dtype=False)

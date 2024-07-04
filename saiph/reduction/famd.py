@@ -545,6 +545,8 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     """Reconstruct a DataFrame from a fitted model.
 
     Note: if nf < df.shape[1], reconstructed df will not be exactly the same.
+    The more nf < df.shape[1], the more the reconstructed df will differ.
+    the degree of difference is linked to the unused explained variance.
 
     Parameters:
         model: Model computed by fit.
@@ -552,71 +554,70 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     Returns:
         df: The reconstructed DataFrame.
     """
-    # Step 1: Extract the necessary components from the model
-    U = model.U
-    if model.s is None:
+    # Extract the necessary components from the model
+    if model.s is None or model.mean is None or model.std is None or model.prop is None:
         raise ValueError(
             "Model has not been fitted. Call fit() to create a Model instance."
         )
+    U = model.U
     S = model.s
-    Vt = model.V
+    V = model.V
     row_w = model.row_weights
     col_weights = model.column_weights
-    if model.mean is None:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
     mean = model.mean.values
-    if model.std is None:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
     std = model.std.values
-    if model.prop is None:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
     prop = model.prop.values
     _modalities = model._modalities
     quanti = model.original_continuous
     quali = model.original_categorical
 
-    # Step 2: Construct the diagonal matrix of singular values
+    # Construct the diagonal matrix of singular values
     Sigma = np.diag(S)
 
-    # Step 3: Reconstruct the weighted and scaled matrix Z
-    Z = np.dot(U, np.dot(Sigma, Vt))
+    # Reconstruct the weighted and scaled matrix Z
+    Z = np.dot(U, np.dot(Sigma, V))
 
-    # Step 4: Undo the row and column weighting
+    # Undo the row and column weighting
     Z = Z / np.sqrt(row_w)[:, np.newaxis]
     Z = Z / np.sqrt(col_weights)
 
-    # Step 5: Split Z back into quantitative and qualitative parts
+    # Split Z back into quantitative and qualitative parts
     n_quanti = len(quanti)
     df_quanti_scaled = Z[:, :n_quanti]
     df_quali_scaled = Z[:, n_quanti:]
 
-    # Step 6: Reverse the scaling for quantitative variables
+    # Reverse the scaling for quantitative variables
     df_quanti = df_quanti_scaled * std + mean
 
-    # Step 7: Reverse the scaling for qualitative variables
+    # Reverse the scaling for qualitative variables
     df_quali = df_quali_scaled * np.sqrt(prop) + prop
 
-    # Step 8: Combine quantitative and qualitative data
+    # Combine quantitative and qualitative data
     df_quali = pd.DataFrame(df_quali, columns=_modalities)
     df_quanti = pd.DataFrame(df_quanti, columns=quanti)
-    df = pd.concat([df_quanti, df_quali], axis=1)
+    df_reconstructed = pd.concat([df_quanti, df_quali], axis=1)
 
-    # Step 9: Reverse the dummy encoding for categorical variables
+    # Reverse the dummy encoding for categorical variables
     for var in quali:
         prefix = var + DUMMIES_SEPARATOR
-        dummies = [col for col in df.columns if col.startswith(prefix)]
-        df[var] = (
-            df[dummies].idxmax(axis=1).apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
+        dummies = [col for col in df_reconstructed.columns if col.startswith(prefix)]
+        df_reconstructed[var] = (
+            df_reconstructed[dummies]
+            .idxmax(axis=1)
+            .apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
         )
-        df.drop(columns=dummies, inplace=True)
+        df_reconstructed.drop(columns=dummies, inplace=True)
 
     # Ensure the column order matches the original dataframe
-    df = df[model.original_dtypes.index]
+    df_reconstructed = df_reconstructed[model.original_dtypes.index]
 
-    return df
+    # Identify the columns that need to be converted to integers
+    int_columns = model.original_dtypes[model.original_dtypes == "int"].index.tolist()
+
+    # Round the values before because astype(int) truncates the decimals
+    df_reconstructed[int_columns] = df_reconstructed[int_columns].round()
+
+    # Convert the data types to the original types
+    df_reconstructed = df_reconstructed.astype(model.original_dtypes)
+
+    return df_reconstructed

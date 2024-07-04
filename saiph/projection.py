@@ -261,3 +261,31 @@ def get_variable_correlation(
         "coord",
     ]
     return cor
+
+
+def get_reconstructed_df_from_model(model: Model) -> pd.DataFrame:
+    """Reconstruct the original DataFrame from the model.
+
+    Note: if nf < df.shape[1], reconstructed df will not be exactly the same.
+    The more nf < df.shape[1], the more the reconstructed df will differ.
+    the degree of difference is linked to the unused explained variance.
+
+    Parameters:
+        model: Model computed by fit.
+
+    Returns:
+        df: The reconstructed DataFrame.
+    """
+    if not model.is_fitted:
+        raise ValueError(
+            "Model has not been fitted."
+            "Call fit() to create a Model instance before calling transform()."
+        )
+
+    if len(model.original_categorical) == 0:
+        return pca.reconstruct_df_from_model(model)
+
+    if len(model.original_continuous) == 0:
+        return mca.reconstruct_df_from_model(model)
+
+    return famd.reconstruct_df_from_model(model)

@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Union
 import numpy as np
 import pandas as pd
 import pytest
-from doubles import expect
+from doubles import allow, expect
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
@@ -300,7 +300,7 @@ def test_get_variable_contribution_for_pca(quanti_df: pd.DataFrame) -> None:
     df = quanti_df
     _, model = fit_transform(df, nf=3)
 
-    contributions = get_variable_contributions(model, df)
+    contributions = get_variable_contributions(model)
     expected_contributions = pd.DataFrame.from_dict(
         data={
             "variable_1": [33.497034, 16.502966, 33.465380],
@@ -323,24 +323,22 @@ def test_get_variable_contributions_calls_correct_subfunction(
     """Verify that projection.get_variable_contributions calls the correct subfunction."""
     # FAMD
     model = fit(mixed_df)
-    expect(saiph.reduction.famd).get_variable_contributions(
-        model, mixed_df, explode=False
-    ).once().and_return((None, None))
-    projection.get_variable_contributions(model, mixed_df)
+    allow(saiph.reduction.famd).get_variable_contributions.once().and_return(
+        (None, None)
+    )
+    projection.get_variable_contributions(model)
 
     # MCA
     model = fit(quali_df)
-    expect(saiph.reduction.mca).get_variable_contributions(
-        model, quali_df, explode=False
-    ).once().and_return(None)
-    projection.get_variable_contributions(model, quali_df)
+    allow(saiph.reduction.mca).get_variable_contributions.once().and_return(None)
+    projection.get_variable_contributions(model)
 
     # PCA
     model = fit(quanti_df)
-    expect(saiph.projection).get_variable_correlation(
-        model, quanti_df
-    ).once().and_return(pd.DataFrame([1, 2, 3]))
-    projection.get_variable_contributions(model, quanti_df)
+    allow(saiph.projection).get_variable_correlation.once().and_return(
+        pd.DataFrame([1, 2, 3])
+    )
+    projection.get_variable_contributions(model)
 
 
 def test_stats_calls_correct_subfunction(
@@ -458,7 +456,7 @@ def test_fit_mca_works_with_different_arguments_for_seed_and_stores_them_in_mode
 def test_get_reconstructed_df_from_model_calls_correct_subfunction(
     quanti_df: pd.DataFrame, quali_df: pd.DataFrame, mixed_df: pd.DataFrame
 ) -> None:
-    """Verify that projection.get_variable_contributions calls the correct subfunction."""
+    """Verify that projection.get_reconstructed_df_from_model calls the correct subfunction."""
     # FAMD
     model = fit(mixed_df)
     expect(saiph.reduction.famd).reconstruct_df_from_model(model).once().and_return(

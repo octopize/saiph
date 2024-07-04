@@ -224,6 +224,5 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
 
     # Convert to DataFrame and restore original column names and dtypes
     df_reconstructed = pd.DataFrame(df_reconstructed, columns=model.original_continuous)
-    df_reconstructed = df_reconstructed.astype(model.original_dtypes)
 
     return df_reconstructed

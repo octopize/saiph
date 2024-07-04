@@ -148,10 +148,18 @@ def test_transform_vs_coord() -> None:
     assert_frame_equal(coord, df_transformed)
 
 
-def test_reconstructed_df_from_model_equals_df() -> None:
+def test_reconstructed_df_from_model_equals_df_minimal() -> None:
     """Ensure that the reconstructed df from the model is equal to the original df."""
     df = pd.DataFrame({0: [-2.0, 7.0, -4.5], 1: [6.0, 2.0, 7.0], 2: [5.0, 10.0, -14.5]})
     model = fit(df)
     reconstructed_df = reconstruct_df_from_model(model)
     # don't check dtypes, model don't know if numerical were int or float
+    assert_frame_equal(df, reconstructed_df, check_dtype=False)
+
+
+def test_reconstructed_df_from_model_equals_df() -> None:
+    """Ensure that the reconstructed df from the model is equal to the original df."""
+    df = pd.read_csv("./fixtures/wbcd.csv").astype(int)
+    model = fit(df)
+    reconstructed_df = reconstruct_df_from_model(model)
     assert_frame_equal(df, reconstructed_df, check_dtype=False)

@@ -98,6 +98,7 @@ def fit(
         dummy_categorical=df_dummies.columns.to_list(),
         U=U,
         V=Vt,
+        s=S,
         explained_var=explained_var,
         explained_var_ratio=explained_var_ratio,
         variable_coord=pd.DataFrame(D_c @ Vt.T),
@@ -326,3 +327,56 @@ def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
     contributions = get_variable_contributions(model, df, explode=explode)
     model.contributions = contributions
     return model
+
+
+def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
+    """Reconstruct the original DataFrame from the model.
+
+    Note: if nf < df.shape[1], reconstructed df will not be exactly the same.
+    The more nf < df.shape[1], the more the reconstructed df will differ.
+    the degree of difference is linked to the unused explained variance.
+
+    Parameters:
+        model: Model computed by fit.
+
+    Returns:
+        df: The reconstructed DataFrame.
+    """
+    # Extract the necessary components from the model
+    if model.s is None:
+        raise ValueError(
+            "Model has not been fitted. Call fit() to create a Model instance."
+        )
+    U = model.U
+    S = model.s
+    V = model.V
+    row_w = model.row_weights
+    col_weights = model.column_weights
+    _modalities = model._modalities
+    quali = model.original_categorical
+
+    # Construct the diagonal matrix of singular values
+    Sigma = np.diag(S)
+
+    # Reconstruct the weighted and scaled matrix Z
+    Z = np.dot(U, np.dot(Sigma, V))
+
+    # Undo the row and column weighting
+    Z = Z / np.sqrt(row_w)[:, np.newaxis]
+    Z = Z / np.sqrt(col_weights)
+    df_reconstructed = pd.DataFrame(Z, columns=_modalities)
+
+    for var in quali:
+        prefix = var + DUMMIES_SEPARATOR
+        dummies = [col for col in df_reconstructed.columns if col.startswith(prefix)]
+        df_reconstructed[var] = (
+            df_reconstructed[dummies]
+            .idxmax(axis=1)
+            .apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
+        )
+        df_reconstructed.drop(columns=dummies, inplace=True)
+
+    # Ensure the column order matches the original dataframe
+    df_reconstructed = df_reconstructed[model.original_dtypes.index]
+
+    return df_reconstructed

@@ -15,6 +15,7 @@ from saiph.reduction.famd import (
     fit,
     fit_transform,
     get_variable_contributions,
+    reconstruct_df_from_model,
     scaler,
     transform,
 )
@@ -274,3 +275,20 @@ def test_get_variable_contributions_with_constant_variable() -> None:
     contributions, _ = get_variable_contributions(model, df, explode=False)
 
     assert np.isfinite(contributions).all().all()
+
+
+def test_reconstructed_df_from_model_equals_df_minimal(mixed_df: pd.DataFrame) -> None:
+    """Ensure that the reconstructed df from the model is equal to the original df."""
+    df = mixed_df
+    model = fit(df)
+    reconstructed_df = reconstruct_df_from_model(model)
+    # don't check dtypes, model don't know if numerical were int or float
+    assert_frame_equal(df, reconstructed_df, check_dtype=False)
+
+
+def test_reconstructed_df_from_weighted_model_equals_df() -> None:
+    """Ensure that the reconstructed df from the model is equal to the original df."""
+    df = pd.read_csv("./fixtures/iris.csv")
+    model = fit(df, col_weights=[3, 1, 1, 1, 1])  # type: ignore
+    reconstructed_df = reconstruct_df_from_model(model)
+    assert_frame_equal(df, reconstructed_df)

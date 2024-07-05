@@ -158,11 +158,14 @@ def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
     return model
 
 
-def get_variable_contributions(model: Model, explode: bool = False) -> pd.DataFrame:
+def get_variable_contributions(
+    model: Model, df: pd.DataFrame, explode: bool = False
+) -> pd.DataFrame:
     """Compute the contributions of the `df` variables within the fitted space.
 
     Parameters:
         model: Model computed by fit.
+        df: dataframe to compute contributions from
         explode: whether to split the contributions of each modality (True)
             or sum them as the contribution of the whole variable (False)
 
@@ -173,8 +176,6 @@ def get_variable_contributions(model: Model, explode: bool = False) -> pd.DataFr
         raise ValueError(
             "Model has not been fitted. Call fit() to create a Model instance."
         )
-    # Get df back from model
-    df = get_reconstructed_df_from_model(model)
 
     has_some_quanti = (
         model.original_continuous is not None and len(model.original_continuous) != 0

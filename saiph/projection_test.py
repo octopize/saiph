@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Union
 import numpy as np
 import pandas as pd
 import pytest
-from doubles import allow, expect
+from doubles import expect
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
@@ -300,7 +300,7 @@ def test_get_variable_contribution_for_pca(quanti_df: pd.DataFrame) -> None:
     df = quanti_df
     _, model = fit_transform(df, nf=3)
 
-    contributions = get_variable_contributions(model)
+    contributions = get_variable_contributions(model, df)
     expected_contributions = pd.DataFrame.from_dict(
         data={
             "variable_1": [33.497034, 16.502966, 33.465380],
@@ -317,28 +317,63 @@ def test_get_variable_contribution_for_pca(quanti_df: pd.DataFrame) -> None:
     assert_frame_equal(contributions.iloc[:, :-1], expected_contributions.iloc[:, :-1])
 
 
+def test_get_variable_contribution_are_similar_with_reduced_nf() -> None:
+    """Verify that get_variable_contributions returns similar contributions with reduced nf."""
+    df = pd.read_csv("./fixtures/wbcd.csv")
+    model_truncated = fit(df, nf=5)  # nf = nf_max/2
+    df_reconstructed = projection.get_reconstructed_df_from_model(model_truncated)
+    truncated_contributions = get_variable_contributions(
+        model_truncated, df_reconstructed
+    )
+    model_full = fit(df)  # nf = nf_max
+    full_contributions = get_variable_contributions(model_full, df)
+    # We only look at the first two dimensions
+    truncated_contributions = truncated_contributions.iloc[:, :2]
+    full_contributions = full_contributions.iloc[:, :2]
+    # Filter values above 1 in both DataFrames
+    mask = (truncated_contributions > 1) & (full_contributions > 1)
+    truncated_contributions = truncated_contributions[mask]
+    full_contributions = full_contributions[mask]
+
+    # Calculate absolute differences
+    absolute_differences = (truncated_contributions - full_contributions).abs()
+
+    # Sum of absolute differences
+    total_difference = absolute_differences.sum().sum()
+
+    # Sum of all elements in the full_nf DataFrame
+    total_sum = full_contributions.sum().sum()
+
+    # Calculate the percentage difference
+    percentage_difference = (total_difference / total_sum) * 100
+
+    assert percentage_difference < 20
+
+
 def test_get_variable_contributions_calls_correct_subfunction(
     quanti_df: pd.DataFrame, quali_df: pd.DataFrame, mixed_df: pd.DataFrame
 ) -> None:
     """Verify that projection.get_variable_contributions calls the correct subfunction."""
     # FAMD
     model = fit(mixed_df)
-    allow(saiph.reduction.famd).get_variable_contributions.once().and_return(
-        (None, None)
-    )
-    projection.get_variable_contributions(model)
+    expect(saiph.reduction.famd).get_variable_contributions(
+        model, mixed_df, explode=False
+    ).once().and_return((None, None))
+    projection.get_variable_contributions(model, mixed_df)
 
     # MCA
     model = fit(quali_df)
-    allow(saiph.reduction.mca).get_variable_contributions.once().and_return(None)
-    projection.get_variable_contributions(model)
+    expect(saiph.reduction.mca).get_variable_contributions(
+        model, quali_df, explode=False
+    ).once().and_return(None)
+    projection.get_variable_contributions(model, quali_df)
 
     # PCA
     model = fit(quanti_df)
-    allow(saiph.projection).get_variable_correlation.once().and_return(
-        pd.DataFrame([1, 2, 3])
-    )
-    projection.get_variable_contributions(model)
+    expect(saiph.projection).get_variable_correlation(
+        model, quanti_df
+    ).once().and_return(pd.DataFrame([1, 2, 3]))
+    projection.get_variable_contributions(model, quanti_df)
 
 
 def test_stats_calls_correct_subfunction(

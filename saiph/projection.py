@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from saiph.exception import InvalidParameterException, NotFoundColumnsError
+from saiph.exception import InvalidParameterException, ColumnsNotFoundError
 from saiph.models import Model
 from saiph.reduction import DUMMIES_SEPARATOR, famd, famd_sparse, mca, pca
 from saiph.reduction.utils.common import get_projected_column_names
@@ -219,7 +219,7 @@ def transform(df: pd.DataFrame, model: Model, *, sparse: bool = False) -> pd.Dat
     df_columns = df.columns.tolist()
     if sorted(df_columns) != sorted(model_columns):
         difference = set(df_columns) - set(model_columns)
-        raise NotFoundColumnsError(
+        raise ColumnsNotFoundError(
             "Expected columns to be the same as the ones used in the model."
             f"Got {difference}."
         )

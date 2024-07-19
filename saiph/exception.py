@@ -4,7 +4,7 @@ class InvalidParameterException(Exception):
     pass
 
 
-class NotFoundColumnsError(Exception):
+class ColumnsNotFoundError(Exception):
     """Error encountered when columns are not found in the dataframe."""
 
     pass

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from saiph.exception import InvalidParameterException, ColumnsNotFoundError
+from saiph.exception import ColumnsNotFoundError, InvalidParameterException
 from saiph.models import Model
 from saiph.reduction import DUMMIES_SEPARATOR, famd, famd_sparse, mca, pca
 from saiph.reduction.utils.common import get_projected_column_names

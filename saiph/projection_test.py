@@ -12,7 +12,13 @@ import saiph
 from saiph import projection
 from saiph.exception import ColumnsNotFoundError, InvalidParameterException
 from saiph.inverse_transform import inverse_transform
-from saiph.projection import fit, fit_transform, get_variable_contributions, stats, transform
+from saiph.projection import (
+    fit,
+    fit_transform,
+    get_variable_contributions,
+    stats,
+    transform,
+)
 from saiph.reduction.utils.common import get_projected_column_names
 
 
@@ -513,11 +519,18 @@ def test_get_reconstructed_df_from_model_calls_correct_subfunction(
     )
     projection.get_reconstructed_df_from_model(model)
 
+
 @pytest.mark.parametrize(
     "df_to_fit,df_to_transform",
     [
-        (pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]}), pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9]})),
-        (pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9]}), pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})),
+        (
+            pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]}),
+            pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9]}),
+        ),
+        (
+            pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9]}),
+            pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]}),
+        ),
     ],
 )
 def test_transform_raise_error_on_wrong_columns(

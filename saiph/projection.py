@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from saiph.exception import InvalidParameterException
+from saiph.exception import ColumnsNotFoundError, InvalidParameterException
 from saiph.models import Model
 from saiph.reduction import DUMMIES_SEPARATOR, famd, famd_sparse, mca, pca
 from saiph.reduction.utils.common import get_projected_column_names
@@ -212,6 +212,16 @@ def transform(df: pd.DataFrame, model: Model, *, sparse: bool = False) -> pd.Dat
         raise ValueError(
             "Model has not been fitted."
             "Call fit() to create a Model instance before calling transform()."
+        )
+
+    # Check that all the columns of the df is in the model
+    model_columns = model.original_continuous + model.original_categorical
+    df_columns = df.columns.tolist()
+    if sorted(df_columns) != sorted(model_columns):
+        difference = set(df_columns) - set(model_columns)
+        raise ColumnsNotFoundError(
+            "Expected columns to be the same as the ones used in the model."
+            f"Got {difference}."
         )
 
     if len(model.original_categorical) == 0:

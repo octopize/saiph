@@ -2,7 +2,7 @@ from .inverse_transform import inverse_transform
 from .projection import fit, fit_transform, stats, transform
 
 # Also modify in pyproject.toml
-__version__ = "1.5.8"
+__version__ = "1.5.9"
 
 __all__ = [
     "__version__",

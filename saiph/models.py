@@ -69,3 +69,9 @@ class Model:
     dummies_col_prop: Optional[NDArray[np.float64]] = None  # MCA only
 
     seed: Optional[int] = None
+
+
+def get_number_of_dimensions_from_categorical_and_continuous(
+    *, dummy_categorical, original_continuous
+) -> int:
+    return len(dummy_categorical) + len(original_continuous) - 1

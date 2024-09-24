@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -72,6 +72,6 @@ class Model:
 
 
 def get_number_of_dimensions_from_categorical_and_continuous(
-    *, dummy_categorical, original_continuous
+    *, dummy_categorical: List[Any], original_continuous: List[Any]
 ) -> int:
     return len(dummy_categorical) + len(original_continuous) - 1

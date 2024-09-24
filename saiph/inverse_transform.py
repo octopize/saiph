@@ -1,4 +1,5 @@
 """Inverse transform coordinates."""
+
 import ast
 from typing import Dict, List, cast
 
@@ -37,7 +38,7 @@ def inverse_transform(
     random_gen = np.random.default_rng(model.seed)
 
     # Check dimension size regarding N
-    n_dimensions = len(model.dummy_categorical) + len(model.original_continuous)
+    n_dimensions = len(model.dummy_categorical) + len(model.original_continuous) - 1
     n_records = len(coord)
 
     if not use_approximate_inverse and n_records < n_dimensions:

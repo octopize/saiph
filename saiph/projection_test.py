@@ -566,4 +566,4 @@ def test_fit_transform_with_horizontal_matrix(
 ) -> None:
     """Verify that the coordinates are a squared matrix even if the input is horizontal."""
     coord, __ = fit_transform(df_to_fit_transform)
-    assert coord.shape[0] == coord.shape[0]
+    assert coord.shape[0] == coord.shape[1]

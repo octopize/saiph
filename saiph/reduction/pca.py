@@ -100,7 +100,8 @@ def fit_transform(
 
     Returns:
         model: The model for transforming new data.
-        coord: The transformed data.
+        coord: The transformed data of size (n, min(n,p))
+        or (n, nf) if nf is specified.
     """
     model = fit(df, nf, col_weights, seed=seed)
     coord = transform(df, model)
@@ -171,7 +172,8 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
         model: Model computed by fit.
 
     Returns:
-        coord: Coordinates of the dataframe in the fitted space.
+        coord: Coordinates of the dataframe in the fitted space of size (n, min(n,p))
+        or (n, nf) if nf is specified.
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.V.T

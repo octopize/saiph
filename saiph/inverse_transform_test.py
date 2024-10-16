@@ -6,7 +6,6 @@ import pytest
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal, assert_series_equal
 
-from saiph.exception import InvalidParameterException
 from saiph.inverse_transform import (
     get_random_weighted_columns,
     inverse_transform,
@@ -110,19 +109,6 @@ def test_undummify_when_dummies_prefix_is_in_variable_name() -> None:
     assert_frame_equal(df, expected)
 
 
-# wider than len df
-def test_inverse_transform_raises_value_error_when_wider_than_df() -> None:
-    wider_df = pd.DataFrame(
-        {
-            "variable_1": ["a", "b", "c"],
-            "variable_2": ["ZZ", "ZZ", "WW"],
-        }
-    )
-    coord, model = fit_transform(wider_df)
-    with pytest.raises(InvalidParameterException, match=r"n_dimensions"):
-        inverse_transform(coord, model)
-
-
 # using df with more dimensions than individuals and high column weights
 # allows for a more balanced probability in modality assignment during inverse transform
 
@@ -144,9 +130,7 @@ def test_inverse_transform_with_ponderation() -> None:
         "cont2": 1,
     }
     coord, model = fit_transform(df, col_weights=col_weights, seed=5)
-    result = inverse_transform(
-        coord, model, use_approximate_inverse=True, use_max_modalities=False
-    )
+    result = inverse_transform(coord, model, use_max_modalities=False)
     assert_frame_equal(result, inverse_expected)
 
 
@@ -167,9 +151,7 @@ def test_inverse_transform_deterministic() -> None:
         "cont2": 1,
     }
     coord, model = fit_transform(df, col_weights=col_weights)
-    result = inverse_transform(
-        coord, model, use_approximate_inverse=True, use_max_modalities=True
-    )
+    result = inverse_transform(coord, model, use_max_modalities=True)
     assert_frame_equal(result, inverse_expected)
 
 

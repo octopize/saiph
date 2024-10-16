@@ -540,3 +540,30 @@ def test_transform_raise_error_on_wrong_columns(
     model = fit(df_to_fit)
     with pytest.raises(ColumnsNotFoundError):
         transform(df_to_transform, model)
+
+
+@pytest.mark.parametrize(
+    "df_to_fit_transform",
+    [
+        pd.DataFrame(
+            {"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9], "d": [10, 11, 12]}
+        ),  # pca
+        pd.DataFrame(
+            {"a": ["a", "b", "b"], "b": [1, 3, 6], "c": [1, 2, 3], "d": [1, 2, 3]}
+        ),  # famd
+        pd.DataFrame(
+            {
+                "a": ["a", "b", "b"],
+                "b": ["a", "b", "b"],
+                "c": ["a", "b", "b"],
+                "d": ["a", "b", "b"],
+            }
+        ),  # mca
+    ],
+)
+def test_fit_transform_with_horizontal_matrix(
+    df_to_fit_transform: pd.DataFrame,
+) -> None:
+    """Verify that the coordinates are a squared matrix even if the input is horizontal."""
+    coord, __ = fit_transform(df_to_fit_transform)
+    assert coord.shape[0] == coord.shape[1]

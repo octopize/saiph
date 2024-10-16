@@ -133,7 +133,8 @@ def fit_transform(
 
     Returns:
         model: The model for transforming new data.
-        coord: The transformed data.
+        coord: The transformed data of size (n, min(n,p))
+        or (n, nf) if nf is specified.
     """
     random_gen = (
         seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
@@ -226,7 +227,8 @@ def transform(df: pd.DataFrame, model: Model) -> pd.DataFrame:
         model: Model computed by fit.
 
     Returns:
-        coord: Coordinates of the dataframe in the fitted space.
+        coord: Coordinates of the dataframe in the fitted space of size (n, min(n,p))
+        or (n, nf) if nf is specified.
     """
     df_scaled = scaler(model, df)
     coord = df_scaled @ model.D_c @ model.V.T

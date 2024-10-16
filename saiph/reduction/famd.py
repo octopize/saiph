@@ -188,7 +188,8 @@ def fit_transform(
             (more weight = more importance in the axes). default: np.ones(df.shape[1])
 
     Returns:
-        coord: The transformed data.
+        coord: The transformed data of size (n, min(n,p))
+        or (n, nf) if nf is specified.
         model: The model for transforming new data.
     """
     # If seed is None or int, we fit a Generator, else we use the one provided.
@@ -285,7 +286,8 @@ def transform(
         model: Model computed by fit.
 
     Returns:
-        coord: Coordinates of the dataframe in the fitted space.
+        coord: Coordinates of the dataframe in the fitted space of size (n, min(n,p))
+        or (n, nf) if nf is specified.
     """
     df_scaled = scaler(model, df)
     coord = pd.DataFrame(df_scaled @ model.V.T)

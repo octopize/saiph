@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from saiph.exception import InvalidParameterException
 from saiph.models import Model
 from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.utils.common import get_dummies_mapping
@@ -16,7 +15,6 @@ def inverse_transform(
     coord: pd.DataFrame,
     model: Model,
     *,
-    use_approximate_inverse: bool = False,
     use_max_modalities: bool = True,
 ) -> pd.DataFrame:
     """Return original format dataframe from coordinates.
@@ -24,8 +22,6 @@ def inverse_transform(
     Parameters:
         coord: coord of individuals to reverse transform
         model: model used for projection
-        use_approximate_inverse: matrix is not invertible when n_individuals < n_dimensions
-            an approximation with bias can be done by setting to ``True``. default: ``False``
         use_max_modalities: for each variable, it assigns to the individual
             the modality with the highest proportion (True)
             or a random modality weighted by their proportion (False). default: True
@@ -36,16 +32,7 @@ def inverse_transform(
     """
     random_gen = np.random.default_rng(model.seed)
 
-    # Check dimension size regarding N
-    n_dimensions = len(model.dummy_categorical) + len(model.original_continuous)
-    n_records = len(coord)
-
-    if not use_approximate_inverse and n_records < n_dimensions:
-        raise InvalidParameterException(
-            f"n_dimensions ({n_dimensions}) is greater than n_records ({n_records})."
-        )
     # Get back scaled_values from coord with inverse matrix operation
-    # If n_records < n_dimensions, There will be an approximation of the inverse of V.T
     scaled_values = pd.DataFrame(coord @ np.linalg.pinv(model.V.T))
     # get number of continuous variables
     nb_quanti = len(model.original_continuous)

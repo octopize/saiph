@@ -266,8 +266,8 @@ def get_variable_correlation(
         bind = df_quanti
 
     concat = pd.concat([bind, coord], axis=1, keys=["bind", "coord"])
-    cor = pd.DataFrame(np.corrcoef(concat, rowvar=False), columns=concat.columns).loc[
-        0 : len(bind.columns) - 1,
+    cor = pd.DataFrame(concat.corr(), columns=concat.columns).loc[
+        "bind",
         "coord",
     ]
     return cor

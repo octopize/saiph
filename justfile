@@ -23,7 +23,7 @@ docs:
     set -euo pipefail
     DOCS_REQUIREMENTS="docs/requirements.txt"
     uv pip compile pyproject.toml --group doc --extra matplotlib --output-file "$DOCS_REQUIREMENTS"
-    grep -E 'matplotlib|sphinx-gallery' "$DOCS_REQUIREMENTS" > docs/tmp.txt
+    grep -E 'matplotlib|sphinx-gallery' "$DOCS_REQUIREMENTS" | grep -v '^[[:space:]]*#' > docs/tmp.txt
     mv docs/tmp.txt "$DOCS_REQUIREMENTS"
     uv run sphinx-build -b html docs build/docs
 

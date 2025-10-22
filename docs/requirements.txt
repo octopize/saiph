@@ -1,13 +1,2 @@
-#    uv pip compile pyproject.toml --extra doc --extra matplotlib --output-file docs/requirements.txt
-    # via matplotlib
-    # via matplotlib
-    # via matplotlib
-    # via matplotlib
 matplotlib==3.9.1
-    #   matplotlib
-    #   matplotlib
-    # via matplotlib
-    # via matplotlib
-    #   matplotlib
-    #   sphinx-gallery
 sphinx-gallery==0.11.1

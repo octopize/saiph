@@ -1,4 +1,5 @@
 """PCA projection module."""
+
 import sys
 from typing import Optional, Tuple, Union
 

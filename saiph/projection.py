@@ -1,4 +1,5 @@
 """Project any dataframe and compute stats."""
+
 from typing import Dict, Optional, Tuple, Union, cast
 
 import numpy as np

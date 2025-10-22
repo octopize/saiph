@@ -1,4 +1,5 @@
 """MCA projection module."""
+
 from itertools import chain, repeat
 from typing import Any, Optional, Tuple, Union
 

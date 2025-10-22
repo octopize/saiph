@@ -6,7 +6,6 @@ jobs:
   saiph-ci:
     runs-on: ubuntu-latest
 
-
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python
@@ -14,46 +13,25 @@ jobs:
       with:
         python-version: "3.10"
 
-    - name: Load cached Poetry installation
-      uses: actions/cache@v3
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
       with:
-        path: ~/.local  # the path depends on the OS
-        key: poetry-1  # increment to reset cache
+        enable-cache: true
 
-    # will not install if it's already there (see previous cache step)
-    - name: Install poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: 1.3.2
-        virtualenvs-create: true
-        virtualenvs-in-project: false
-        installer-parallel: true
-        virtualenvs-path: ~/.venv
-
-
-    # install deps (use cache if poetry.lock did not change)
-    - name: Load cached venv
-      id: cached-poetry-dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.venv
-        key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+    - name: Install just
+      uses: extractions/setup-just@v2
 
     - name: Install dependencies
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction --no-root --extras "matplotlib"
-
-    - name: Install app
-      run: poetry install --no-interaction
+      run: uv sync --extra matplotlib --extra dev --extra doc
 
     - name: Typecheck
-      run: make typecheck
+      run: just typecheck
 
     - name: Lint
-      run: make lint
+      run: just lint
 
     - name: Build docs
-      run: make docs
+      run: just docs
 
     - name: Run tests
-      run: make test
+      run: just test

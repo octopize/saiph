@@ -1,4 +1,5 @@
 """FAMD projection module."""
+
 import sys
 from typing import Any, List, Optional, Tuple, Union, cast
 
@@ -64,9 +65,7 @@ def fit_transform(
     return coord, model
 
 
-def center_sparse(
-    df: pd.DataFrame, quanti: List[str], quali: List[str]
-) -> Tuple[
+def center_sparse(df: pd.DataFrame, quanti: List[str], quali: List[str]) -> Tuple[
     scipy.sparse.spmatrix,
     NDArray[np.float64],
     NDArray[np.float64],

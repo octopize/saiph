@@ -19,14 +19,14 @@ pip install saiph
 ## Development
 
 ```bash
-poetry install
+uv sync --extra matplotlib --extra dev
 ```
 
 If you want to install dev dependencies, make sure you have a rust compiler installed:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-make install
+just install
 ```
 
 ## Documentation
@@ -34,7 +34,7 @@ make install
 To get the documentation, clone the repo then
 
 ```bash
-make install docs docs-open
+just install docs docs-open
 ```
 
 ## License

@@ -1,4 +1,5 @@
 """FAMD projection module."""
+
 import sys
 from itertools import chain, repeat
 from typing import Any, Callable, List, Optional, Tuple, Union, cast

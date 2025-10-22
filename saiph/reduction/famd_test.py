@@ -292,3 +292,39 @@ def test_reconstructed_df_from_weighted_model_equals_df() -> None:
     model = fit(df, col_weights=[3, 1, 1, 1, 1])  # type: ignore
     reconstructed_df = reconstruct_df_from_model(model)
     assert_frame_equal(df, reconstructed_df)
+
+
+def test_transform_sparse_dataset_no_performance_warning() -> None:
+    """Test transforming sparse dataset with many missing modalities.
+
+    This test verifies the fix for the issue where having more than 100
+    missing modalities would trigger a pandas PerformanceWarning due to
+    iterative column assignment.
+    """
+    # Create training data with many unique categories
+    np.random.seed(42)
+    n_rows = 600
+    n_categories = 150  # More than 100 to trigger the warning
+
+    df_train = pd.DataFrame(
+        {
+            "name": [f"User_{i}" for i in range(n_categories)]
+            * (n_rows // n_categories + 1)
+        }
+    )
+    df_train = df_train.iloc[:n_rows]
+
+    # Fit the model
+    coord, model = fit_transform(df_train, nf=10)
+
+    # Create test data with categories that don't exist in train
+    # This will cause many missing columns to be added
+    df_test = pd.DataFrame({"name": [f"User_{i}" for i in range(200, 250)]})
+
+    # This should NOT trigger a PerformanceWarning
+    # (pytest is configured to treat warnings as errors)
+    coord_test = transform(df_test, model)
+
+    # Verify that the transform produced the expected shape
+    assert coord_test.shape == (50, 10)
+    assert list(coord_test.columns) == [f"Dim. {i+1}" for i in range(10)]

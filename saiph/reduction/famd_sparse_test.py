@@ -51,7 +51,11 @@ def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
     assert_allclose(model.s, expected_s, atol=0.01)
     assert_allclose(np.abs(model.U), np.abs(expected_u), atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
-    assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),
+    (
+        assert_allclose(
+            model.explained_var_ratio, expected_explained_var_ratio, atol=0.01
+        ),
+    )
     assert_allclose(model.variable_coord, model.V.T)
     assert np.array_equal(
         model._modalities,  # type: ignore

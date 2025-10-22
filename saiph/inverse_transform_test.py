@@ -1,5 +1,3 @@
-from typing import Dict, List, Union
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -24,7 +22,7 @@ from saiph.reduction import DUMMIES_SEPARATOR
         ([0.01, 0.3, 0.7], 2),
     ],
 )
-def test_get_random_weighted_columns(weights: List[float], expected_index: int) -> None:
+def test_get_random_weighted_columns(weights: list[float], expected_index: int) -> None:
     """Verify that get_random_weighted_columns returns the correct column."""
     df = pd.DataFrame(data=[weights])
     result = get_random_weighted_columns(df, np.random.default_rng(1))
@@ -61,7 +59,7 @@ def test_normalization() -> None:
     ],
 )
 def test_undummify(
-    mapping: Dict[str, List[str]], use_max_modalities: bool, expected: pd.DataFrame
+    mapping: dict[str, list[str]], use_max_modalities: bool, expected: pd.DataFrame
 ) -> None:
     """Test undummify a disjunctive table with different use_max_modalities."""
     dummy_df = pd.DataFrame(
@@ -116,14 +114,14 @@ def test_undummify_when_dummies_prefix_is_in_variable_name() -> None:
 def test_inverse_transform_with_ponderation() -> None:
     """Verify that use_max_modalities=False returns a random ponderation of modalities."""
     df = pd.DataFrame(
-        zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 3], [2, 2, 10]),
+        zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 3], [2, 2, 10], strict=False),
         columns=["cat1", "cat2", "cont1", "cont2"],
     )
     inverse_expected = pd.DataFrame(
-        zip(["c", "b", "a"], ["ZZ", "ZZ", "WW"], [1, 2, 2], [4, 4, 4]),
+        zip(["c", "b", "a"], ["ZZ", "ZZ", "WW"], [1, 2, 2], [4, 4, 4], strict=False),
         columns=["cat1", "cat2", "cont1", "cont2"],
     )
-    col_weights: Dict[str, Union[int, float]] = {
+    col_weights: dict[str, int | float] = {
         "cat1": 1,
         "cat2": 2000,
         "cont1": 1,
@@ -137,14 +135,14 @@ def test_inverse_transform_with_ponderation() -> None:
 def test_inverse_transform_deterministic() -> None:
     """Verify that use_max_modalities=True returns a deterministic of modalities."""
     df = pd.DataFrame(
-        zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 3], [2, 2, 10]),
+        zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 3], [2, 2, 10], strict=False),
         columns=["cat1", "cat2", "cont1", "cont2"],
     )
     inverse_expected = pd.DataFrame(
-        zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 2], [4, 4, 4]),
+        zip(["a", "b", "c"], ["ZZ", "ZZ", "WW"], [1, 2, 2], [4, 4, 4], strict=False),
         columns=["cat1", "cat2", "cont1", "cont2"],
     )
-    col_weights: Dict[str, Union[int, float]] = {
+    col_weights: dict[str, int | float] = {
         "cat1": 1,
         "cat2": 2000,
         "cont1": 1,

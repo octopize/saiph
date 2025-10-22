@@ -1,7 +1,7 @@
 """FAMD projection module."""
 
 import sys
-from typing import Any, List, Optional, Tuple, Union, cast
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -17,9 +17,9 @@ from saiph.reduction.famd import transform as transform_famd
 
 def fit(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
-    seed: Optional[Union[int, np.random.Generator]] = None,
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
+    seed: int | np.random.Generator | None = None,
 ) -> Model:
     """Fit a FAMD model on sparse data.
 
@@ -40,10 +40,10 @@ def fit(
 
 def fit_transform(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
-    seed: Optional[Union[int, np.random.Generator]] = None,
-) -> Tuple[pd.DataFrame, Model]:
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
+    seed: int | np.random.Generator | None = None,
+) -> tuple[pd.DataFrame, Model]:
     """Fit a FAMD model on data and return transformed data.
 
     Parameters:
@@ -65,7 +65,9 @@ def fit_transform(
     return coord, model
 
 
-def center_sparse(df: pd.DataFrame, quanti: List[str], quali: List[str]) -> Tuple[
+def center_sparse(
+    df: pd.DataFrame, quanti: list[str], quali: list[str]
+) -> tuple[
     scipy.sparse.spmatrix,
     NDArray[np.float64],
     NDArray[np.float64],

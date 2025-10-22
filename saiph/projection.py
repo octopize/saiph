@@ -1,6 +1,6 @@
 """Project any dataframe and compute stats."""
 
-from typing import Dict, Optional, Tuple, Union, cast
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -14,10 +14,10 @@ from saiph.reduction.utils.common import get_projected_column_names
 
 def fit(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[Dict[str, Union[int, float]]] = None,
+    nf: int | None = None,
+    col_weights: dict[str, int | float] | None = None,
     sparse: bool = False,
-    seed: Optional[Union[int, np.random.Generator]] = None,
+    seed: int | np.random.Generator | None = None,
 ) -> Model:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
@@ -90,10 +90,10 @@ def fit(
 
 def fit_transform(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[Dict[str, Union[int, float]]] = None,
-    seed: Optional[Union[int, np.random.Generator]] = None,
-) -> Tuple[pd.DataFrame, Model]:
+    nf: int | None = None,
+    col_weights: dict[str, int | float] | None = None,
+    seed: int | np.random.Generator | None = None,
+) -> tuple[pd.DataFrame, Model]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
     Datetimes must be stored as numbers of seconds since epoch.

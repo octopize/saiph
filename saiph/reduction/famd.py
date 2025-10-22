@@ -1,8 +1,9 @@
 """FAMD projection module."""
 
 import sys
+from collections.abc import Callable
 from itertools import chain, repeat
-from typing import Any, Callable, List, Optional, Tuple, Union, cast
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -26,8 +27,8 @@ from saiph.reduction.utils.svd import get_svd
 
 
 def center(
-    df: pd.DataFrame, quanti: List[str], quali: List[str]
-) -> Tuple[
+    df: pd.DataFrame, quanti: list[str], quali: list[str]
+) -> tuple[
     pd.DataFrame, NDArray[np.float64], NDArray[np.float64], NDArray[Any], NDArray[Any]
 ]:
     """Center data, scale it, compute modalities and proportions of each categorical.
@@ -79,11 +80,11 @@ def center(
 
 def fit(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
     center: Callable[
-        [pd.DataFrame, List[str], List[str]],
-        Tuple[
+        [pd.DataFrame, list[str], list[str]],
+        tuple[
             pd.DataFrame,
             NDArray[np.float64],
             NDArray[np.float64],
@@ -91,7 +92,7 @@ def fit(
             NDArray[Any],
         ],
     ] = center,
-    seed: Optional[Union[int, np.random.Generator]] = None,
+    seed: int | np.random.Generator | None = None,
 ) -> Model:
     """Fit a FAMD model on data.
 
@@ -176,10 +177,10 @@ def fit(
 
 def fit_transform(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
-    seed: Optional[Union[int, np.random.Generator]] = None,
-) -> Tuple[pd.DataFrame, Model]:
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
+    seed: int | np.random.Generator | None = None,
+) -> tuple[pd.DataFrame, Model]:
     """Fit a FAMD model on data and return transformed data.
 
     Parameters:
@@ -203,7 +204,7 @@ def fit_transform(
 
 
 def _col_weights_compute(
-    df: pd.DataFrame, col_weights: NDArray[Any], quanti: List[int], quali: List[int]
+    df: pd.DataFrame, col_weights: NDArray[Any], quanti: list[int], quali: list[int]
 ) -> NDArray[Any]:
     """Calculate weights for columns given what weights the user gave."""
     # Set the columns and row weights
@@ -219,7 +220,8 @@ def _col_weights_compute(
     # Set weight vector for categorical columns
     weight_quali_rep = list(
         chain.from_iterable(
-            repeat(i, j) for i, j in zip(list(weight_quali.iloc[0]), modality_numbers)
+            repeat(i, j)
+            for i, j in zip(list(weight_quali.iloc[0]), modality_numbers, strict=False)
         )
     )
 
@@ -322,7 +324,7 @@ def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
 
 def get_variable_contributions(
     model: Model, df: pd.DataFrame, explode: bool = False
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the contributions of the `df` variables within the fitted space.
 
     Parameters:
@@ -357,7 +359,7 @@ def _compute_contributions(
     U: NDArray[np.float64],
     eig: NDArray[np.float64],
     min_nf: int,
-    column_names: List[str],
+    column_names: list[str],
     *,
     explode: bool = True,
 ) -> pd.DataFrame:
@@ -406,7 +408,7 @@ def compute_categorical_cos2(
     min_nf :
         number of degrees of freedom
 
-    Returns
+    Returns:
     -------
         dataframe of categorical cos2
     """
@@ -473,7 +475,7 @@ def compute_continuous_cos2(
 
 def _compute_svd(
     model: Model, weighted: NDArray[np.float64], min_nf: int
-) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     U, s, V = get_svd(weighted.T, svd_flip=False)
 
     # Only keep first nf components
@@ -511,7 +513,7 @@ def _compute_cos2_single_category(
     coords :
         projections of the data used to created the axes
 
-    Returns
+    Returns:
     -------
         cos2 of the single category
     """

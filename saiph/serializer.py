@@ -1,7 +1,7 @@
 # type: ignore
 from dataclasses import dataclass
 from io import StringIO
-from typing import Any, Type, Union
+from typing import Any
 
 import msgspec
 import numpy as np
@@ -29,7 +29,7 @@ class ModelJSONSerializer:
         return encoded_model
 
     @classmethod
-    def loads(self, raw_model: Union[str, bytes]) -> Model:
+    def loads(self, raw_model: str | bytes) -> Model:
         decoder = msgspec.json.Decoder(
             SerializedModel, dec_hook=numpy_pandas_json_decoding_hook
         )
@@ -103,7 +103,7 @@ def numpy_pandas_json_encoding_hook(obj: Any) -> Any:
     raise NotImplementedError(f"Objects of type {type(obj)} cannot be encoded.")
 
 
-def numpy_pandas_json_decoding_hook(type: Type, json_dict: Any) -> Any:
+def numpy_pandas_json_decoding_hook(type: type, json_dict: Any) -> Any:
     """Decode numpy arrays, pandas dataframes, and pandas series, or objects containing them.
 
     Parameters:

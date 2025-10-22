@@ -1,5 +1,3 @@
-from typing import Optional, Tuple
-
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
@@ -9,14 +7,14 @@ from sklearn.utils import extmath
 
 def get_svd(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
+    nf: int | None = None,
     *,
     svd_flip: bool = True,
     random_gen: np.random.Generator = np.random.default_rng(),
-) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """Compute Singular Value Decomposition.
 
-    Arguments
+    Arguments:
     ---------
         df: Matrix to decompose, shape (m, n)
         nf: target number of dimensions to retain (number of singular values). Default `None`.
@@ -24,7 +22,7 @@ def get_svd(
         svd_flip: Whether to use svd_flip on U and V or not. Default `True`
         seed: random seed. Default `None`
 
-    Returns
+    Returns:
     -------
         U: unitary matrix having left singular vectors as columns, shape (m,l)
         S: vector of the singular values, shape (l,)
@@ -59,7 +57,7 @@ def get_randomized_subspace_iteration(
     (Finding structure with randomness: Probabilistic algorithms for constructing approximate
     matrix decompositions. Halko, Nathan and Martinsson, Per-Gunnar and Tropp, Joel A.)
 
-    Arguments
+    Arguments:
     ---------
         A: input matrix, shape (m, n)
         l_retained_dimensions: target number of retained dimensions, l<min(m,n)
@@ -67,7 +65,7 @@ def get_randomized_subspace_iteration(
             the SVD, but more complex to compute. Default `2`
         seed: random seed. Default `None`
 
-    Returns
+    Returns:
     -------
         Q: matrix whose range approximates the range of A, shape (m, l)
     """
@@ -92,7 +90,7 @@ def get_direct_randomized_svd(
     l_retained_dimensions: int,
     q: int = 2,
     random_gen: np.random.Generator = np.random.default_rng(),
-) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """Compute a fixed-rank SVD approximation using random methods.
 
     The computation of the randomized SVD is generally faster than a regular SVD when we retain
@@ -102,7 +100,7 @@ def get_direct_randomized_svd(
     (Finding structure with randomness: Probabilistic algorithms for constructing approximate
     matrix decompositions. Halko, Nathan and Martinsson, Per-Gunnar and Tropp, Joel A.)
 
-    Arguments
+    Arguments:
     ---------
         A: input matrix, shape (m, n)
         l_retained_dimensions: target number of retained dimensions, l<min(m,n)
@@ -110,7 +108,7 @@ def get_direct_randomized_svd(
         the SVD, but more complex to compute.
         seed: random seed. Default `None`
 
-    Returns
+    Returns:
     -------
         U: unitary matrix having left singular vectors as columns, shape (m,l)
         S: vector of the singular values, shape (l,)

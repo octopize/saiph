@@ -1,7 +1,7 @@
 """MCA projection module."""
 
 from itertools import chain, repeat
-from typing import Any, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -26,9 +26,9 @@ from saiph.reduction.utils.svd import get_svd
 
 def fit(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
-    seed: Optional[Union[int, np.random.Generator]] = None,
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
+    seed: int | np.random.Generator | None = None,
 ) -> Model:
     """Fit a MCA model on data.
 
@@ -60,7 +60,8 @@ def fit(
     col_weights_dummies: NDArray[Any] = np.array(
         list(
             chain.from_iterable(
-                repeat(i, j) for i, j in zip(_col_weights, modality_numbers)
+                repeat(i, j)
+                for i, j in zip(_col_weights, modality_numbers, strict=False)
             )
         )
     )
@@ -120,10 +121,10 @@ def fit(
 
 def fit_transform(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
-    seed: Optional[Union[int, np.random.Generator]] = None,
-) -> Tuple[pd.DataFrame, Model]:
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
+    seed: int | np.random.Generator | None = None,
+) -> tuple[pd.DataFrame, Model]:
     """Fit a MCA model on data and return transformed data.
 
     Parameters:
@@ -147,7 +148,7 @@ def fit_transform(
 
 def center(
     df: pd.DataFrame,
-) -> Tuple[pd.DataFrame, NDArray[Any], NDArray[Any], NDArray[Any]]:
+) -> tuple[pd.DataFrame, NDArray[Any], NDArray[Any], NDArray[Any]]:
     """Center data and compute modalities.
 
     Used as internal function during fit.
@@ -207,7 +208,7 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
 
 def _diag_compute(
     df_scale: pd.DataFrame, r: NDArray[Any], c: NDArray[Any]
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Compute diagonal matrices and scale data."""
     eps: np.float64 = np.finfo(float).eps
     if df_scale.shape[0] >= 10000:
@@ -296,7 +297,7 @@ def get_variable_contributions(
 
 def _compute_svd(
     weighted: pd.DataFrame, min_nf: int, col_sum: pd.DataFrame
-) -> Tuple[pd.DataFrame, NDArray[np.float64]]:
+) -> tuple[pd.DataFrame, NDArray[np.float64]]:
     U, s, V = get_svd(weighted.T, svd_flip=False)
 
     U = U[:, :min_nf]

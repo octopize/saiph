@@ -1,5 +1,5 @@
 # type: ignore
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -45,7 +45,7 @@ from saiph.serializer import (
     ],
 )
 def test_encode_decode_single_items(
-    item: Union[pd.DataFrame, pd.Series, NDArray[Any]]
+    item: pd.DataFrame | pd.Series | NDArray[Any],
 ) -> None:
     """Verify that we can encode dataframes and arrays separately."""
     encoded = numpy_pandas_json_encoding_hook(item)

@@ -1,5 +1,6 @@
+from collections import OrderedDict
 from itertools import repeat
-from typing import Any, Dict, List, OrderedDict, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -10,7 +11,7 @@ from toolz import concat
 from saiph.reduction import DUMMIES_SEPARATOR
 
 
-def get_projected_column_names(n: int) -> List[str]:
+def get_projected_column_names(n: int) -> list[str]:
     return [f"Dim. {i + 1}" for i in range(n)]
 
 
@@ -44,7 +45,7 @@ def get_explained_variance(
     s: NDArray[np.float64],
     nb_individuals: int,
     nf: int,
-) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     all_variance = (s**2) / (nb_individuals - 1)
     variance = all_variance[:nf]
 
@@ -59,14 +60,14 @@ def get_explained_variance(
     return variance, variance_ratio
 
 
-def get_modalities_types(df: pd.DataFrame) -> Dict[str, str]:
+def get_modalities_types(df: pd.DataFrame) -> dict[str, str]:
     modalities_types = {col: get_type_as_string(df.loc[0, col]) for col in df.columns}
     return modalities_types
 
 
 def get_dummies_mapping(
-    columns: List[str], dummy_columns: List[str]
-) -> Dict[str, List[str]]:
+    columns: list[str], dummy_columns: list[str]
+) -> dict[str, list[str]]:
     """Get mapping between original column and all dummy columns."""
     return OrderedDict(
         {
@@ -98,7 +99,7 @@ def get_type_as_string(value: Any) -> str:
 
 
 def get_grouped_modality_values(
-    mapping: Dict[str, List[str]], to_group: pd.DataFrame
+    mapping: dict[str, list[str]], to_group: pd.DataFrame
 ) -> pd.DataFrame:
     """Get the sum of the values of modalities into the category.
 
@@ -110,7 +111,7 @@ def get_grouped_modality_values(
         dataframe from which to sum the values of modalities, which are
         passed as the index.
 
-    Returns
+    Returns:
     -------
         a dataframe with the categorical variables without the dummies
     """

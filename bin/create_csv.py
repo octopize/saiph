@@ -5,7 +5,7 @@ import os
 import random
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import typer
 from faker import Faker
@@ -27,12 +27,12 @@ CITIES = [
 CITIES_WEIGHTS = (20, 10, 50, 10, 4, 1, 1, 1, 1, 2)
 
 
-def eprint(*args: Any, **kwargs: Dict[str, Any]) -> None:
+def eprint(*args: Any, **kwargs: dict[str, Any]) -> None:
     print(*args, file=sys.stderr, **kwargs)  # type: ignore
 
 
 def human_size(
-    size: int, units: List[str] = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB"]
+    size: int, units: list[str] = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB"]
 ) -> str:
     """Return a human readable string representation of bytes."""
     return (
@@ -46,7 +46,7 @@ def get_city() -> str:
     return random.choices(CITIES, weights=CITIES_WEIGHTS)[0]  # nosec
 
 
-def get_row(dimension_count: int = 3) -> Dict[str, Any]:
+def get_row(dimension_count: int = 3) -> dict[str, Any]:
     r = {
         "latitude": fake.latitude(),
         "longitude": fake.longitude(),

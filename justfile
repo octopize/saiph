@@ -7,7 +7,7 @@ default:
 # Install the stack
 install:
     pre-commit install --hook-type commit-msg
-    uv sync --extra matplotlib
+    uv sync --extra matplotlib --group dev --group doc
 
 # Prepare a new release of saiph
 prepare-release:
@@ -22,7 +22,7 @@ docs:
     #!/usr/bin/env bash
     set -euo pipefail
     DOCS_REQUIREMENTS="docs/requirements.txt"
-    uv pip compile pyproject.toml --extra doc --extra matplotlib --output-file "$DOCS_REQUIREMENTS"
+    uv pip compile pyproject.toml --group doc --extra matplotlib --output-file "$DOCS_REQUIREMENTS"
     grep -E 'matplotlib|sphinx-gallery' "$DOCS_REQUIREMENTS" > docs/tmp.txt
     mv docs/tmp.txt "$DOCS_REQUIREMENTS"
     uv run sphinx-build -b html docs build/docs
@@ -39,14 +39,13 @@ lci: lint-fix ci
 
 # Run linting
 lint:
-    uv run black --check saiph
-    uv run flake8 saiph
-    uv run bandit -c bandit.yaml -r saiph bin
+    uv run ruff check saiph bin
+    uv run ruff format --check saiph bin
 
 # Run autoformatters
 lint-fix:
-    uv run black .
-    uv run isort .
+    uv run ruff check --fix saiph bin
+    uv run ruff format saiph bin
 
 # Run typechecking
 typecheck:

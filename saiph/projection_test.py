@@ -1,5 +1,5 @@
 from contextlib import nullcontext
-from typing import Any, Dict, List, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -54,7 +54,7 @@ def test_transform_then_inverse_MCA_type(quali_df: pd.DataFrame) -> None:
 
 def test_transform_then_inverse_FAMD_weighted(mixed_df: pd.DataFrame) -> None:
     df = mixed_df
-    col_weights: Dict[str, Union[int, float]] = {"variable_1": 2, "tool": 3}
+    col_weights: dict[str, int | float] = {"variable_1": 2, "tool": 3}
     transformed, model = fit_transform(df, col_weights=col_weights)
     un_transformed = inverse_transform(transformed, model)
 
@@ -63,7 +63,7 @@ def test_transform_then_inverse_FAMD_weighted(mixed_df: pd.DataFrame) -> None:
 
 def test_transform_then_inverse_PCA_weighted(quanti_df: pd.DataFrame) -> None:
     df = quanti_df
-    col_weights: Dict[str, Union[int, float]] = {
+    col_weights: dict[str, int | float] = {
         "variable_1": 2,
         "variable_2": 1,
         "variable_3": 3,
@@ -94,7 +94,7 @@ def test_transform_then_inverse_MCA_weighted() -> None:
             ],
         }
     )
-    col_weights: Dict[str, Union[int, float]] = {
+    col_weights: dict[str, int | float] = {
         "variable_1": 2,
         "variable_2": 1,
         "variable_3": 3,
@@ -216,7 +216,7 @@ expected_famd_cor = [
         (df_famd, expected_famd_cor),
     ],
 )
-def test_var_cor(df_input: pd.DataFrame, expected_cor: List[float]) -> None:
+def test_var_cor(df_input: pd.DataFrame, expected_cor: list[float]) -> None:
     _, model = fit_transform(df_input)
     stats(model, df_input)
     if model.correlations is not None:
@@ -254,7 +254,7 @@ expected_famd_explained_var_ratio = [
         (df_famd, expected_famd_explained_var_ratio),
     ],
 )
-def test_var_ratio(df_input: pd.DataFrame, expected_var_ratio: List[float]) -> None:
+def test_var_ratio(df_input: pd.DataFrame, expected_var_ratio: list[float]) -> None:
     _, model = fit_transform(df_input)
     stats(model, df_input)
     assert_allclose(model.explained_var_ratio[0:5], expected_var_ratio, atol=1e-07)
@@ -501,22 +501,18 @@ def test_get_reconstructed_df_from_model_calls_correct_subfunction(
     # FAMD
     model = fit(mixed_df)
     expect(saiph.reduction.famd).reconstruct_df_from_model(model).once().and_return(
-        (None)
+        None
     )
     projection.get_reconstructed_df_from_model(model)
 
     # MCA
     model = fit(quali_df)
-    expect(saiph.reduction.mca).reconstruct_df_from_model(model).once().and_return(
-        (None)
-    )
+    expect(saiph.reduction.mca).reconstruct_df_from_model(model).once().and_return(None)
     projection.get_reconstructed_df_from_model(model)
 
     # PCA
     model = fit(quanti_df)
-    expect(saiph.reduction.pca).reconstruct_df_from_model(model).once().and_return(
-        (None)
-    )
+    expect(saiph.reduction.pca).reconstruct_df_from_model(model).once().and_return(None)
     projection.get_reconstructed_df_from_model(model)
 
 

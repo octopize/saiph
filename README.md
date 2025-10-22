@@ -19,7 +19,7 @@ pip install saiph
 ## Development
 
 ```bash
-uv sync --extra matplotlib --extra dev
+uv sync --extra matplotlib --group dev --group doc
 ```
 
 If you want to install dev dependencies, make sure you have a rust compiler installed:

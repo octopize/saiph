@@ -1,7 +1,5 @@
 """Visualization functions."""
 
-from typing import List, Optional, Tuple
-
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -14,7 +12,7 @@ from saiph.models import Model
 
 def plot_circle(
     model: Model,
-    dimensions: Optional[List[int]] = None,
+    dimensions: list[int] | None = None,
     min_cor: float = 0.1,
     max_var: int = 7,
 ) -> None:
@@ -86,11 +84,11 @@ def plot_circle(
     plt.title("Correlation Circle", fontsize=figure_axis_size * 3)
 
     plt.xlabel(
-        f"Dim {str(dimensions[0])} {str(explained_var_ratio[dimensions[0] - 1] * 100)[:4]} %",
+        f"Dim {dimensions[0]!s} {str(explained_var_ratio[dimensions[0] - 1] * 100)[:4]} %",
         fontsize=figure_axis_size * 2,
     )
     plt.ylabel(
-        f"Dim {str(dimensions[1])} {str(explained_var_ratio[dimensions[1] - 1] * 100)[:4]} %",
+        f"Dim {dimensions[1]!s} {str(explained_var_ratio[dimensions[1] - 1] * 100)[:4]} %",
         fontsize=figure_axis_size * 2,
     )
 
@@ -153,7 +151,7 @@ def plot_explained_var(
 
 
 def plot_projections(
-    model: Model, data: pd.DataFrame, dim: Tuple[int, int] = (0, 1)
+    model: Model, data: pd.DataFrame, dim: tuple[int, int] = (0, 1)
 ) -> None:
     """Plot projections in reduced space for input data.
 

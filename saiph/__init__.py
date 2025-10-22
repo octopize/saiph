@@ -9,6 +9,6 @@ __all__ = [
     "fit",
     "fit_transform",
     "inverse_transform",
-    "transform",
     "stats",
+    "transform",
 ]

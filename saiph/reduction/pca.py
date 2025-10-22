@@ -1,7 +1,6 @@
 """PCA projection module."""
 
 import sys
-from typing import Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -18,9 +17,9 @@ from saiph.reduction.utils.svd import get_svd
 
 def fit(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
-    seed: Optional[Union[int, np.random.Generator]] = None,
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
+    seed: int | np.random.Generator | None = None,
 ) -> Model:
     """Fit a PCA model on data.
 
@@ -87,10 +86,10 @@ def fit(
 
 def fit_transform(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
-    seed: Optional[int] = None,
-) -> Tuple[pd.DataFrame, Model]:
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
+    seed: int | None = None,
+) -> tuple[pd.DataFrame, Model]:
     """Fit a PCA model on data and return transformed data.
 
     Parameters:
@@ -109,7 +108,7 @@ def fit_transform(
     return coord, model
 
 
-def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
+def center(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, pd.Series]:
     """Center data and standardize it if scale. Compute mean and std values.
 
     Used as internal function during fit.

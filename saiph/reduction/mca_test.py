@@ -44,7 +44,11 @@ def test_fit() -> None:
 
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
-    assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),
+    (
+        assert_allclose(
+            model.explained_var_ratio, expected_explained_var_ratio, atol=0.01
+        ),
+    )
     assert np.array_equal(
         model._modalities,  # type: ignore
         [

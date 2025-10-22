@@ -28,9 +28,7 @@ def test_full_svd(matrix: pd.DataFrame) -> None:
         ]
     )
 
-    expected_S: NDArray[np.float64] = np.array(
-        [1.68481034e01, 1.06836951e00, 3.33475287e-16]
-    )
+    expected_S: NDArray[np.float64] = np.array([1.68481034e01, 1.06836951e00, 3.33475287e-16])
 
     expected_Vt: NDArray[np.float64] = np.array(
         [

@@ -46,15 +46,11 @@ def test_normalization() -> None:
     [
         (
             True,
-            pd.DataFrame(
-                [["wrench", "orange"], ["hammer", "apple"]], columns=["tool", "fruit"]
-            ),
+            pd.DataFrame([["wrench", "orange"], ["hammer", "apple"]], columns=["tool", "fruit"]),
         ),
         (
             False,
-            pd.DataFrame(
-                [["wrench", "orange"], ["wrench", "apple"]], columns=["tool", "fruit"]
-            ),
+            pd.DataFrame([["wrench", "orange"], ["wrench", "apple"]], columns=["tool", "fruit"]),
         ),
     ],
 )
@@ -100,9 +96,7 @@ def test_undummify_when_dummies_prefix_is_in_variable_name() -> None:
         use_max_modalities=True,
     )
 
-    expected = pd.DataFrame(
-        [["wrench"], ["hammer"]], columns=[f"tool{DUMMIES_SEPARATOR}"]
-    )
+    expected = pd.DataFrame([["wrench"], ["hammer"]], columns=[f"tool{DUMMIES_SEPARATOR}"])
 
     assert_frame_equal(df, expected)
 
@@ -179,12 +173,8 @@ def test_inverse_from_coord_mca(
     wbcd_statistics = wbcd_quali_df.describe()
 
     assert_series_equal(wbcd_statistics.loc["count"], reversed_statistics.loc["count"])
-    assert_allclose(
-        wbcd_statistics.loc["mean"], reversed_statistics.loc["mean"], atol=0.25
-    )
-    assert_allclose(
-        wbcd_statistics.loc["std"], reversed_statistics.loc["std"], atol=0.35
-    )
+    assert_allclose(wbcd_statistics.loc["mean"], reversed_statistics.loc["mean"], atol=0.25)
+    assert_allclose(wbcd_statistics.loc["std"], reversed_statistics.loc["std"], atol=0.35)
     # assert equal for the min as there are many low values
     assert_series_equal(wbcd_statistics.loc["min"], reversed_statistics.loc["min"])
     assert_allclose(wbcd_statistics.loc["25%"], reversed_statistics.loc["25%"], atol=1)
@@ -212,20 +202,14 @@ def test_inverse_from_coord_pca(
     wbcd_statistics = wbcd_quanti_df.describe()
 
     assert_series_equal(wbcd_statistics.loc["count"], reversed_statistics.loc["count"])
-    assert_allclose(
-        wbcd_statistics.loc["mean"], reversed_statistics.loc["mean"], atol=0.4
-    )
-    assert_allclose(
-        wbcd_statistics.loc["std"], reversed_statistics.loc["std"], atol=0.7
-    )
+    assert_allclose(wbcd_statistics.loc["mean"], reversed_statistics.loc["mean"], atol=0.4)
+    assert_allclose(wbcd_statistics.loc["std"], reversed_statistics.loc["std"], atol=0.7)
     # assert equal for the min as there are many low values
     assert_series_equal(wbcd_statistics.loc["min"], reversed_statistics.loc["min"])
     assert_allclose(wbcd_statistics.loc["25%"], reversed_statistics.loc["25%"], atol=1)
     assert_allclose(wbcd_statistics.loc["50%"], reversed_statistics.loc["50%"], atol=1)
     assert_allclose(wbcd_statistics.loc["75%"], reversed_statistics.loc["75%"], atol=1)
-    assert_series_equal(
-        wbcd_statistics.loc["max"], reversed_statistics.loc["max"], atol=1
-    )
+    assert_series_equal(wbcd_statistics.loc["max"], reversed_statistics.loc["max"], atol=1)
 
 
 def test_inverse_from_coord_famd(
@@ -246,17 +230,11 @@ def test_inverse_from_coord_famd(
     wbcd_statistics = wbcd_mixed_df.describe()
 
     assert_series_equal(wbcd_statistics.loc["count"], reversed_statistics.loc["count"])
-    assert_allclose(
-        wbcd_statistics.loc["mean"], reversed_statistics.loc["mean"], atol=0.4
-    )
-    assert_allclose(
-        wbcd_statistics.loc["std"], reversed_statistics.loc["std"], atol=0.6
-    )
+    assert_allclose(wbcd_statistics.loc["mean"], reversed_statistics.loc["mean"], atol=0.4)
+    assert_allclose(wbcd_statistics.loc["std"], reversed_statistics.loc["std"], atol=0.6)
     # assert equal for the min as there are many low values
     assert_series_equal(wbcd_statistics.loc["min"], reversed_statistics.loc["min"])
     assert_series_equal(wbcd_statistics.loc["25%"], reversed_statistics.loc["25%"])
     assert_series_equal(wbcd_statistics.loc["50%"], reversed_statistics.loc["50%"])
     assert_allclose(wbcd_statistics.loc["75%"], reversed_statistics.loc["75%"], atol=1)
-    assert_series_equal(
-        wbcd_statistics.loc["max"], reversed_statistics.loc["max"], atol=1
-    )
+    assert_series_equal(wbcd_statistics.loc["max"], reversed_statistics.loc["max"], atol=1)

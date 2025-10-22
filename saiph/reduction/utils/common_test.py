@@ -45,9 +45,7 @@ def test_row_division(df: pd.DataFrame) -> None:
     assert_frame_equal(result, expected)
 
 
-def test_get_dummies_mapping(
-    quali_df: pd.DataFrame, mapping: dict[str, list[str]]
-) -> None:
+def test_get_dummies_mapping(quali_df: pd.DataFrame, mapping: dict[str, list[str]]) -> None:
     dummy_columns = pd.get_dummies(
         quali_df,
         prefix_sep=DUMMIES_SEPARATOR,
@@ -60,9 +58,7 @@ def test_get_dummies_mapping(
 
 def test_get_grouped_modality_values(mapping: dict[str, list[str]]) -> None:
     """Verify that grouping modalities returns the correct groupings."""
-    df = pd.DataFrame.from_dict(
-        {col: [10] for col in concat(mapping.values())}, orient="index"
-    )
+    df = pd.DataFrame.from_dict({col: [10] for col in concat(mapping.values())}, orient="index")
     expected = pd.DataFrame.from_dict({col: [20] for col in mapping}, orient="index")
     grouped_df = get_grouped_modality_values(mapping, df)
 

@@ -65,17 +65,11 @@ def get_modalities_types(df: pd.DataFrame) -> dict[str, str]:
     return modalities_types
 
 
-def get_dummies_mapping(
-    columns: list[str], dummy_columns: list[str]
-) -> dict[str, list[str]]:
+def get_dummies_mapping(columns: list[str], dummy_columns: list[str]) -> dict[str, list[str]]:
     """Get mapping between original column and all dummy columns."""
     return OrderedDict(
         {
-            col: list(
-                filter(
-                    lambda c: c.startswith(f"{col}{DUMMIES_SEPARATOR}"), dummy_columns
-                )
-            )
+            col: list(filter(lambda c: c.startswith(f"{col}{DUMMIES_SEPARATOR}"), dummy_columns))
             for col in columns
         }
     )

@@ -34,9 +34,7 @@ def fit(
     """
     nf = nf or min(df.shape)
     _col_weights = col_weights if col_weights is not None else np.ones(df.shape[1])
-    random_gen = (
-        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-    )
+    random_gen = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
 
     # Set row weights
     row_w = get_uniform_row_weights(len(df))
@@ -196,9 +194,7 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     """
     # Extract the necessary components from the model
     if model.s is None or model.mean is None or model.std is None:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
+        raise ValueError("Model has not been fitted. Call fit() to create a Model instance.")
     U = model.U
     S = model.s
     V = model.V

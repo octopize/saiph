@@ -44,9 +44,7 @@ def fit(
     nf = nf or min(pd.get_dummies(df).shape)
 
     _col_weights = col_weights if col_weights is not None else np.ones(df.shape[1])
-    random_gen = (
-        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-    )
+    random_gen = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
 
     modalities_types = get_modalities_types(df)
 
@@ -60,8 +58,7 @@ def fit(
     col_weights_dummies: NDArray[Any] = np.array(
         list(
             chain.from_iterable(
-                repeat(i, j)
-                for i, j in zip(_col_weights, modality_numbers, strict=False)
+                repeat(i, j) for i, j in zip(_col_weights, modality_numbers, strict=False)
             )
         )
     )
@@ -81,9 +78,7 @@ def fit(
     Z = ((T * col_weights_dummies).T * row_weights).T
     U, S, Vt = get_svd(Z, nf=nf, random_gen=random_gen)
 
-    explained_var, explained_var_ratio = get_explained_variance(
-        S, df_dummies.shape[0], nf
-    )
+    explained_var, explained_var_ratio = get_explained_variance(S, df_dummies.shape[0], nf)
 
     # Retain only the nf higher singular values
     U = U[:, :nf]
@@ -138,9 +133,7 @@ def fit_transform(
         coord: The transformed data of size (n, min(n,p))
         or (n, nf) if nf is specified.
     """
-    random_gen = (
-        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-    )
+    random_gen = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
     model = fit(df, nf, col_weights, seed=random_gen)
     coord = transform(df, model)
     return coord, model
@@ -253,9 +246,7 @@ def get_variable_contributions(
         contributions
     """
     if not model.is_fitted:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
+        raise ValueError("Model has not been fitted. Call fit() to create a Model instance.")
     df = pd.get_dummies(
         df.astype("category"),
         prefix_sep=DUMMIES_SEPARATOR,
@@ -348,9 +339,7 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     """
     # Extract the necessary components from the model
     if model.s is None:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
+        raise ValueError("Model has not been fitted. Call fit() to create a Model instance.")
     U = model.U
     S = model.s
     V = model.V
@@ -374,9 +363,7 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
         prefix = var + DUMMIES_SEPARATOR
         dummies = [col for col in df_reconstructed.columns if col.startswith(prefix)]
         df_reconstructed[var] = (
-            df_reconstructed[dummies]
-            .idxmax(axis=1)
-            .apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
+            df_reconstructed[dummies].idxmax(axis=1).apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
         )
         df_reconstructed.drop(columns=dummies, inplace=True)
 

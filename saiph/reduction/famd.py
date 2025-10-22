@@ -28,9 +28,7 @@ from saiph.reduction.utils.svd import get_svd
 
 def center(
     df: pd.DataFrame, quanti: list[str], quali: list[str]
-) -> tuple[
-    pd.DataFrame, NDArray[np.float64], NDArray[np.float64], NDArray[Any], NDArray[Any]
-]:
+) -> tuple[pd.DataFrame, NDArray[np.float64], NDArray[np.float64], NDArray[Any], NDArray[Any]]:
     """Center data, scale it, compute modalities and proportions of each categorical.
 
     Used as internal function during fit.
@@ -108,9 +106,7 @@ def fit(
     nf = nf or min(pd.get_dummies(df).shape)
     _col_weights = np.ones(df.shape[1]) if col_weights is None else col_weights
     # If seed is None or int, we fit a Generator, else we use the one provided.
-    random_gen = (
-        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-    )
+    random_gen = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
 
     # Select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
@@ -195,9 +191,7 @@ def fit_transform(
         model: The model for transforming new data.
     """
     # If seed is None or int, we fit a Generator, else we use the one provided.
-    random_gen = (
-        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-    )
+    random_gen = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
     model = fit(df, nf, col_weights, seed=random_gen)
     coord = transform(df, model)
     return coord, model
@@ -225,9 +219,7 @@ def _col_weights_compute(
         )
     )
 
-    _col_weights: NDArray[Any] = np.array(
-        list(weight_quanti.iloc[0]) + weight_quali_rep
-    )
+    _col_weights: NDArray[Any] = np.array(list(weight_quanti.iloc[0]) + weight_quali_rep)
 
     return _col_weights
 
@@ -312,9 +304,7 @@ def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
         model: model populated with contribution and cos2.
     """
     if not model.is_fitted:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
+        raise ValueError("Model has not been fitted. Call fit() to create a Model instance.")
 
     contributions, cos2 = get_variable_contributions(model, df, explode=explode)
     model.contributions = contributions
@@ -394,9 +384,7 @@ def _compute_contributions(
     return contributions
 
 
-def compute_categorical_cos2(
-    model: Model, df: pd.DataFrame, min_nf: int
-) -> pd.DataFrame:
+def compute_categorical_cos2(model: Model, df: pd.DataFrame, min_nf: int) -> pd.DataFrame:
     """Compute the cos2 statistic for categorical variables.
 
     Parameters
@@ -526,9 +514,7 @@ def _compute_cos2_single_category(
         for i, col in enumerate(single_category_df.columns):
             dummy_values = single_category_df[col].values
             if model.prop is not None:
-                p_values[i] = (dummy_values * weighted_coord).sum() ** 2 / model.prop[
-                    col
-                ]
+                p_values[i] = (dummy_values * weighted_coord).sum() ** 2 / model.prop[col]
 
         p = p_values.sum()
         cos2.append(p)
@@ -540,9 +526,7 @@ def _compute_cos2_single_category(
     summed_weights_without_zeros = np.where(
         summed_weights <= sys.float_info.min, 1, summed_weights
     )
-    single_category_cos2: NDArray[np.float64] = (
-        np.array(cos2) / summed_weights_without_zeros
-    )
+    single_category_cos2: NDArray[np.float64] = np.array(cos2) / summed_weights_without_zeros
     return single_category_cos2
 
 
@@ -561,9 +545,7 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     """
     # Extract the necessary components from the model
     if model.s is None or model.mean is None or model.std is None or model.prop is None:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
+        raise ValueError("Model has not been fitted. Call fit() to create a Model instance.")
     U = model.U
     S = model.s
     V = model.V
@@ -607,9 +589,7 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
         prefix = var + DUMMIES_SEPARATOR
         dummies = [col for col in df_reconstructed.columns if col.startswith(prefix)]
         df_reconstructed[var] = (
-            df_reconstructed[dummies]
-            .idxmax(axis=1)
-            .apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
+            df_reconstructed[dummies].idxmax(axis=1).apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
         )
         df_reconstructed.drop(columns=dummies, inplace=True)
 

@@ -328,9 +328,7 @@ def test_get_variable_contribution_are_similar_with_reduced_nf() -> None:
     df = pd.read_csv("./fixtures/wbcd.csv")
     model_truncated = fit(df, nf=5)  # nf = nf_max/2
     df_reconstructed = projection.get_reconstructed_df_from_model(model_truncated)
-    truncated_contributions = get_variable_contributions(
-        model_truncated, df_reconstructed
-    )
+    truncated_contributions = get_variable_contributions(model_truncated, df_reconstructed)
     model_full = fit(df)  # nf = nf_max
     full_contributions = get_variable_contributions(model_full, df)
     # We only look at the first two dimensions
@@ -376,28 +374,22 @@ def test_get_variable_contributions_calls_correct_subfunction(
 
     # PCA
     model = fit(quanti_df)
-    expect(saiph.projection).get_variable_correlation(
-        model, quanti_df
-    ).once().and_return(pd.DataFrame([1, 2, 3]))
+    expect(saiph.projection).get_variable_correlation(model, quanti_df).once().and_return(
+        pd.DataFrame([1, 2, 3])
+    )
     projection.get_variable_contributions(model, quanti_df)
 
 
-def test_stats_calls_correct_subfunction(
-    quali_df: pd.DataFrame, mixed_df: pd.DataFrame
-) -> None:
+def test_stats_calls_correct_subfunction(quali_df: pd.DataFrame, mixed_df: pd.DataFrame) -> None:
     """Verify that projection.stats calls the correct subfunction."""
     # FAMD
     model = fit(mixed_df)
-    expect(saiph.reduction.famd).stats(
-        model, mixed_df, explode=False
-    ).once().and_return(model)
+    expect(saiph.reduction.famd).stats(model, mixed_df, explode=False).once().and_return(model)
 
     # MCA
     projection.stats(model, mixed_df)
     model = fit(quali_df)
-    expect(saiph.reduction.mca).stats(model, quali_df, explode=False).once().and_return(
-        model
-    )
+    expect(saiph.reduction.mca).stats(model, quali_df, explode=False).once().and_return(model)
     projection.stats(model, quali_df)
 
     # FIXME: Can't test PCA as it has no subfunction associated to it
@@ -500,9 +492,7 @@ def test_get_reconstructed_df_from_model_calls_correct_subfunction(
     """Verify that projection.get_reconstructed_df_from_model calls the correct subfunction."""
     # FAMD
     model = fit(mixed_df)
-    expect(saiph.reduction.famd).reconstruct_df_from_model(model).once().and_return(
-        None
-    )
+    expect(saiph.reduction.famd).reconstruct_df_from_model(model).once().and_return(None)
     projection.get_reconstructed_df_from_model(model)
 
     # MCA
@@ -541,9 +531,7 @@ def test_transform_raise_error_on_wrong_columns(
 @pytest.mark.parametrize(
     "df_to_fit_transform",
     [
-        pd.DataFrame(
-            {"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9], "d": [10, 11, 12]}
-        ),  # pca
+        pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9], "d": [10, 11, 12]}),  # pca
         pd.DataFrame(
             {"a": ["a", "b", "b"], "b": [1, 3, 6], "c": [1, 2, 3], "d": [1, 2, 3]}
         ),  # famd

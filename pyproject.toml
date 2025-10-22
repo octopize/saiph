@@ -71,43 +71,6 @@ exclude_lines = [
 [tool.coverage.run]
 branch = true
 
-[tool.ruff]
-target-version = "py310"
-line-length = 88
-
-[tool.ruff.lint]
-select = [
-    "E",      # pycodestyle errors
-    "W",      # pycodestyle warnings
-    "F",      # pyflakes
-    "I",      # isort
-    "B",      # flake8-bugbear
-    "C4",     # flake8-comprehensions
-    "UP",     # pyupgrade
-    "ARG",    # flake8-unused-arguments
-    "SIM",    # flake8-simplify
-    "S",      # bandit
-    "T20",    # flake8-print
-    "DTZ",    # flake8-datetimez
-    "RUF",    # ruff-specific rules
-    "D",      # pydocstyle
-]
-ignore = [
-    "E501",   # line too long (handled by formatter)
-    "D100",   # Missing docstring in public module
-    "D104",   # Missing docstring in public package
-    "D203",   # 1 blank line required before class docstring (incompatible with D211)
-    "D213",   # Multi-line docstring summary should start at the second line (incompatible with D212)
-]
-
-[tool.ruff.lint.per-file-ignores]
-"*_test.py" = ["S101", "D"]  # Allow assert statements and no docstrings in tests
-"tests/*" = ["S101", "D"]
-"bin/*" = ["D"]
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-
 [tool.mypy]
 strict = true
 

@@ -31,9 +31,7 @@ def eprint(*args: Any, **kwargs: dict[str, Any]) -> None:
     print(*args, file=sys.stderr, **kwargs)  # type: ignore
 
 
-def human_size(
-    size: int, units: list[str] = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB"]
-) -> str:
+def human_size(size: int, units: list[str] = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB"]) -> str:
     """Return a human readable string representation of bytes."""
     return (
         str(size) + units[0]
@@ -66,9 +64,7 @@ def main(
     eprint(f"generating {row_count} fake rows")
 
     if dimension_count < 3:
-        raise ValueError(
-            f"Expected dimension_count >= 3, got {dimension_count} instead"
-        )
+        raise ValueError(f"Expected dimension_count >= 3, got {dimension_count} instead")
 
     header = list(get_row(dimension_count).keys())
     with open(outfile, "w") as f:

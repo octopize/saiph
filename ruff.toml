@@ -55,6 +55,11 @@ ignore = [
     # --  Ignore missing docstrings - END
     "ANN401",
     "PD901",
+    "N802",
+    "N803",
+    "N804",
+    "N806",
+    "N818",
 ]
 
 
@@ -66,3 +71,4 @@ ignore-overlong-task-comments = true
 # Prevent bandit from checking tests
 "**/tests/*.py" = ["S"]
 "**/*_test.py" = ["S"]
+"**/conftest.py" = ["S"]

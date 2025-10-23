@@ -28,7 +28,7 @@ CITIES_WEIGHTS = (20, 10, 50, 10, 4, 1, 1, 1, 1, 2)
 
 
 def eprint(*args: Any, **kwargs: dict[str, Any]) -> None:
-    print(*args, file=sys.stderr, **kwargs)  # type: ignore
+    print(*args, file=sys.stderr, **kwargs)  # noqa: T201 # type: ignore
 
 
 def human_size(size: int, units: list[str] = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB"]) -> str:
@@ -41,7 +41,7 @@ def human_size(size: int, units: list[str] = ["bytes", "KB", "MB", "GB", "TB", "
 
 
 def get_city() -> str:
-    return random.choices(CITIES, weights=CITIES_WEIGHTS)[0]  # nosec
+    return random.choices(CITIES, weights=CITIES_WEIGHTS)[0]  # noqa: S311
 
 
 def get_row(dimension_count: int = 3) -> dict[str, Any]:

@@ -11,7 +11,7 @@ install:
 
 # Prepare a new release of saiph
 prepare-release:
-    uv run python release.py --bump-type patch
+    uv run python release.py
 
 # Run the notebook
 notebook:

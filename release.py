@@ -28,7 +28,7 @@ class BumpType(enum.Enum):
 
 
 def get_version_pattern(key: str) -> Pattern:  # type: ignore[type-arg]
-    pattern = re.compile(f'{key} = "(\d+)\.(\d+)\.(\d+)"')  # noqa W905
+    pattern = re.compile(rf'{key} = "(\d+)\.(\d+)\.(\d+)"')  # noqa W905
     return pattern
 
 
@@ -193,7 +193,9 @@ def check_preconditions() -> None:
 
 
 @app.command()
-def release(bump_type: BumpType = typer.Option(BumpType.PATCH)) -> Any:
+def release(
+    bump_type: BumpType =  typer.Option(default=BumpType.PATCH.value),
+) -> Any:
     proc = subprocess.Popen(
         args=("git", "branch", "--show-current"), stdout=PIPE, text=True
     )

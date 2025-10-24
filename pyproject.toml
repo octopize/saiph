@@ -15,7 +15,7 @@ dependencies = [
     "scikit-learn>=1.0,<2",
     "toolz>=1,<2",
     "pydantic>=2,<3",
-    "msgspec>=0.18.5,<0.19",
+    "msgspec>=0.19,<0.20",
 ]
 
 [project.optional-dependencies]
@@ -38,9 +38,9 @@ dev = [
     "ipdb>=0.13.9,<0.14",
 ]
 doc = [
-    "Sphinx<6",
-    "sphinx-rtd-theme>=1.1.1,<2",
-    "sphinx-gallery>=0.11.1,<0.12",
+    "Sphinx>=8",
+    "sphinx-rtd-theme>=3",
+    "sphinx-gallery>=0.19",
     "matplotlib>=3.5.2,<4",
 ]
 

@@ -1,7 +1,9 @@
 """FAMD projection module."""
+
 import sys
+from collections.abc import Callable
 from itertools import chain, repeat
-from typing import Any, Callable, List, Optional, Tuple, Union, cast
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -25,10 +27,8 @@ from saiph.reduction.utils.svd import get_svd
 
 
 def center(
-    df: pd.DataFrame, quanti: List[str], quali: List[str]
-) -> Tuple[
-    pd.DataFrame, NDArray[np.float64], NDArray[np.float64], NDArray[Any], NDArray[Any]
-]:
+    df: pd.DataFrame, quanti: list[str], quali: list[str]
+) -> tuple[pd.DataFrame, NDArray[np.float64], NDArray[np.float64], NDArray[Any], NDArray[Any]]:
     """Center data, scale it, compute modalities and proportions of each categorical.
 
     Used as internal function during fit.
@@ -78,11 +78,11 @@ def center(
 
 def fit(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
     center: Callable[
-        [pd.DataFrame, List[str], List[str]],
-        Tuple[
+        [pd.DataFrame, list[str], list[str]],
+        tuple[
             pd.DataFrame,
             NDArray[np.float64],
             NDArray[np.float64],
@@ -90,7 +90,7 @@ def fit(
             NDArray[Any],
         ],
     ] = center,
-    seed: Optional[Union[int, np.random.Generator]] = None,
+    seed: int | np.random.Generator | None = None,
 ) -> Model:
     """Fit a FAMD model on data.
 
@@ -106,9 +106,7 @@ def fit(
     nf = nf or min(pd.get_dummies(df).shape)
     _col_weights = np.ones(df.shape[1]) if col_weights is None else col_weights
     # If seed is None or int, we fit a Generator, else we use the one provided.
-    random_gen = (
-        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-    )
+    random_gen = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
 
     # Select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
@@ -175,10 +173,10 @@ def fit(
 
 def fit_transform(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
-    seed: Optional[Union[int, np.random.Generator]] = None,
-) -> Tuple[pd.DataFrame, Model]:
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
+    seed: int | np.random.Generator | None = None,
+) -> tuple[pd.DataFrame, Model]:
     """Fit a FAMD model on data and return transformed data.
 
     Parameters:
@@ -193,16 +191,14 @@ def fit_transform(
         model: The model for transforming new data.
     """
     # If seed is None or int, we fit a Generator, else we use the one provided.
-    random_gen = (
-        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-    )
+    random_gen = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
     model = fit(df, nf, col_weights, seed=random_gen)
     coord = transform(df, model)
     return coord, model
 
 
 def _col_weights_compute(
-    df: pd.DataFrame, col_weights: NDArray[Any], quanti: List[int], quali: List[int]
+    df: pd.DataFrame, col_weights: NDArray[Any], quanti: list[int], quali: list[int]
 ) -> NDArray[Any]:
     """Calculate weights for columns given what weights the user gave."""
     # Set the columns and row weights
@@ -218,13 +214,12 @@ def _col_weights_compute(
     # Set weight vector for categorical columns
     weight_quali_rep = list(
         chain.from_iterable(
-            repeat(i, j) for i, j in zip(list(weight_quali.iloc[0]), modality_numbers)
+            repeat(i, j)
+            for i, j in zip(list(weight_quali.iloc[0]), modality_numbers, strict=False)
         )
     )
 
-    _col_weights: NDArray[Any] = np.array(
-        list(weight_quanti.iloc[0]) + weight_quali_rep
-    )
+    _col_weights: NDArray[Any] = np.array(list(weight_quanti.iloc[0]) + weight_quali_rep)
 
     return _col_weights
 
@@ -309,9 +304,7 @@ def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
         model: model populated with contribution and cos2.
     """
     if not model.is_fitted:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
+        raise ValueError("Model has not been fitted. Call fit() to create a Model instance.")
 
     contributions, cos2 = get_variable_contributions(model, df, explode=explode)
     model.contributions = contributions
@@ -321,7 +314,7 @@ def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
 
 def get_variable_contributions(
     model: Model, df: pd.DataFrame, explode: bool = False
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the contributions of the `df` variables within the fitted space.
 
     Parameters:
@@ -356,7 +349,7 @@ def _compute_contributions(
     U: NDArray[np.float64],
     eig: NDArray[np.float64],
     min_nf: int,
-    column_names: List[str],
+    column_names: list[str],
     *,
     explode: bool = True,
 ) -> pd.DataFrame:
@@ -391,9 +384,7 @@ def _compute_contributions(
     return contributions
 
 
-def compute_categorical_cos2(
-    model: Model, df: pd.DataFrame, min_nf: int
-) -> pd.DataFrame:
+def compute_categorical_cos2(model: Model, df: pd.DataFrame, min_nf: int) -> pd.DataFrame:
     """Compute the cos2 statistic for categorical variables.
 
     Parameters
@@ -405,7 +396,7 @@ def compute_categorical_cos2(
     min_nf :
         number of degrees of freedom
 
-    Returns
+    Returns:
     -------
         dataframe of categorical cos2
     """
@@ -472,7 +463,7 @@ def compute_continuous_cos2(
 
 def _compute_svd(
     model: Model, weighted: NDArray[np.float64], min_nf: int
-) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     U, s, V = get_svd(weighted.T, svd_flip=False)
 
     # Only keep first nf components
@@ -510,7 +501,7 @@ def _compute_cos2_single_category(
     coords :
         projections of the data used to created the axes
 
-    Returns
+    Returns:
     -------
         cos2 of the single category
     """
@@ -523,9 +514,7 @@ def _compute_cos2_single_category(
         for i, col in enumerate(single_category_df.columns):
             dummy_values = single_category_df[col].values
             if model.prop is not None:
-                p_values[i] = (dummy_values * weighted_coord).sum() ** 2 / model.prop[
-                    col
-                ]
+                p_values[i] = (dummy_values * weighted_coord).sum() ** 2 / model.prop[col]
 
         p = p_values.sum()
         cos2.append(p)
@@ -537,9 +526,7 @@ def _compute_cos2_single_category(
     summed_weights_without_zeros = np.where(
         summed_weights <= sys.float_info.min, 1, summed_weights
     )
-    single_category_cos2: NDArray[np.float64] = (
-        np.array(cos2) / summed_weights_without_zeros
-    )
+    single_category_cos2: NDArray[np.float64] = np.array(cos2) / summed_weights_without_zeros
     return single_category_cos2
 
 
@@ -558,9 +545,7 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     """
     # Extract the necessary components from the model
     if model.s is None or model.mean is None or model.std is None or model.prop is None:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
+        raise ValueError("Model has not been fitted. Call fit() to create a Model instance.")
     U = model.U
     S = model.s
     V = model.V
@@ -604,9 +589,7 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
         prefix = var + DUMMIES_SEPARATOR
         dummies = [col for col in df_reconstructed.columns if col.startswith(prefix)]
         df_reconstructed[var] = (
-            df_reconstructed[dummies]
-            .idxmax(axis=1)
-            .apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
+            df_reconstructed[dummies].idxmax(axis=1).apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
         )
         df_reconstructed.drop(columns=dummies, inplace=True)
 

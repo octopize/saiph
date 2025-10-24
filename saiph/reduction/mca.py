@@ -1,6 +1,7 @@
 """MCA projection module."""
+
 from itertools import chain, repeat
-from typing import Any, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -25,9 +26,9 @@ from saiph.reduction.utils.svd import get_svd
 
 def fit(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
-    seed: Optional[Union[int, np.random.Generator]] = None,
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
+    seed: int | np.random.Generator | None = None,
 ) -> Model:
     """Fit a MCA model on data.
 
@@ -43,9 +44,7 @@ def fit(
     nf = nf or min(pd.get_dummies(df).shape)
 
     _col_weights = col_weights if col_weights is not None else np.ones(df.shape[1])
-    random_gen = (
-        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-    )
+    random_gen = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
 
     modalities_types = get_modalities_types(df)
 
@@ -59,7 +58,7 @@ def fit(
     col_weights_dummies: NDArray[Any] = np.array(
         list(
             chain.from_iterable(
-                repeat(i, j) for i, j in zip(_col_weights, modality_numbers)
+                repeat(i, j) for i, j in zip(_col_weights, modality_numbers, strict=False)
             )
         )
     )
@@ -79,9 +78,7 @@ def fit(
     Z = ((T * col_weights_dummies).T * row_weights).T
     U, S, Vt = get_svd(Z, nf=nf, random_gen=random_gen)
 
-    explained_var, explained_var_ratio = get_explained_variance(
-        S, df_dummies.shape[0], nf
-    )
+    explained_var, explained_var_ratio = get_explained_variance(S, df_dummies.shape[0], nf)
 
     # Retain only the nf higher singular values
     U = U[:, :nf]
@@ -119,10 +116,10 @@ def fit(
 
 def fit_transform(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
-    seed: Optional[Union[int, np.random.Generator]] = None,
-) -> Tuple[pd.DataFrame, Model]:
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
+    seed: int | np.random.Generator | None = None,
+) -> tuple[pd.DataFrame, Model]:
     """Fit a MCA model on data and return transformed data.
 
     Parameters:
@@ -136,9 +133,7 @@ def fit_transform(
         coord: The transformed data of size (n, min(n,p))
         or (n, nf) if nf is specified.
     """
-    random_gen = (
-        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-    )
+    random_gen = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
     model = fit(df, nf, col_weights, seed=random_gen)
     coord = transform(df, model)
     return coord, model
@@ -146,7 +141,7 @@ def fit_transform(
 
 def center(
     df: pd.DataFrame,
-) -> Tuple[pd.DataFrame, NDArray[Any], NDArray[Any], NDArray[Any]]:
+) -> tuple[pd.DataFrame, NDArray[Any], NDArray[Any], NDArray[Any]]:
     """Center data and compute modalities.
 
     Used as internal function during fit.
@@ -206,7 +201,7 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
 
 def _diag_compute(
     df_scale: pd.DataFrame, r: NDArray[Any], c: NDArray[Any]
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Compute diagonal matrices and scale data."""
     eps: np.float64 = np.finfo(float).eps
     if df_scale.shape[0] >= 10000:
@@ -251,9 +246,7 @@ def get_variable_contributions(
         contributions
     """
     if not model.is_fitted:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
+        raise ValueError("Model has not been fitted. Call fit() to create a Model instance.")
     df = pd.get_dummies(
         df.astype("category"),
         prefix_sep=DUMMIES_SEPARATOR,
@@ -295,7 +288,7 @@ def get_variable_contributions(
 
 def _compute_svd(
     weighted: pd.DataFrame, min_nf: int, col_sum: pd.DataFrame
-) -> Tuple[pd.DataFrame, NDArray[np.float64]]:
+) -> tuple[pd.DataFrame, NDArray[np.float64]]:
     U, s, V = get_svd(weighted.T, svd_flip=False)
 
     U = U[:, :min_nf]
@@ -346,9 +339,7 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     """
     # Extract the necessary components from the model
     if model.s is None:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
+        raise ValueError("Model has not been fitted. Call fit() to create a Model instance.")
     U = model.U
     S = model.s
     V = model.V
@@ -372,9 +363,7 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
         prefix = var + DUMMIES_SEPARATOR
         dummies = [col for col in df_reconstructed.columns if col.startswith(prefix)]
         df_reconstructed[var] = (
-            df_reconstructed[dummies]
-            .idxmax(axis=1)
-            .apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
+            df_reconstructed[dummies].idxmax(axis=1).apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
         )
         df_reconstructed.drop(columns=dummies, inplace=True)
 

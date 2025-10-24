@@ -1,9 +1,7 @@
-from typing import List, Optional
-
 UNITS = ["bytes", "kB", "MB", "GB", "TB", "PB", "EB"]
 
 
-def get_readable_size(size: int, units: Optional[List[str]] = None) -> str:
+def get_readable_size(size: int, units: list[str] | None = None) -> str:
     """Return a human readable string representation of bytes."""
     units = units or UNITS
     return (

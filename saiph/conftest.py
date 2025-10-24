@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -127,7 +127,7 @@ def wbcd_supplemental_coord_mixed() -> pd.DataFrame:
 
 
 @pytest.fixture
-def mapping() -> Dict[str, List[str]]:
+def mapping() -> dict[str, list[str]]:
     sep = DUMMIES_SEPARATOR
     return {
         "tool": [f"tool{sep}hammer", f"tool{sep}wrench"],

@@ -1,62 +1,52 @@
-[tool.poetry]
+[project]
 name = "saiph"
 # Also modify in saiph/__init__.py
 version = "2.0.3"
 description = "A projection package"
-authors = ["Octopize <help@octopize.io>"]
-license = "Apache-2.0"
+authors = [
+    {name = "Octopize", email = "help@octopize.io"}
+]
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10,<=3.12"
+dependencies = [
+    "pandas>=2.2.2",
+    "numpy>=1,<2",
+    "scipy>=1.14,<2",
+    "scikit-learn>=1.0,<2",
+    "toolz>=1,<2",
+    "pydantic>=2,<3",
+    "msgspec>=0.18.5,<0.19",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10,<4.0"
-pandas = ">=2.2.2"
-numpy = "^1"
-scipy = "^1.14"
-scikit-learn = "^1.0"
-toolz = "1.*"
-matplotlib = {version = "^3.5.2", optional = true}
-pydantic = "^2"
-msgspec = "^0.18.5"
+[project.optional-dependencies]
+matplotlib = ["matplotlib>=3.5.2,<4"]
 
-[tool.poetry.extras]
-matplotlib = ["matplotlib"]
-
-
-[tool.poetry.group.dev.dependencies]
-ipykernel = "^6.4"
-jupyter = "^1.0"
-isort = "^5.9"
-pytest = "^8.2.2"
-pydocstyle = "^6.1"
-mypy = "^1.10.1"
-black = {extras = ["jupyter"], version = "^22.1.0"}
-flit = "^3.4.0"
-flake8 = "^7.1.0"
-flake8-docstrings = "^1.6.0"
-flake8-black = "^0.3.2"
-flake8-isort = "^6.1.1"
-flake8-tidy-imports = "^4.6.0"
-flake8-eradicate = "^1.2.0"
-flake8-printf-formatting = "^1.1.2"
-flake8-use-fstring = "^1.3"
-flake8-print = "^4.0.0"
-py-spy = "^0.3.11"
-typer = "^0.4.1"
-Faker = "^13.6.0"
-tqdm = "^4.64.0"
-pytest-benchmark = "^4.0.0"
-doubles = "^1.5.3"
-ipdb = "^0.13.9"
-bandit = "^1.7.4"
-
-[tool.poetry.group.doc.dependencies]
-Sphinx = "<6"
-sphinx-rtd-theme = "^1.1.1"
-sphinx-gallery = "^0.11.1"
-matplotlib = "^3.5.2"
+[dependency-groups]
+dev = [
+    "ipykernel>=6.4,<7",
+    "jupyter>=1.0,<2",
+    "pytest>=8.2.2,<9",
+    "mypy>=1.10.1,<2",
+    "ruff>=0.8.0,<0.9",
+    "flit>=3.4.0,<4",
+    "py-spy>=0.3.11,<0.4",
+    "typer>=0.4.1,<0.5",
+    "Faker>=13.6.0,<14",
+    "tqdm>=4.64.0,<5",
+    "pytest-benchmark>=4.0.0,<5",
+    "doubles>=1.5.3,<2",
+    "ipdb>=0.13.9,<0.14",
+]
+doc = [
+    "Sphinx<6",
+    "sphinx-rtd-theme>=1.1.1,<2",
+    "sphinx-gallery>=0.11.1,<0.12",
+    "matplotlib>=3.5.2,<4",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 filterwarnings = [
@@ -77,10 +67,6 @@ exclude_lines = [
     "nocov",
     "if TYPE_CHECKING:",
 ]
-
-[tool.isort]
-# https://pycqa.github.io/isort/docs/configuration/black_compatibility.html
-profile = "black"
 
 [tool.coverage.run]
 branch = true

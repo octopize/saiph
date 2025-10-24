@@ -33,7 +33,7 @@ def main(sparse: bool) -> None:
 
     typer.echo(f"after fit, took {(end-start):.3} sec")
 
-    webbrowser.open(f"file://{str(full_path)}")
+    webbrowser.open(f"file://{full_path!s}")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 """PCA projection module."""
+
 import sys
-from typing import Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -17,9 +17,9 @@ from saiph.reduction.utils.svd import get_svd
 
 def fit(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
-    seed: Optional[Union[int, np.random.Generator]] = None,
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
+    seed: int | np.random.Generator | None = None,
 ) -> Model:
     """Fit a PCA model on data.
 
@@ -34,9 +34,7 @@ def fit(
     """
     nf = nf or min(df.shape)
     _col_weights = col_weights if col_weights is not None else np.ones(df.shape[1])
-    random_gen = (
-        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-    )
+    random_gen = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
 
     # Set row weights
     row_w = get_uniform_row_weights(len(df))
@@ -86,10 +84,10 @@ def fit(
 
 def fit_transform(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
-    seed: Optional[int] = None,
-) -> Tuple[pd.DataFrame, Model]:
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
+    seed: int | None = None,
+) -> tuple[pd.DataFrame, Model]:
     """Fit a PCA model on data and return transformed data.
 
     Parameters:
@@ -108,7 +106,7 @@ def fit_transform(
     return coord, model
 
 
-def center(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
+def center(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, pd.Series]:
     """Center data and standardize it if scale. Compute mean and std values.
 
     Used as internal function during fit.
@@ -196,9 +194,7 @@ def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
     """
     # Extract the necessary components from the model
     if model.s is None or model.mean is None or model.std is None:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
+        raise ValueError("Model has not been fitted. Call fit() to create a Model instance.")
     U = model.U
     S = model.s
     V = model.V

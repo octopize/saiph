@@ -1,6 +1,7 @@
 """Inverse transform coordinates."""
+
 import ast
-from typing import Dict, List, cast
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -77,9 +78,7 @@ def inverse_transform(
         # As we are not scaling MCA such as FAMD categorical, the descale is
         # not the same. Doing the same as FAMD is incoherent.
         inverse_data = coord @ (model.D_c @ model.V.T).T
-        inverse_coord_quali = inverse_data.set_axis(
-            model.dummy_categorical, axis="columns"
-        )
+        inverse_coord_quali = inverse_data.set_axis(model.dummy_categorical, axis="columns")
 
         descaled_values_quali = inverse_coord_quali.divide(model.dummies_col_prop)
         inverse = undummify(
@@ -106,7 +105,7 @@ def inverse_transform(
 
 def undummify(
     dummy_df: pd.DataFrame,
-    dummies_mapping: Dict[str, List[str]],
+    dummies_mapping: dict[str, list[str]],
     *,
     use_max_modalities: bool = True,
     random_gen: np.random.Generator = np.random.default_rng(),
@@ -146,9 +145,7 @@ def undummify(
     return inverse_quali
 
 
-def get_random_weighted_columns(
-    df: pd.DataFrame, random_gen: np.random.Generator
-) -> pd.Series:
+def get_random_weighted_columns(df: pd.DataFrame, random_gen: np.random.Generator) -> pd.Series:
     """Randomly select column labels weighted by proportions.
 
     Parameters:

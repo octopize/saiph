@@ -5,7 +5,7 @@ import os
 import random
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import typer
 from faker import Faker
@@ -27,13 +27,11 @@ CITIES = [
 CITIES_WEIGHTS = (20, 10, 50, 10, 4, 1, 1, 1, 1, 2)
 
 
-def eprint(*args: Any, **kwargs: Dict[str, Any]) -> None:
-    print(*args, file=sys.stderr, **kwargs)  # type: ignore
+def eprint(*args: Any, **kwargs: dict[str, Any]) -> None:
+    print(*args, file=sys.stderr, **kwargs)  # noqa: T201 # type: ignore
 
 
-def human_size(
-    size: int, units: List[str] = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB"]
-) -> str:
+def human_size(size: int, units: list[str] = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB"]) -> str:
     """Return a human readable string representation of bytes."""
     return (
         str(size) + units[0]
@@ -43,10 +41,10 @@ def human_size(
 
 
 def get_city() -> str:
-    return random.choices(CITIES, weights=CITIES_WEIGHTS)[0]  # nosec
+    return random.choices(CITIES, weights=CITIES_WEIGHTS)[0]  # noqa: S311
 
 
-def get_row(dimension_count: int = 3) -> Dict[str, Any]:
+def get_row(dimension_count: int = 3) -> dict[str, Any]:
     r = {
         "latitude": fake.latitude(),
         "longitude": fake.longitude(),
@@ -66,9 +64,7 @@ def main(
     eprint(f"generating {row_count} fake rows")
 
     if dimension_count < 3:
-        raise ValueError(
-            f"Expected dimension_count >= 3, got {dimension_count} instead"
-        )
+        raise ValueError(f"Expected dimension_count >= 3, got {dimension_count} instead")
 
     header = list(get_row(dimension_count).keys())
     with open(outfile, "w") as f:

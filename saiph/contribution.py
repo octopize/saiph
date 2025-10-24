@@ -1,5 +1,4 @@
 import sys
-from typing import Optional
 
 import pandas as pd
 
@@ -8,8 +7,8 @@ def filter_variable_contribution(
     contributions: pd.DataFrame,
     dim: int = 1,
     *,
-    max_var: Optional[int] = 10,
-    min_contrib: Optional[float] = 0.1,
+    max_var: int | None = 10,
+    min_contrib: float | None = 0.1,
 ) -> pd.Series:
     """Get sorted and filtered variable contributions for a given dimension.
 

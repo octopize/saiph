@@ -1,6 +1,7 @@
 """FAMD projection module."""
+
 import sys
-from typing import Any, List, Optional, Tuple, Union, cast
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -16,9 +17,9 @@ from saiph.reduction.famd import transform as transform_famd
 
 def fit(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
-    seed: Optional[Union[int, np.random.Generator]] = None,
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
+    seed: int | np.random.Generator | None = None,
 ) -> Model:
     """Fit a FAMD model on sparse data.
 
@@ -31,18 +32,16 @@ def fit(
     Returns:
         model: The model for transforming new data.
     """
-    random_gen = (
-        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-    )
+    random_gen = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
     return fit_famd(df, nf, col_weights, center=center_sparse, seed=random_gen)
 
 
 def fit_transform(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[NDArray[np.float64]] = None,
-    seed: Optional[Union[int, np.random.Generator]] = None,
-) -> Tuple[pd.DataFrame, Model]:
+    nf: int | None = None,
+    col_weights: NDArray[np.float64] | None = None,
+    seed: int | np.random.Generator | None = None,
+) -> tuple[pd.DataFrame, Model]:
     """Fit a FAMD model on data and return transformed data.
 
     Parameters:
@@ -55,9 +54,7 @@ def fit_transform(
         coord: The transformed data.
         model: The model for transforming new data.
     """
-    random_gen = (
-        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-    )
+    random_gen = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
 
     model = fit(df, nf, col_weights, seed=random_gen)
     coord = transform(df, model)
@@ -65,8 +62,8 @@ def fit_transform(
 
 
 def center_sparse(
-    df: pd.DataFrame, quanti: List[str], quali: List[str]
-) -> Tuple[
+    df: pd.DataFrame, quanti: list[str], quali: list[str]
+) -> tuple[
     scipy.sparse.spmatrix,
     NDArray[np.float64],
     NDArray[np.float64],

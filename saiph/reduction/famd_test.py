@@ -55,7 +55,7 @@ def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
     assert_allclose(model.s, expected_s, atol=0.01)
     assert_allclose(model.U, expected_u, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
-    assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),
+    (assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),)
     assert_allclose(model.variable_coord, model.V.T)
     assert np.array_equal(
         model._modalities,  # type: ignore
@@ -204,9 +204,7 @@ def test_get_variable_contributions(mixed_df: pd.DataFrame) -> None:
         columns=get_projected_column_names(3),
     )
 
-    assert_frame_equal(
-        contributions, expected_contributions, check_exact=False, atol=0.0001
-    )
+    assert_frame_equal(contributions, expected_contributions, check_exact=False, atol=0.0001)
     assert_frame_equal(cos2, expected_cos2, check_exact=False, atol=0.0001)
 
 

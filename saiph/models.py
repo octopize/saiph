@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -9,7 +8,7 @@ from numpy.typing import NDArray
 @dataclass
 class Model:
     # List of categorical columns transformed into dummies using pd.get_dummies
-    dummy_categorical: List[str]
+    dummy_categorical: list[str]
 
     # List of original columns with dtypes generated with df.dtypes.
     # Calling .index refers to column names,
@@ -17,9 +16,9 @@ class Model:
     original_dtypes: pd.Series
 
     # Original categorical column names
-    original_categorical: List[str]
+    original_categorical: list[str]
     # Original continuous column names
-    original_continuous: List[str]
+    original_continuous: list[str]
 
     # Number of components kept.
     nf: int
@@ -37,35 +36,35 @@ class Model:
     # Orthogonal matrix with right singular vectors as rows.
     V: NDArray[np.float64]
     # Modality type of the first individuals
-    modalities_types: Dict[str, str]
+    modalities_types: dict[str, str]
     # Orthogonal matrix with left singular vectors as columns.
     U: NDArray[np.float64]
     # Singular values
-    s: Optional[NDArray[np.float64]] = None
+    s: NDArray[np.float64] | None = None
 
     # Mean of the original data. Calculated while centering.
-    mean: Optional[pd.Series] = None
+    mean: pd.Series | None = None
     # Standard deviation of the original data. Calculated while scaling.
-    std: Optional[pd.Series] = None
+    std: pd.Series | None = None
 
     # Modality proportions of categorical variables.
-    prop: Optional[pd.Series] = None  # FAMD only
+    prop: pd.Series | None = None  # FAMD only
     # Modalities for the MCA/FAMD.
-    _modalities: Optional[NDArray[np.bytes_]] = None
+    _modalities: NDArray[np.bytes_] | None = None
     # Diagonal matrix containing sums along columns of the scaled data as diagonals.
-    D_c: Optional[NDArray[np.float64]] = None
+    D_c: NDArray[np.float64] | None = None
     # Type of dimension reduction that was performed.
-    type: Optional[str] = None
+    type: str | None = None
 
     is_fitted: bool = False
 
     # Correlation between the axis and the variables.
-    correlations: Optional[pd.DataFrame] = None
+    correlations: pd.DataFrame | None = None
     # Contributions for each variable.
-    contributions: Optional[pd.DataFrame] = None
+    contributions: pd.DataFrame | None = None
     # Cos2 for each variable.
-    cos2: Optional[pd.DataFrame] = None
+    cos2: pd.DataFrame | None = None
     # Proportion of individuals taking each modality.
-    dummies_col_prop: Optional[NDArray[np.float64]] = None  # MCA only
+    dummies_col_prop: NDArray[np.float64] | None = None  # MCA only
 
-    seed: Optional[int] = None
+    seed: int | None = None

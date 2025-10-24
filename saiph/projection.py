@@ -1,5 +1,6 @@
 """Project any dataframe and compute stats."""
-from typing import Dict, Optional, Tuple, Union, cast
+
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -13,10 +14,10 @@ from saiph.reduction.utils.common import get_projected_column_names
 
 def fit(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[Dict[str, Union[int, float]]] = None,
+    nf: int | None = None,
+    col_weights: dict[str, int | float] | None = None,
     sparse: bool = False,
-    seed: Optional[Union[int, np.random.Generator]] = None,
+    seed: int | np.random.Generator | None = None,
 ) -> Model:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
@@ -39,9 +40,7 @@ def fit(
         )
 
     if col_weights is not None:
-        unknown_variables = list(
-            filter(lambda c: c not in df.columns, col_weights.keys())
-        )
+        unknown_variables = list(filter(lambda c: c not in df.columns, col_weights.keys()))
         if unknown_variables:
             raise InvalidParameterException(
                 "Expected valid variable name(s) in 'col_weights', "
@@ -50,9 +49,7 @@ def fit(
 
     _nf = nf if nf else min(pd.get_dummies(df, prefix_sep=DUMMIES_SEPARATOR).shape)
     # If seed is None or int, we fit a Generator, else we use the one provided.
-    random_gen = (
-        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-    )
+    random_gen = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
 
     # Convert col weights from dict to ndarray
     _col_weights: NDArray[np.float64] = np.ones(df.shape[1])
@@ -89,10 +86,10 @@ def fit(
 
 def fit_transform(
     df: pd.DataFrame,
-    nf: Optional[int] = None,
-    col_weights: Optional[Dict[str, Union[int, float]]] = None,
-    seed: Optional[Union[int, np.random.Generator]] = None,
-) -> Tuple[pd.DataFrame, Model]:
+    nf: int | None = None,
+    col_weights: dict[str, int | float] | None = None,
+    seed: int | np.random.Generator | None = None,
+) -> tuple[pd.DataFrame, Model]:
     """Fit a PCA, MCA or FAMD model on data, imputing what has to be used.
 
     Datetimes must be stored as numbers of seconds since epoch.
@@ -108,9 +105,7 @@ def fit_transform(
         model: The model for transforming new data.
     """
     # If seed is None or int, we fit a Generator, else we use the one provided.
-    random_gen = (
-        seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-    )
+    random_gen = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
     model = fit(df, nf=nf, col_weights=col_weights, seed=random_gen)
     coord = transform(df, model)
     return coord, model
@@ -130,19 +125,13 @@ def stats(model: Model, df: pd.DataFrame, explode: bool = False) -> Model:
         model: model populated with contribution.
     """
     if not model.is_fitted:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
+        raise ValueError("Model has not been fitted. Call fit() to create a Model instance.")
 
     model.correlations = get_variable_correlation(model, df)
-    model.variable_coord.columns = get_projected_column_names(
-        model.variable_coord.shape[1]
-    )
+    model.variable_coord.columns = get_projected_column_names(model.variable_coord.shape[1])
     model.variable_coord.index = list(model.correlations.index)
 
-    has_some_quanti = (
-        model.original_continuous is not None and len(model.original_continuous) != 0
-    )
+    has_some_quanti = model.original_continuous is not None and len(model.original_continuous) != 0
     has_some_quali = (
         model.original_categorical is not None and len(model.original_categorical) != 0
     )
@@ -173,13 +162,9 @@ def get_variable_contributions(
         contributions
     """
     if not model.is_fitted:
-        raise ValueError(
-            "Model has not been fitted. Call fit() to create a Model instance."
-        )
+        raise ValueError("Model has not been fitted. Call fit() to create a Model instance.")
 
-    has_some_quanti = (
-        model.original_continuous is not None and len(model.original_continuous) != 0
-    )
+    has_some_quanti = model.original_continuous is not None and len(model.original_continuous) != 0
     has_some_quali = (
         model.original_categorical is not None and len(model.original_categorical) != 0
     )
@@ -220,8 +205,7 @@ def transform(df: pd.DataFrame, model: Model, *, sparse: bool = False) -> pd.Dat
     if sorted(df_columns) != sorted(model_columns):
         difference = set(df_columns) - set(model_columns)
         raise ColumnsNotFoundError(
-            "Expected columns to be the same as the ones used in the model."
-            f"Got {difference}."
+            "Expected columns to be the same as the ones used in the model." f"Got {difference}."
         )
 
     if len(model.original_categorical) == 0:

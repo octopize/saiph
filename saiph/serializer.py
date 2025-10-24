@@ -1,7 +1,7 @@
 # type: ignore
 from dataclasses import dataclass
 from io import StringIO
-from typing import Any, Type, Union
+from typing import Any
 
 import msgspec
 import numpy as np
@@ -29,10 +29,8 @@ class ModelJSONSerializer:
         return encoded_model
 
     @classmethod
-    def loads(self, raw_model: Union[str, bytes]) -> Model:
-        decoder = msgspec.json.Decoder(
-            SerializedModel, dec_hook=numpy_pandas_json_decoding_hook
-        )
+    def loads(self, raw_model: str | bytes) -> Model:
+        decoder = msgspec.json.Decoder(SerializedModel, dec_hook=numpy_pandas_json_decoding_hook)
         serialized_model = decoder.decode(raw_model)
         version = serialized_model.__version__
         major_version = version.split(".")[0]
@@ -77,9 +75,7 @@ def numpy_pandas_json_encoding_hook(obj: Any) -> Any:
         for col in obj.columns:
             non_null_series = obj[col].dropna()
             value_types[col] = (
-                type(non_null_series.values[0]).__name__
-                if not non_null_series.empty
-                else "float"
+                type(non_null_series.values[0]).__name__ if not non_null_series.empty else "float"
             )
         data = obj.to_json(orient="index", default_handler=str)
 
@@ -88,9 +84,7 @@ def numpy_pandas_json_encoding_hook(obj: Any) -> Any:
         # If we don't it remains at integer when decoding and using
         # an index or column with `'0'`
         index_type = "str" if str(obj.index.dtype) == "object" else str(obj.index.dtype)
-        columns_type = (
-            "str" if str(obj.columns.dtype) == "object" else str(obj.columns.dtype)
-        )
+        columns_type = "str" if str(obj.columns.dtype) == "object" else str(obj.columns.dtype)
 
         return dict(
             __frame__=data,
@@ -103,7 +97,7 @@ def numpy_pandas_json_encoding_hook(obj: Any) -> Any:
     raise NotImplementedError(f"Objects of type {type(obj)} cannot be encoded.")
 
 
-def numpy_pandas_json_decoding_hook(type: Type, json_dict: Any) -> Any:
+def numpy_pandas_json_decoding_hook(type: type, json_dict: Any) -> Any:
     """Decode numpy arrays, pandas dataframes, and pandas series, or objects containing them.
 
     Parameters:

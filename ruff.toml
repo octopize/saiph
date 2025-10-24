@@ -1,0 +1,74 @@
+line-length = 99
+target-version = "py310"
+
+[lint]
+select = [
+    # https://docs.astral.sh/ruff/rules/
+    "I",
+    "F",
+    "S",
+    "E",
+    "W",
+    "N",
+    # "UP",
+    "ASYNC",
+    "BLE",
+    # "FBT",
+    # "B",
+    # "A",
+    # "COM",
+    # "C4",
+    # "DTZ",
+    # "ISC",
+    # "PIE",
+    "T20",
+    # "PT",
+    # "SLF",
+    # "SIM",
+    # "TC",
+    # "ARG",
+    # "ERA",
+    # "FAST",
+    # "FURB",
+    # "RUF",
+    # "DOC",
+    # "TRY",
+    # "PD",
+    # "NPY",
+    # "PLR",
+    # "PLW",
+    # "INP",
+    # "ANN",
+    # "D"
+]
+
+ignore = [
+    # -- Ignore missing docstrings - START
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D106",
+    "D107",
+    # --  Ignore missing docstrings - END
+    "ANN401",
+    "PD901",
+    "N802",
+    "N803",
+    "N804",
+    "N806",
+    "N818",
+]
+
+
+
+[lint.pycodestyle]
+ignore-overlong-task-comments = true
+
+[lint.per-file-ignores]
+# Prevent bandit from checking tests
+"**/tests/*.py" = ["S"]
+"**/*_test.py" = ["S"]
+"**/conftest.py" = ["S"]

@@ -5,7 +5,7 @@
 Depending on the version bump you want to do, you'll run
 
 ```bash
-poetry run python release.py --bump-type {patch, minor, major} # choose one
+uv run python release.py --bump-type {patch, minor, major} # choose one
 ```
 
 This will bump the version, commit it, and generate a tag and push it.

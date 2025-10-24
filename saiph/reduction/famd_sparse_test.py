@@ -51,7 +51,7 @@ def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
     assert_allclose(model.s, expected_s, atol=0.01)
     assert_allclose(np.abs(model.U), np.abs(expected_u), atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
-    assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),
+    (assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),)
     assert_allclose(model.variable_coord, model.V.T)
     assert np.array_equal(
         model._modalities,  # type: ignore
@@ -135,9 +135,7 @@ def test_scaler_pca_famd(mixed_df2: pd.DataFrame) -> None:
     _, model_pca = fit_pca(original_df[model.original_continuous])
     df_pca = scaler_pca(model_pca, original_df)
 
-    assert_array_equal(
-        df_famd.todense()[:, [0, 1]], df_pca[model.original_continuous].to_numpy()
-    )
+    assert_array_equal(df_famd.todense()[:, [0, 1]], df_pca[model.original_continuous].to_numpy())
 
 
 def test_center_pca_famd(mixed_df2: pd.DataFrame) -> None:
@@ -147,9 +145,7 @@ def test_center_pca_famd(mixed_df2: pd.DataFrame) -> None:
     _, model = fit_transform(original_df)
     continuous = model.original_continuous
     categorical = model.original_categorical
-    df_famd, mean1, std1, _, _ = center_sparse(
-        original_df, quali=categorical, quanti=continuous
-    )
+    df_famd, mean1, std1, _, _ = center_sparse(original_df, quali=categorical, quanti=continuous)
 
     df_pca, mean2, std2 = center_pca(original_df[continuous])
 

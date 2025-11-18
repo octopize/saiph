@@ -13,6 +13,7 @@ app = typer.Typer()
 
 PYPROJECT_TOML = Path("pyproject.toml")
 INIT_PY = Path("saiph/__init__.py")
+UV_LOCK = Path("uv.lock")
 
 TAG_PREFIX = "saiph-v"
 
@@ -109,6 +110,10 @@ def bump_version(bump_type: BumpType) -> None:
     bump_version_in_file(INIT_PY, key="__version__", bump_type=bump_type)
 
 
+def run_uv_lock():
+    subprocess.run(["uv", "lock"]) # noqa: S603, S607
+
+
 def commit_and_tag() -> None:
     match = get_version_from_file(PYPROJECT_TOML)
     if not match:
@@ -117,7 +122,7 @@ def commit_and_tag() -> None:
     new_version = ".".join(match.groups())
     tag = TAG_PREFIX + new_version
 
-    files_to_add = [str(PYPROJECT_TOML), str(INIT_PY)]
+    files_to_add = [str(PYPROJECT_TOML), str(INIT_PY), str(UV_LOCK)]
     DoCommand: TypeAlias = list[str]
     UndoCommand: TypeAlias = list[str]
     commands: list[tuple[DoCommand, UndoCommand]] = [
@@ -209,6 +214,7 @@ def release(
 
     check_preconditions()
     bump_version(bump_type)
+    run_uv_lock()
     commit_and_tag()
     push()
 

@@ -44,6 +44,9 @@ doc = [
     "matplotlib>=3.5.2,<4",
 ]
 
+[tool.hatchling.build.targets.wheel]
+packages = ["saiph"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

@@ -57,15 +57,15 @@ from saiph.reduction import pca, mca, famd
 
 # For numerical data - PCA
 model = pca.fit(df, nf=3)
-coordinates = pca.transform(model, df)
+coordinates = pca.transform(df, model)
 
 # For categorical data - MCA
 model = mca.fit(df, nf=3)
-coordinates = mca.transform(model, df)
+coordinates = mca.transform(df, model)
 
 # For mixed data - FAMD
 model = famd.fit(df, nf=3)
-coordinates = famd.transform(model, df)
+coordinates = famd.transform(df, model)
 ```
 
 ## API Overview
@@ -73,7 +73,7 @@ coordinates = famd.transform(model, df)
 ### Main Functions
 
 - `saiph.fit(df, nf=None, col_weights=None)`: Fit a projection model
-- `saiph.transform(model, df)`: Transform data using a fitted model
+- `saiph.transform(df, model)`: Transform data using a fitted model
 - `saiph.fit_transform(df, nf=None, col_weights=None)`: Fit and transform in one step
 - `saiph.stats(model, df)`: Compute statistical metrics (cos², contributions, explained variance)
 - `saiph.inverse_transform(model, coordinates)`: Project back to original space

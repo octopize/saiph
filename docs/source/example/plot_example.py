@@ -134,7 +134,7 @@ saiph.visualization.plot_explained_var(model)
 #
 # Here we demonstrate by transforming the first 10 rows:
 new_data = df.head(10)
-new_coords = saiph.transform(model, new_data)
+new_coords = saiph.transform(new_data, model)
 print("\nNew data projected coordinates:")
 print(new_coords)
 

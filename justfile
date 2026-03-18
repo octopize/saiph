@@ -6,7 +6,7 @@ default:
 
 # Install the stack
 install:
-    pre-commit install --hook-type commit-msg
+    uvx pre-commit install --hook-type commit-msg
     uv sync --extra matplotlib --group dev --group doc
 
 # Prepare a new release of saiph

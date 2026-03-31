@@ -132,9 +132,13 @@ def scaler_sparse(model: Model, df: pd.DataFrame) -> pd.DataFrame:
         df[model.original_categorical].astype("category"), prefix_sep=DUMMIES_SEPARATOR
     )
     if model._modalities is not None:
-        for mod in model._modalities:
-            if mod not in df_quali:
-                df_quali[mod] = 0
+        missing_cols = [mod for mod in model._modalities if mod not in df_quali]
+        if missing_cols:
+            # Create a DataFrame with all missing columns at once to avoid performance warning
+            missing_df = pd.DataFrame(
+                0, index=df_quali.index, columns=missing_cols, dtype=np.uint8
+            )
+            df_quali = pd.concat([df_quali, missing_df], axis=1)
     df_quali = df_quali[model._modalities]
     df_quali = csr_matrix(df_quali)
     df_quali /= np.sqrt(model.prop)

@@ -258,9 +258,13 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     # Here we add a column with 0 if the modality is not present in the dataset but
     # was used to train the saiph model
     if model._modalities is not None:
-        for mod in model._modalities:
-            if mod not in df_quali:
-                df_quali[mod] = 0
+        missing_cols = [mod for mod in model._modalities if mod not in df_quali]
+        if missing_cols:
+            # Create a DataFrame with all missing columns at once to avoid performance warning
+            missing_df = pd.DataFrame(
+                0, index=df_quali.index, columns=missing_cols, dtype=np.uint8
+            )
+            df_quali = pd.concat([df_quali, missing_df], axis=1)
     df_quali = df_quali[model._modalities]
     df_quali = (df_quali - model.prop) / np.sqrt(model.prop)
 

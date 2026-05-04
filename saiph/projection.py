@@ -205,7 +205,7 @@ def transform(df: pd.DataFrame, model: Model, *, sparse: bool = False) -> pd.Dat
     if sorted(df_columns) != sorted(model_columns):
         difference = set(df_columns) - set(model_columns)
         raise ColumnsNotFoundError(
-            "Expected columns to be the same as the ones used in the model." f"Got {difference}."
+            f"Expected columns to be the same as the ones used in the model.Got {difference}."
         )
 
     if len(model.original_categorical) == 0:

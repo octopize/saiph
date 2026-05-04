@@ -54,7 +54,6 @@ ignore = [
     "D107",
     # --  Ignore missing docstrings - END
     "ANN401",
-    "PD901",
     "N802",
     "N803",
     "N804",

@@ -31,7 +31,7 @@ def main(sparse: bool) -> None:
     profile(lambda: fit(df, nf=5, sparse=sparse), filename)
     end = time.perf_counter()
 
-    typer.echo(f"after fit, took {(end-start):.3} sec")
+    typer.echo(f"after fit, took {(end - start):.3} sec")
 
     webbrowser.open(f"file://{full_path!s}")
 

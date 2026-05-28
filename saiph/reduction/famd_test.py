@@ -290,3 +290,111 @@ def test_reconstructed_df_from_weighted_model_equals_df() -> None:
     model = fit(df, col_weights=[3, 1, 1, 1, 1])  # type: ignore
     reconstructed_df = reconstruct_df_from_model(model)
     assert_frame_equal(df, reconstructed_df)
+
+
+# ---------------------------------------------------------------------------
+# Absent / novel modality tests
+# ---------------------------------------------------------------------------
+# These three tests collectively protect the behaviour of scaler() under the
+# conditions that actually occur in the avatar pipeline:
+#
+#   • Privacy metrics fit on 50 % of rows, then transform the other 50 %
+#     (→ holdout may be missing categories seen only in the training half).
+#   • Avatar data is transformed with the original model after generation
+#     (→ rare categories may be absent from the avatar batch).
+#   • Cross-table linkage transforms a child table with a parent-table model
+#     (→ child may have categories never seen in the parent).
+# ---------------------------------------------------------------------------
+
+
+def test_transform_famd_absent_categories_no_performance_warning() -> None:
+    """FAMD (mixed continuous + categorical) must not emit PerformanceWarning
+    when >100 categories are absent from the transform batch.
+
+    The existing MCA-only test covers pure-categorical input (mca.py).
+    This test covers the mixed-type path through famd.scaler, which is the
+    real-world call site in the avatar quality-metrics pipeline.
+
+    pytest is configured to turn all warnings into errors, so this test
+    currently *fails* with the fragmentation loop and will pass once the
+    loop is replaced by a single vectorised operation.
+    """
+    rng = np.random.default_rng(42)
+    n_categories = 150  # exceeds the pandas >100 block-fragmentation threshold
+    n_rows = n_categories * 4
+
+    df_train = pd.DataFrame(
+        {
+            "num": rng.normal(size=n_rows),
+            "cat": [f"val_{i}" for i in range(n_categories)] * 4,
+        }
+    )
+    _, model = fit_transform(df_train, nf=5)
+
+    # Only the first 50 categories are present → 100 of 150 are absent.
+    df_test = pd.DataFrame(
+        {
+            "num": rng.normal(size=50),
+            "cat": [f"val_{i}" for i in range(50)],
+        }
+    )
+    coord_test = transform(df_test, model)
+
+    assert coord_test.shape == (50, 5)
+
+
+def test_transform_coordinates_independent_of_batch_composition() -> None:
+    """Coordinates for a row must not change depending on which other categories
+    happen to appear in the same transform batch.
+
+    This verifies the mathematical invariant: absent categories are filled with
+    zero *before* centering and scaling, using the fitted model.prop values.
+    The result for a given row is therefore a pure function of that row’s own
+    values plus the fitted model, with no dependency on the batch.
+    """
+    rng = np.random.default_rng(0)
+    n = 30
+    df_train = pd.DataFrame(
+        {
+            "num": rng.normal(size=n),
+            "cat": rng.choice(["a", "b", "c"], n),
+        }
+    )
+    _, model = fit_transform(df_train)
+
+    # Row under test: num=1.0, cat="a"
+    # Batch A: only category "a" present — "b" and "c" are absent.
+    coords_isolated = transform(pd.DataFrame({"num": [1.0], "cat": ["a"]}), model)
+
+    # Batch B: all three categories present — the target row is still num=1.0 / cat="a".
+    coords_mixed_batch = transform(
+        pd.DataFrame({"num": [1.0, 2.0, 3.0], "cat": ["a", "b", "c"]}), model
+    ).iloc[[0]]
+
+    assert_frame_equal(
+        coords_isolated.reset_index(drop=True),
+        coords_mixed_batch.reset_index(drop=True),
+    )
+
+
+def test_transform_novel_category_not_seen_at_fit() -> None:
+    """A category value that was not present during fit must be silently ignored.
+
+    Rows containing an unknown category are treated as if all model-known dummy
+    columns for that variable are zero — i.e., the same as an absent known
+    category.  The transform must complete without error and return finite,
+    non-NaN coordinates.
+    """
+    df_train = pd.DataFrame(
+        {
+            "num": [1.0, 2.0, 3.0, 4.0],
+            "cat": ["a", "a", "b", "b"],
+        }
+    )
+    _, model = fit_transform(df_train)
+
+    df_novel = pd.DataFrame({"num": [1.5], "cat": ["unseen_value"]})
+    coord = transform(df_novel, model)
+
+    assert coord.shape == (1, model.nf)
+    assert not coord.isnull().any().any()

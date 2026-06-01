@@ -475,12 +475,12 @@ def _compute_svd(
     # FIXME: kept this here for legacy, don't know why we were doing it: U, V = V, U
 
     sign = np.sign(np.sum(U))
-    signed_U = column_multiplication(pd.DataFrame(U), sign).values
+    signed_U = column_multiplication(pd.DataFrame(U), sign).to_numpy()
 
     # Divide diagonal values by weights
     min_shape = min(signed_U.shape)
     diagonal = np.diag_indices_from(signed_U[:min_shape, :min_shape])
-    weighted_U = signed_U
+    weighted_U = signed_U.copy()
     weighted_U[diagonal] = np.true_divide(signed_U[diagonal], weights)
 
     eigenvalues = np.power(s, 2)

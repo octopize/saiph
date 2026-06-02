@@ -1,6 +1,7 @@
 """FAMD projection module."""
 
 import sys
+from collections import defaultdict
 from collections.abc import Callable
 from itertools import chain, repeat
 from typing import Any, cast
@@ -250,17 +251,30 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     df_quanti = (df_quanti - model.mean) / std_without_zeros
 
     # scale
-    df_quali = pd.get_dummies(
-        df[model.original_categorical].astype("category"),
-        prefix_sep=DUMMIES_SEPARATOR,
-        dtype=np.uint8,
-    )
-    # Here we add a column with 0 if the modality is not present in the dataset but
-    # was used to train the saiph model
+    # Attach fit-time categories to each column so that pd.get_dummies emits a
+    # column for every modality seen during fit — including those absent from
+    # this transform batch (they become all-zero columns automatically).
+    # This replaces a one-by-one loop that fragmented the DataFrame block
+    # manager and emitted a PerformanceWarning after 100+ insertions.
     if model._modalities is not None:
+        col_cats: dict[str, list[str]] = defaultdict(list)
         for mod in model._modalities:
-            if mod not in df_quali:
-                df_quali[mod] = 0
+            col, _, val = mod.partition(DUMMIES_SEPARATOR)
+            col_cats[col].append(val)
+
+        df_quali = pd.get_dummies(
+            df[model.original_categorical].assign(
+                **{col: pd.Categorical(df[col], categories=cats) for col, cats in col_cats.items()}
+            ),
+            prefix_sep=DUMMIES_SEPARATOR,
+            dtype=np.uint8,
+        )
+    else:
+        df_quali = pd.get_dummies(
+            df[model.original_categorical].astype("category"),
+            prefix_sep=DUMMIES_SEPARATOR,
+            dtype=np.uint8,
+        )
     df_quali = df_quali[model._modalities]
     df_quali = (df_quali - model.prop) / np.sqrt(model.prop)
 

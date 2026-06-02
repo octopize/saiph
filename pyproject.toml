@@ -16,6 +16,7 @@ dependencies = [
     "toolz>=1",
     "pydantic>=2",
     "msgspec>=0.19",
+    "matplotlib>=3.10.9",
 ]
 
 [project.optional-dependencies]

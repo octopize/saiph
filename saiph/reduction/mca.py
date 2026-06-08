@@ -188,9 +188,11 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
         dtype=np.uint8,
     )
     if model._modalities is not None:
-        for mod in model._modalities:
-            if mod not in df_scaled:
-                df_scaled[mod] = 0
+        missing = [mod for mod in model._modalities if mod not in df_scaled]
+        if missing:
+            # Create a DataFrame with missing columns, all zeros
+            zeros = pd.DataFrame(0, index=df_scaled.index, columns=missing)
+            df_scaled = pd.concat([df_scaled, zeros], axis=1)
     df_scaled = df_scaled[model._modalities]
 
     # scale

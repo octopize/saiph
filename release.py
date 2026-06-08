@@ -90,7 +90,7 @@ def get_version_from_file(filename: Path) -> Optional[Match]:  # type: ignore[ty
         return get_version_match(file.read(), KEY_MAPPING[filename])
 
 
-def bump_version(bump_type: BumpType) -> None:
+def bump_version(bump_type: BumpType, yes: bool = False) -> None:
     version = get_version_from_file(PYPROJECT_TOML)
 
     if not version:
@@ -100,11 +100,12 @@ def bump_version(bump_type: BumpType) -> None:
 
     next_version = bump(version, bump_type)
 
-    should_bump = typer.confirm(
-        f"Upgrade version from {current_version} to {next_version}?"
-    )
-    if not should_bump:
-        raise typer.Abort()
+    if not yes:
+        should_bump = typer.confirm(
+            f"Upgrade version from {current_version} to {next_version}?"
+        )
+        if not should_bump:
+            raise typer.Abort()
 
     bump_version_in_file(PYPROJECT_TOML, key="version", bump_type=bump_type)
     bump_version_in_file(INIT_PY, key="__version__", bump_type=bump_type)
@@ -186,7 +187,10 @@ def push() -> None:
             raise typer.Exit(result)
 
 
-def check_preconditions() -> None:
+def check_preconditions(yes: bool = False) -> None:
+    if yes:
+        return
+
     preconditions = [
         "Have you run 'make lci'?",
     ]
@@ -200,6 +204,7 @@ def check_preconditions() -> None:
 @app.command()
 def release(
     bump_type: BumpType =  typer.Option(default=BumpType.PATCH.value),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip all confirmations (for CI use)"),
 ) -> Any:
     proc = subprocess.Popen(
         args=("git", "branch", "--show-current"), stdout=PIPE, text=True
@@ -212,8 +217,8 @@ def release(
         )
         raise typer.Exit(1)
 
-    check_preconditions()
-    bump_version(bump_type)
+    check_preconditions(yes)
+    bump_version(bump_type, yes)
     run_uv_lock()
     commit_and_tag()
     push()

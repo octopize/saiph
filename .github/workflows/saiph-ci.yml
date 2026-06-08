@@ -1,6 +1,8 @@
 name: "Check PR ci"
 
-on: pull_request
+on:
+  pull_request:
+  workflow_call:
 
 jobs:
   saiph-ci:
@@ -29,7 +31,7 @@ jobs:
       uses: extractions/setup-just@v4
 
     - name: Install dependencies
-      run: uv sync --extra matplotlib --group dev --group doc
+      run: just install-packages
 
     - name: Typecheck
       run: just typecheck

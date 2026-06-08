@@ -1,0 +1,73 @@
+name: "Prepare Release"
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: "Version bump type"
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+      run_tests:
+        description: "Run CI tests before releasing"
+        type: boolean
+        default: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  run-saiph-ci:
+    name: Run Saiph CI
+    if: inputs.run_tests
+    uses: ./.github/workflows/saiph-ci.yml
+    secrets: inherit
+
+  prepare-release:
+    name: Prepare Release
+    needs: [run-saiph-ci]
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ssh-key: ${{ secrets.OCTOBOT_SSH_PRIVATE_KEY }}
+          fetch-depth: 0
+          ref: refs/heads/main
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install just
+        uses: extractions/setup-just@v4
+
+      - name: Install dependencies
+        run: just install-packages
+
+      - name: Configure git user
+        run: |
+          git config --global user.email 'octobot@octopize.io'
+          git config --global user.name 'octopize-bot'
+
+      - name: Import GPG key
+        id: import-gpg
+        uses: crazy-max/ghaction-import-gpg@v7
+        with:
+          gpg_private_key: ${{ secrets.OCTOBOT_GPG_PRIVATE_KEY }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
+      - name: Prepare release
+        run: uv run python release.py --bump-type ${{ inputs.bump_type }} --yes

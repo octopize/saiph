@@ -59,6 +59,13 @@ def fit(
             _col_weights[df.columns.get_loc(col)] = col_weights[col]
 
     # Check column types
+    datetime_cols = df.select_dtypes(include=["datetime", "datetimetz"]).columns.tolist()
+    if datetime_cols:
+        raise ValueError(
+            f"DataFrame contains datetime column(s): {datetime_cols}. "
+            "Convert them to numeric (e.g. seconds since epoch) before fitting."
+        )
+
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.values
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.values
 
@@ -197,6 +204,13 @@ def transform(df: pd.DataFrame, model: Model, *, sparse: bool = False) -> pd.Dat
         raise ValueError(
             "Model has not been fitted."
             "Call fit() to create a Model instance before calling transform()."
+        )
+
+    datetime_cols = df.select_dtypes(include=["datetime", "datetimetz"]).columns.tolist()
+    if datetime_cols:
+        raise ValueError(
+            f"DataFrame contains datetime column(s): {datetime_cols}. "
+            "Convert them to numeric (e.g. seconds since epoch) before transforming."
         )
 
     # Check that all the columns of the df is in the model

@@ -439,6 +439,35 @@ def test_fit_checks_col_weights_parameter(
 
 
 @pytest.mark.parametrize(
+    "df",
+    [
+        pd.DataFrame({"a": pd.to_datetime(["2021-01-01", "2021-01-02"]), "b": [1, 2]}),
+        pd.DataFrame({"a": pd.to_datetime(["2021-01-01", "2021-01-02"])}),
+        pd.DataFrame(
+            {
+                "a": pd.to_datetime(["2021-01-01", "2021-01-02"]),
+                "b": ["x", "y"],
+            }
+        ),
+    ],
+)
+def test_fit_rejects_datetime_columns(df: pd.DataFrame) -> None:
+    """Verify that fit raises ValueError when the DataFrame contains datetime columns."""
+    with pytest.raises(ValueError, match="datetime"):
+        fit(df)
+
+
+def test_transform_rejects_datetime_columns() -> None:
+    """Verify that transform raises ValueError when the DataFrame contains datetime columns."""
+    model = fit(pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]}))
+    df_with_datetime = pd.DataFrame(
+        {"a": pd.to_datetime(["2021-01-01", "2021-01-02", "2021-01-03"]), "b": [4, 5, 6]}
+    )
+    with pytest.raises(ValueError, match="datetime"):
+        transform(df_with_datetime, model)
+
+
+@pytest.mark.parametrize(
     "starting_seed, stored_seed",
     [
         (1, 2032329982),

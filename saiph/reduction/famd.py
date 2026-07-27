@@ -1,6 +1,5 @@
 """FAMD projection module."""
 
-import ast
 import sys
 from collections import defaultdict
 from collections.abc import Callable
@@ -258,19 +257,29 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     # This replaces a one-by-one loop that fragmented the DataFrame block
     # manager and emitted a PerformanceWarning after 100+ insertions.
     if model._modalities is not None:
-        col_cats: dict[str, list[Any]] = defaultdict(list)
+        col_cats: dict[str, list[str]] = defaultdict(list)
         for mod in model._modalities:
             col, _, val = mod.partition(DUMMIES_SEPARATOR)
-            # Category values extracted from dummy column names are always strings,
-            # but the original column may contain non-string values (e.g. Python
-            # bools).  Cast them back so pd.Categorical can match the actual data.
-            if model.modalities_types.get(col) == "bool":
-                val = ast.literal_eval(val)
             col_cats[col].append(val)
+
+        # Category values extracted from dummy column names are always strings,
+        # but the original column may contain non-string values (e.g. Python
+        # bools or ints).  Cast the category list once per column to match the
+        # actual data dtype so pd.Categorical can match row values.
+        _STR_TO_BOOL = {"True": True, "False": False}
+        _CASTERS: dict[str, Callable[[str], Any]] = {
+            "bool": lambda v: _STR_TO_BOOL[v],
+            "int": int,
+            "float": float,
+        }
+        typed_cats: dict[str, list[Any]] = {}
+        for col, cats in col_cats.items():
+            caster = _CASTERS.get(model.modalities_types.get(col, ""))
+            typed_cats[col] = [caster(v) for v in cats] if caster else cats
 
         df_quali = pd.get_dummies(
             df[model.original_categorical].assign(
-                **{col: pd.Categorical(df[col], categories=cats) for col, cats in col_cats.items()}
+                **{col: pd.Categorical(df[col], categories=cats) for col, cats in typed_cats.items()}
             ),
             prefix_sep=DUMMIES_SEPARATOR,
             dtype=np.uint8,

@@ -398,3 +398,29 @@ def test_transform_novel_category_not_seen_at_fit() -> None:
 
     assert coord.shape == (1, model.nf)
     assert not coord.isnull().any().any()
+
+
+def test_transform_bool_column_in_object_dtype() -> None:
+    """Boolean values stored as object dtype must survive a round-trip through transform.
+
+    pd.get_dummies encodes True/False bools into dummy column names like
+    ``col___True`` and ``col___False``.  When scaler() rebuilds pd.Categorical
+    categories from those names, the extracted values are strings — not bools.
+    pd.Categorical then fails to match any row, producing all-zero dummies and
+    collapsing every inverse_transform result to a single modality.
+
+    Regression test for the fix in scaler() that casts category values back to
+    their original type using model.modalities_types.
+    """
+    n = 20
+    df = pd.DataFrame(
+        {
+            "flag": pd.array([True] * n + [False] * n, dtype=object),
+            "value": list(range(n)) + list(range(100, 100 + n)),
+        }
+    )
+    _, model = fit_transform(df)
+    coord = transform(df, model)
+
+    assert set(coord.columns) == {f"Dim. {i}" for i in range(1, model.nf + 1)}
+    assert not coord.isnull().any().any(), "transform produced NaN for bool column"

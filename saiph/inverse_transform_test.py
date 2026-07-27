@@ -238,3 +238,27 @@ def test_inverse_from_coord_famd(
     assert_series_equal(wbcd_statistics.loc["50%"], reversed_statistics.loc["50%"])
     assert_allclose(wbcd_statistics.loc["75%"], reversed_statistics.loc["75%"], atol=1)
     assert_series_equal(wbcd_statistics.loc["max"], reversed_statistics.loc["max"], atol=1)
+
+
+def test_inverse_transform_preserves_bool_modalities() -> None:
+    """Boolean columns in object dtype must preserve both modalities after round-trip.
+
+    Regression test: saiph >= 2.0.10 collapsed all bool values to a single
+    modality (e.g. all False) because scaler() built pd.Categorical categories
+    from string-typed dummy column names that didn't match the Python bool
+    values in the actual data.
+    """
+    n = 50
+    df = pd.DataFrame(
+        {
+            "flag": pd.array([True] * n + [False] * n, dtype=object),
+            "value": [float(x) for x in range(n)]
+            + [float(x) for x in range(1000, 1000 + n)],
+        }
+    )
+    _, model = fit_transform(df)
+    coord = fit_transform(df)[0]
+    result = inverse_transform(coord, model)
+
+    assert set(result["flag"].unique()) == {True, False}
+    assert all(isinstance(v, bool) for v in result["flag"])

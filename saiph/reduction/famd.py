@@ -1,5 +1,6 @@
 """FAMD projection module."""
 
+import ast
 import sys
 from collections import defaultdict
 from collections.abc import Callable
@@ -257,9 +258,14 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     # This replaces a one-by-one loop that fragmented the DataFrame block
     # manager and emitted a PerformanceWarning after 100+ insertions.
     if model._modalities is not None:
-        col_cats: dict[str, list[str]] = defaultdict(list)
+        col_cats: dict[str, list[Any]] = defaultdict(list)
         for mod in model._modalities:
             col, _, val = mod.partition(DUMMIES_SEPARATOR)
+            # Category values extracted from dummy column names are always strings,
+            # but the original column may contain non-string values (e.g. Python
+            # bools).  Cast them back so pd.Categorical can match the actual data.
+            if model.modalities_types.get(col) == "bool":
+                val = ast.literal_eval(val)
             col_cats[col].append(val)
 
         df_quali = pd.get_dummies(

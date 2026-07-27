@@ -264,18 +264,18 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
 
         # Category values extracted from dummy column names are always strings,
         # but the original column may contain non-string values (e.g. Python
-        # bools or ints).  Cast the category list once per column to match the
-        # actual data dtype so pd.Categorical can match row values.
+        # bools or ints).  Cast each column's categories in one vectorized
+        # operation so cost scales with column count, not modality count.
         _STR_TO_BOOL = {"True": True, "False": False}
-        _CASTERS: dict[str, Callable[[str], Any]] = {
-            "bool": lambda v: _STR_TO_BOOL[v],
-            "int": int,
-            "float": float,
-        }
         typed_cats: dict[str, list[Any]] = {}
         for col, cats in col_cats.items():
-            caster = _CASTERS.get(model.modalities_types.get(col, ""))
-            typed_cats[col] = [caster(v) for v in cats] if caster else cats
+            mod_type = model.modalities_types.get(col, "")
+            if mod_type == "bool":
+                typed_cats[col] = pd.Series(cats).map(_STR_TO_BOOL).tolist()
+            elif mod_type in ("int", "float"):
+                typed_cats[col] = pd.to_numeric(pd.Series(cats)).tolist()
+            else:
+                typed_cats[col] = cats
 
         df_quali = pd.get_dummies(
             df[model.original_categorical].assign(

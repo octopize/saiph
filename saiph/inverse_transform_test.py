@@ -252,8 +252,7 @@ def test_inverse_transform_preserves_bool_modalities() -> None:
     df = pd.DataFrame(
         {
             "flag": pd.array([True] * n + [False] * n, dtype=object),
-            "value": [float(x) for x in range(n)]
-            + [float(x) for x in range(1000, 1000 + n)],
+            "value": [float(x) for x in range(n)] + [float(x) for x in range(1000, 1000 + n)],
         }
     )
     _, model = fit_transform(df)

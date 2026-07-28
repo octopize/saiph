@@ -238,3 +238,35 @@ def test_inverse_from_coord_famd(
     assert_series_equal(wbcd_statistics.loc["50%"], reversed_statistics.loc["50%"])
     assert_allclose(wbcd_statistics.loc["75%"], reversed_statistics.loc["75%"], atol=1)
     assert_series_equal(wbcd_statistics.loc["max"], reversed_statistics.loc["max"], atol=1)
+
+
+def test_inverse_transform_preserves_bool_modality_proportions() -> None:
+    """A round-trip must not collapse a bool column onto a single modality.
+
+    This is the user-visible consequence of scaler() failing to one-hot encode
+    non-string modalities: with every dummy zero, undummify() picks essentially
+    the same modality for every individual.  saiph 2.0.10 to 2.0.12 turned a
+    balanced 50/50 bool column into a 98/2 split.
+
+    The 20 % tolerance is loose on purpose — the point is that both modalities
+    survive in roughly their original proportions, not that the round-trip is
+    exact.
+    """
+    n = 50
+    df = pd.DataFrame(
+        {
+            "flag": pd.array([True] * n + [False] * n, dtype=object),
+            # Well-separated per modality, so the projection carries enough
+            # signal for the round-trip to recover the right one.
+            "value": [float(x) for x in range(n)] + [float(x) for x in range(1000, 1000 + n)],
+        }
+    )
+    coord, model = fit_transform(df)
+
+    result = inverse_transform(coord, model)
+
+    counts = result["flag"].value_counts()
+    assert set(counts.index) == {True, False}
+    assert counts[True] == pytest.approx(n, rel=0.2)
+    assert counts[False] == pytest.approx(n, rel=0.2)
+    assert all(isinstance(value, bool) for value in result["flag"])

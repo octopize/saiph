@@ -9,6 +9,7 @@ from numpy.typing import NDArray
 from pandas._testing.asserters import assert_series_equal
 from pandas.testing import assert_frame_equal
 
+from saiph.models import Model
 from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.famd import (
     center,
@@ -398,3 +399,84 @@ def test_transform_novel_category_not_seen_at_fit() -> None:
 
     assert coord.shape == (1, model.nf)
     assert not coord.isnull().any().any()
+
+
+# ---------------------------------------------------------------------------
+# Non-string modality tests
+# ---------------------------------------------------------------------------
+# scaler() must one-hot encode a categorical column whatever the Python type of
+# its values.  Reconstructing the fit-time categories by parsing them out of the
+# dummy column names ("cat___True" -> "True") yields strings, which silently
+# fail to match non-string values such as Python bools or ints: every dummy
+# comes out zero and the individual is projected as if it had no modality at
+# all.  See test_inverse_transform_preserves_bool_modality_proportions for the
+# user-visible consequence.
+# ---------------------------------------------------------------------------
+
+
+def unscale_dummies(model: Model, df_scaled: pd.DataFrame) -> pd.DataFrame:
+    """Undo the centering and scaling scaler() applies to the dummy block.
+
+    Returns the raw 0/1 one-hot values, so a test can assert on the encoding
+    itself rather than on a downstream projection.
+    """
+    prop = cast(pd.Series, model.prop)
+    return (df_scaled[model.dummy_categorical] * np.sqrt(prop) + prop).round(6)
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        pytest.param(pd.array([True, False] * 10, dtype=object), id="object_bool"),
+        pytest.param(pd.Series([True, False] * 10), id="native_bool"),
+        pytest.param(pd.Series([True, False] * 10).astype("category"), id="category_bool"),
+        pytest.param(pd.array([1, 2] * 10, dtype=object), id="object_int"),
+        pytest.param(pd.array([1.5, 2.5] * 10, dtype=object), id="object_float"),
+        pytest.param(pd.Series([1, 2] * 10).astype("category"), id="category_int"),
+        pytest.param(pd.array(["a", "b"] * 10, dtype=object), id="object_str"),
+        # Only the first value decides the type recorded in model.modalities_types,
+        # so a column mixing types is where any type-casting scheme breaks down.
+        pytest.param(pd.array([True, "unknown"] * 10, dtype=object), id="mixed_bool_str"),
+        pytest.param(pd.array([1, "a"] * 10, dtype=object), id="mixed_int_str"),
+        pytest.param(pd.array([1, 2.5] * 10, dtype=object), id="mixed_int_float"),
+    ],
+)
+def test_scaler_one_hot_encodes_categories_of_any_value_type(values: Any) -> None:
+    """Every individual must get exactly one hot dummy, for any modality type."""
+    df = pd.DataFrame({"cat": values, "num": [float(i) for i in range(20)]})
+    _, model = fit_transform(df)
+
+    dummies = unscale_dummies(model, scaler(model, df))
+
+    assert_series_equal(
+        dummies.sum(axis=1),
+        pd.Series(1.0, index=df.index),
+        check_names=False,
+    )
+    # The hot dummy must be the one naming this row's own modality. Modality
+    # names come from the category labels pandas derives from the column, which
+    # is not always str(value) — a column mixing ints and floats is homogenised
+    # to float, so the int 1 is labelled "1.0".
+    labels = df["cat"].astype("category").astype(str)
+    expected = [f"cat{DUMMIES_SEPARATOR}{label}" for label in labels]
+    assert list(dummies.idxmax(axis=1)) == expected
+
+
+def test_scaler_encodes_bool_column_identically_to_str_column() -> None:
+    """A bool column and its stringified twin must produce the same encoding.
+
+    Pins the invariant behind the whole family: the dummy block depends on which
+    modality each row holds, not on the Python type used to spell it.
+    """
+    flags = [True, False] * 10
+    num = [float(i) for i in range(20)]
+    df_bool = pd.DataFrame({"cat": pd.array(flags, dtype=object), "num": num})
+    df_str = pd.DataFrame({"cat": [str(flag) for flag in flags], "num": num})
+
+    _, model_bool = fit_transform(df_bool)
+    _, model_str = fit_transform(df_str)
+
+    assert_frame_equal(
+        unscale_dummies(model_bool, scaler(model_bool, df_bool)),
+        unscale_dummies(model_str, scaler(model_str, df_str)),
+    )

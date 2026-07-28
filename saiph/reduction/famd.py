@@ -1,7 +1,6 @@
 """FAMD projection module."""
 
 import sys
-from collections import defaultdict
 from collections.abc import Callable
 from itertools import chain, repeat
 from typing import Any, cast
@@ -240,6 +239,11 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
             "Expected model to have mean and std attributes,",
             f"got {model.mean} and {model.std} instead.",
         )
+    if model._modalities is None:
+        raise ValueError(
+            "Expected model to have a _modalities attribute to align the dummies on, "
+            "got None instead. Call fit() to create a Model instance."
+        )
     model.prop = cast(pd.Series, model.prop)
 
     df_quanti = df[model.original_continuous]
@@ -251,31 +255,19 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
     df_quanti = (df_quanti - model.mean) / std_without_zeros
 
     # scale
-    # Attach fit-time categories to each column so that pd.get_dummies emits a
-    # column for every modality seen during fit — including those absent from
-    # this transform batch (they become all-zero columns automatically).
-    # This replaces a one-by-one loop that fragmented the DataFrame block
+    df_quali = pd.get_dummies(
+        df[model.original_categorical].astype("category"),
+        prefix_sep=DUMMIES_SEPARATOR,
+        dtype=np.uint8,
+    )
+    # Align on the fit-time modalities: a modality absent from this batch becomes
+    # an all-zero column, and a category unseen at fit is dropped.
+    # `reindex` builds the result in a single allocation, unlike the one-by-one
+    # `df_quali[mod] = 0` loop it replaces, which fragmented the DataFrame block
     # manager and emitted a PerformanceWarning after 100+ insertions.
-    if model._modalities is not None:
-        col_cats: dict[str, list[str]] = defaultdict(list)
-        for mod in model._modalities:
-            col, _, val = mod.partition(DUMMIES_SEPARATOR)
-            col_cats[col].append(val)
-
-        df_quali = pd.get_dummies(
-            df[model.original_categorical].assign(
-                **{col: pd.Categorical(df[col], categories=cats) for col, cats in col_cats.items()}
-            ),
-            prefix_sep=DUMMIES_SEPARATOR,
-            dtype=np.uint8,
-        )
-    else:
-        df_quali = pd.get_dummies(
-            df[model.original_categorical].astype("category"),
-            prefix_sep=DUMMIES_SEPARATOR,
-            dtype=np.uint8,
-        )
-    df_quali = df_quali[model._modalities]
+    # `fill_value` must be a np.uint8 so that the filled columns keep the dtype
+    # asked of get_dummies instead of being upcast to int64.
+    df_quali = df_quali.reindex(columns=model._modalities, fill_value=np.uint8(0))
     df_quali = (df_quali - model.prop) / np.sqrt(model.prop)
 
     df_scaled = pd.concat([df_quanti, df_quali], axis=1)

@@ -277,10 +277,12 @@ def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
             else:
                 typed_cats[col] = cats
 
+        cat_overrides = {
+            col: pd.Categorical(df[col], categories=cats)
+            for col, cats in typed_cats.items()
+        }
         df_quali = pd.get_dummies(
-            df[model.original_categorical].assign(
-                **{col: pd.Categorical(df[col], categories=cats) for col, cats in typed_cats.items()}
-            ),
+            df[model.original_categorical].assign(**cat_overrides),
             prefix_sep=DUMMIES_SEPARATOR,
             dtype=np.uint8,
         )

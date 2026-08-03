@@ -1,2 +1,2 @@
-matplotlib==3.11.0
+matplotlib==3.11.1
 sphinx-gallery==0.21.0

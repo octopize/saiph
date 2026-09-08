@@ -47,6 +47,42 @@ def align_signs(
     return V * signs[:, np.newaxis], reference
 
 
+# The optional Model fields, and which method's fit populates each. Driving the
+# comparison off the method rather than off whichever fields the reference happens to
+# have set means a field left unset by a bug fails here instead of skipping its check.
+METHOD_FIELDS = ("mean", "std", "prop", "_modalities", "D_c", "dummies_col_prop")
+POPULATED_BY = {
+    "pca": ("mean", "std"),
+    "famd": ("mean", "std", "prop", "_modalities"),
+    "mca": ("_modalities", "D_c", "dummies_col_prop"),
+}
+
+
+def assert_method_fields_agree(streamed: Model, reference: Model, *, rtol: float) -> None:
+    """Compare the fields the fitted method defines, and require the rest to be unset."""
+    assert reference.type in POPULATED_BY, f"unknown method {reference.type!r}"
+    populated = POPULATED_BY[str(reference.type)]
+
+    for field in METHOD_FIELDS:
+        expected = getattr(reference, field)
+        got = getattr(streamed, field)
+
+        if field not in populated:
+            assert expected is None, f"{reference.type} fit unexpectedly set {field}"
+            assert got is None, f"streamed {reference.type} fit unexpectedly set {field}"
+            continue
+
+        assert expected is not None, f"{reference.type} fit left {field} unset"
+        assert got is not None, f"streamed {reference.type} fit left {field} unset"
+
+        if field == "_modalities":
+            assert list(got) == list(expected)
+        elif isinstance(expected, pd.Series):
+            assert_series_equal(got, expected, rtol=rtol)
+        else:
+            assert_allclose(got, expected, rtol=rtol)
+
+
 def assert_agrees_with_reference(
     streamed: Model, reference: Model, *, rtol: float = 1e-11, atol: float = 1e-10
 ) -> None:
@@ -59,20 +95,7 @@ def assert_agrees_with_reference(
     assert_allclose(streamed.column_weights, reference.column_weights)
     assert_allclose(streamed.row_weights, reference.row_weights)
 
-    if reference.mean is not None:
-        assert_series_equal(streamed.mean, reference.mean, rtol=rtol)
-        assert_series_equal(streamed.std, reference.std, rtol=rtol)
-    if reference.prop is not None:
-        assert_series_equal(streamed.prop, reference.prop, rtol=rtol)
-    if reference._modalities is not None:
-        assert streamed._modalities is not None
-        assert list(streamed._modalities) == list(reference._modalities)
-    if reference.D_c is not None:
-        assert streamed.D_c is not None
-        assert_allclose(streamed.D_c, reference.D_c, rtol=rtol)
-    if reference.dummies_col_prop is not None:
-        assert streamed.dummies_col_prop is not None
-        assert_allclose(streamed.dummies_col_prop, reference.dummies_col_prop, rtol=rtol)
+    assert_method_fields_agree(streamed, reference, rtol=rtol)
 
     assert reference.s is not None and streamed.s is not None
     k = numerical_rank(reference.s)
@@ -647,3 +670,29 @@ def test_mca_round_trip_matches_the_whole_table_round_trip() -> None:
     back_streamed = inverse_transform(transform(df, streamed), streamed)
 
     assert_frame_equal(back_streamed, back_reference)
+
+
+@pytest.mark.parametrize(
+    ("on_streamed", "field", "value", "message"),
+    [
+        (False, "mean", None, "famd fit left mean unset"),
+        (True, "prop", None, "streamed famd fit left prop unset"),
+        (True, "D_c", np.eye(2), "streamed famd fit unexpectedly set D_c"),
+    ],
+)
+def test_assert_method_fields_agree_rejects_a_field_the_method_disagrees_on(
+    on_streamed: bool, field: str, value: object, message: str
+) -> None:
+    """Every equality test above leans on this helper, so it must fail rather than skip.
+
+    A guard reading `if reference.mean is not None` would drop the mean and std
+    comparisons entirely the moment the reference lost either one.
+    """
+    df = mixed_table(n=60)
+    reference = reference_famd(df)
+    streamed = fit_streaming(lambda: chunks(df, 17), nf=streamed_rank(df))
+
+    setattr(streamed if on_streamed else reference, field, value)
+
+    with pytest.raises(AssertionError, match=message):
+        assert_method_fields_agree(streamed, reference, rtol=1e-11)

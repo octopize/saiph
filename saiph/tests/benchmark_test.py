@@ -61,9 +61,11 @@ def test_1m(benchmark: Any) -> None:
     benchmark(fit, df)
 
 
-SMALL_ROW_COUNT = 50_000
-LARGE_ROW_COUNT = 800_000
-STREAMING_BATCH_SIZE = 10_000
+# Sixteen times the rows. tracemalloc counts bytes exactly, so the two points need only
+# be far enough apart that holding the table would show; they do not need to be large.
+SMALL_ROW_COUNT = 2_000
+LARGE_ROW_COUNT = 32_000
+STREAMING_BATCH_SIZE = 1_000
 # Columns of the scaled matrix per method.
 SCALED_WIDTH = {"pca": 2, "famd": 7, "mca": 5}
 

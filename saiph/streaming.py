@@ -37,6 +37,8 @@ from saiph.reduction.utils.common import (
 
 METHODS = ("pca", "famd", "mca")
 
+_EPS: np.float64 = np.finfo(float).eps
+
 
 @dataclass
 class ScalingParams:
@@ -59,6 +61,25 @@ class ScalingParams:
     def p(self) -> int:
         """Number of columns of the scaled matrix."""
         return len(self.quanti) + len(self.modalities)
+
+    @property
+    def total(self) -> float:
+        """Number of ones in the whole dummy matrix, `X.sum().sum()`."""
+        return float(self.modality_counts.sum())
+
+    @property
+    def column_masses(self) -> NDArray[np.float64]:
+        """Share of the dummy matrix held by each modality, `c` in the MCA scaling."""
+        return np.asarray(self.modality_counts / self.total, dtype=np.float64)
+
+    @property
+    def D_c(self) -> NDArray[np.float64]:
+        return np.diag(1 / (_EPS + np.sqrt(self.column_masses)))
+
+    @property
+    def dummies_col_prop(self) -> NDArray[np.float64]:
+        """Number of individuals per individual taking each modality."""
+        return np.asarray(self.n / self.modality_counts, dtype=np.float64)
 
     @property
     def prop(self) -> pd.Series:
@@ -121,6 +142,9 @@ class ScalingParams:
         )
         if self.method == "famd":
             model.prop = self.prop
+        if self.method == "mca":
+            model.D_c = self.D_c
+            model.dummies_col_prop = self.dummies_col_prop
         return model
 
 
@@ -351,7 +375,11 @@ class DecompositionAccumulator:
         # The U-based decision sklearn defaults to needs the left singular vectors,
         # which a streaming fit does not have.
         _, Vt = extmath.svd_flip(None, Vt, u_based_decision=False)
-        Vt = Vt / np.sqrt(self.params.column_weights)
+        if self.params.method != "mca":
+            # mca.fit leaves the column weights in its right singular vectors, and
+            # mca.transform carries D_c to compensate. Dividing them out here would
+            # rescale every axis by 1/sqrt(weight).
+            Vt = Vt / np.sqrt(self.params.column_weights)
 
         # S holds every singular value, so the ratio is against the true total
         # variance rather than against the truncated sum a partial SVD would give.
@@ -362,7 +390,10 @@ class DecompositionAccumulator:
         model.s = S[: self.nf]
         model.explained_var = explained_var
         model.explained_var_ratio = explained_var_ratio
-        model.variable_coord = pd.DataFrame(model.V.T)
+        if self.params.method == "mca":
+            model.variable_coord = pd.DataFrame(self.params.D_c @ model.V.T)
+        else:
+            model.variable_coord = pd.DataFrame(model.V.T)
         model.row_weights = get_uniform_row_weights(self.params.n)
         model.nf = self.nf
         model.seed = int(self._random_gen.integers(0, 2**32 - 1))
@@ -385,7 +416,46 @@ class DecompositionAccumulator:
             scaled = famd.scaler(self._model, batch)
             return np.asarray(scaled, dtype=np.float64)
 
+        if self.params.method == "mca":
+            return self._scale_mca(batch)
+
         raise NotImplementedError(f"Unsupported method {self.params.method!r}.")
+
+    def _scale_mca(self, batch: pd.DataFrame) -> NDArray[np.float64]:
+        """Scale a batch of dummies the way `mca.center` and `mca._diag_compute` do.
+
+        Those two build an `n x p` dense array and an `n x n` diagonal, so MCA is the
+        method that runs out of memory first. Written per row instead:
+
+            T_ij = (X_ij / total - r_i c_j)
+                   / ((eps + sqrt(r_i)) (eps + sqrt(c_j)))
+
+        with `total` the number of ones in the whole dummy matrix, `c` the share of
+        it held by each modality, and `r_i` this row's share of it. `total` and `c`
+        come from pass 1; `r_i` is this row's own dummies, so nothing here reaches
+        outside the row.
+
+        `r_i` must stay per row. It equals `1/n` only while every individual has a
+        value in every column: pd.get_dummies emits no indicator for a null, so a
+        row holding one sums to less. Substituting `1/n` puts a 16% error on the
+        singular values of a table with nulls.
+        """
+        dummies = pd.get_dummies(
+            batch.astype("category"),
+            prefix_sep=DUMMIES_SEPARATOR,
+            dtype=np.uint8,
+        )
+        X = dummies.reindex(columns=self.params.modalities, fill_value=np.uint8(0)).to_numpy(
+            dtype=np.float64
+        )
+        total = self.params.total
+        c = self.params.column_masses
+
+        r = X.sum(axis=1) / total
+        centered = X / total - np.outer(r, c)
+        scaled = centered / (_EPS + np.sqrt(c))
+        row_scaled: NDArray[np.float64] = scaled / (_EPS + np.sqrt(r))[:, np.newaxis]
+        return row_scaled
 
 
 def fit_streaming(

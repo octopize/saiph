@@ -11,7 +11,7 @@ from saiph.exception import InvalidParameterException
 from saiph.inverse_transform import inverse_transform
 from saiph.models import Model
 from saiph.projection import transform
-from saiph.reduction import DUMMIES_SEPARATOR, famd, pca
+from saiph.reduction import DUMMIES_SEPARATOR, famd, mca, pca
 from saiph.streaming import (
     DecompositionAccumulator,
     ScalingAccumulator,
@@ -514,6 +514,141 @@ def test_famd_round_trip_matches_the_whole_table_round_trip() -> None:
     nf = streamed_rank(df)
 
     reference = reference_famd(df, nf=nf)
+    streamed = fit_streaming(lambda: chunks(df, 17), nf=nf)
+
+    back_reference = inverse_transform(transform(df, reference), reference)
+    back_streamed = inverse_transform(transform(df, streamed), streamed)
+
+    assert_frame_equal(back_streamed, back_reference)
+
+
+# ---------------------------------------------------------------------------
+# MCA
+# ---------------------------------------------------------------------------
+
+
+def categorical_table(n: int = 400, seed: int = 5) -> pd.DataFrame:
+    rng = np.random.default_rng(seed)
+    return pd.DataFrame(
+        {
+            "tool": rng.choice(["wrench", "hammer", "saw"], size=n),
+            "fruit": rng.choice(["apple", "orange"], size=n),
+            "colour": rng.choice(["red", "green", "blue", "black"], size=n),
+        }
+    )
+
+
+def reference_mca(df: pd.DataFrame, *, nf: int | None = None, **kwargs: object) -> Model:
+    """Fit the whole table down the full-SVD path."""
+    width = min(len(df), whole_table_width(df))
+    model = mca.fit(df, nf=width, **kwargs)  # type: ignore[arg-type]
+    if nf is None:
+        return model
+    assert model.D_c is not None
+    D_c = model.D_c
+    truncated = _truncated(model, nf)
+    truncated.variable_coord = pd.DataFrame(D_c @ truncated.V.T)
+    return truncated
+
+
+def test_streamed_mca_scaling_equals_diag_compute() -> None:
+    """The row-local formula must equal the code it replaces, not merely the SVD of it.
+
+    `mca.center` and `mca._diag_compute` are what a whole-table fit decomposes, and
+    they cannot stream: they build an `n x p` dense array and an `n x n` diagonal.
+    """
+    df = categorical_table(n=200)
+
+    df_scale, _, r, c = mca.center(df)
+    _, expected, _ = mca._diag_compute(df_scale, r, c)
+
+    params = _scaling_params(df, size=64)
+    decomposition = DecompositionAccumulator(params, nf=params.max_rank)
+    streamed = np.vstack([decomposition._scale(batch) for batch in chunks(df, 7)])
+
+    assert_allclose(streamed, np.asarray(expected), atol=1e-17)
+
+
+@pytest.mark.parametrize("size", [1, 3, 11, 97, 400, 1000])
+def test_fit_streaming_mca_equals_fit(size: int) -> None:
+    df = categorical_table()
+    nf = streamed_rank(df)
+
+    reference = reference_mca(df)
+    streamed = fit_streaming(lambda: chunks(df, size), nf=nf)
+
+    assert_agrees_with_reference(streamed, reference)
+
+
+def test_fit_streaming_mca_independent_of_batch_order() -> None:
+    df = categorical_table()
+    nf = streamed_rank(df)
+    shuffled = df.sample(frac=1, random_state=0)
+
+    reference = reference_mca(df)
+    streamed = fit_streaming(lambda: chunks(shuffled, 31), nf=nf)
+
+    assert_agrees_with_reference(streamed, reference)
+
+
+def test_fit_streaming_mca_with_col_weights() -> None:
+    df = categorical_table()
+    nf = streamed_rank(df)
+    col_weights = np.array([3.0, 1.0, 2.0])
+
+    reference = reference_mca(df, col_weights=col_weights)
+    streamed = fit_streaming(lambda: chunks(df, 23), nf=nf, col_weights=col_weights)
+
+    assert_agrees_with_reference(streamed, reference)
+
+
+def test_fit_streaming_mca_with_null_categorical_value() -> None:
+    """The row share `r` is not constant once a column holds a null.
+
+    A row with a null has fewer dummies set, so its share of the dummy matrix is
+    smaller. Substituting `1/n` for it puts a 16% error on the singular values,
+    which this equality would not survive.
+    """
+    df = categorical_table(n=200)
+    df.loc[df.index[3], "tool"] = None
+    df.loc[df.index[57], "colour"] = None
+    df.loc[df.index[58], "fruit"] = None
+    nf = streamed_rank(df)
+
+    reference = reference_mca(df)
+    streamed = fit_streaming(lambda: chunks(df, 13), nf=nf)
+
+    assert_agrees_with_reference(streamed, reference)
+
+
+def test_fit_streaming_mca_with_a_modality_only_in_the_last_batch() -> None:
+    df = categorical_table(n=120)
+    df.loc[df.index[-1], "colour"] = "violet"
+    nf = streamed_rank(df)
+
+    reference = reference_mca(df)
+    streamed = fit_streaming(lambda: chunks(df, 20), nf=nf)
+
+    assert f"colour{DUMMIES_SEPARATOR}violet" in streamed.dummy_categorical
+    assert_agrees_with_reference(streamed, reference)
+
+
+def test_fit_streaming_mca_with_a_constant_column() -> None:
+    df = categorical_table(n=120)
+    df["constant"] = "only"
+    nf = streamed_rank(df)
+
+    reference = reference_mca(df)
+    streamed = fit_streaming(lambda: chunks(df, 17), nf=nf)
+
+    assert_agrees_with_reference(streamed, reference)
+
+
+def test_mca_round_trip_matches_the_whole_table_round_trip() -> None:
+    df = categorical_table(n=120)
+    nf = streamed_rank(df)
+
+    reference = reference_mca(df, nf=nf)
     streamed = fit_streaming(lambda: chunks(df, 17), nf=nf)
 
     back_reference = inverse_transform(transform(df, reference), reference)

@@ -132,7 +132,6 @@ class ScalingParams:
             _modalities=self.modalities if len(self.modalities) else None,
             column_weights=self.column_weights,
             type=self.method,
-            U=np.empty((0, 0)),
             V=np.empty((0, 0)),
             explained_var=np.empty(0),
             explained_var_ratio=np.empty(0),

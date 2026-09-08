@@ -338,7 +338,6 @@ def _truncated(model: Model, nf: int) -> Model:
     model.s = model.s[:nf]
     model.explained_var = model.explained_var[:nf]
     model.explained_var_ratio = model.explained_var_ratio[:nf]
-    model.U = model.U[:, :nf]
     model.variable_coord = pd.DataFrame(model.V.T)
     model.nf = nf
     return model

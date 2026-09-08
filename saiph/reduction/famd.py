@@ -131,19 +131,17 @@ def fit(
     Z = df_scaled.multiply(col_weights).T.multiply(row_w).T
 
     # Compute the svd
-    _U, S, _Vt = (
+    _, S, _Vt = (
         get_svd(Z.todense(), nf=nf, random_gen=random_gen)
         if isinstance(Z, scipy.sparse.spmatrix)
         else get_svd(Z, nf=nf, random_gen=random_gen)
     )
 
-    U = ((_U.T) / np.sqrt(row_w)).T
     Vt = _Vt / np.sqrt(col_weights)
 
     explained_var, explained_var_ratio = get_explained_variance(S, df.shape[0], nf)
 
     # Retain only the nf higher singular values
-    U = U[:, :nf]
     S = S[:nf]
     Vt = Vt[:nf, :]
     # we use the random generator to generate a new seed for the model
@@ -153,7 +151,6 @@ def fit(
         original_categorical=quali,
         original_continuous=quanti,
         dummy_categorical=dummy_categorical,
-        U=U,
         V=Vt,
         s=S,
         explained_var=explained_var,
@@ -525,81 +522,3 @@ def _compute_cos2_single_category(
     )
     single_category_cos2: NDArray[np.float64] = np.array(cos2) / summed_weights_without_zeros
     return single_category_cos2
-
-
-def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
-    """Reconstruct a DataFrame from a fitted model.
-
-    Note: if nf < df.shape[1], reconstructed df will not be exactly the same.
-    The more nf < df.shape[1], the more the reconstructed df will differ.
-    the degree of difference is linked to the unused explained variance.
-
-    Parameters:
-        model: Model computed by fit.
-
-    Returns:
-        df: The reconstructed DataFrame.
-    """
-    # Extract the necessary components from the model
-    if model.s is None or model.mean is None or model.std is None or model.prop is None:
-        raise ValueError("Model has not been fitted. Call fit() to create a Model instance.")
-    U = model.U
-    S = model.s
-    V = model.V
-    row_w = model.row_weights
-    col_weights = model.column_weights
-    mean = model.mean.values
-    std = model.std.values
-    prop = model.prop.values
-    _modalities = model._modalities
-    quanti = model.original_continuous
-    quali = model.original_categorical
-
-    # Construct the diagonal matrix of singular values
-    Sigma = np.diag(S)
-
-    # Reconstruct the weighted and scaled matrix Z
-    Z = np.dot(U, np.dot(Sigma, V))
-
-    # Undo the row and column weighting
-    Z = Z / np.sqrt(row_w)[:, np.newaxis]
-    Z = Z / np.sqrt(col_weights)
-
-    # Split Z back into quantitative and qualitative parts
-    n_quanti = len(quanti)
-    df_quanti_scaled = Z[:, :n_quanti]
-    df_quali_scaled = Z[:, n_quanti:]
-
-    # Reverse the scaling for quantitative variables
-    df_quanti = df_quanti_scaled * std + mean
-
-    # Reverse the scaling for qualitative variables
-    df_quali = df_quali_scaled * np.sqrt(prop) + prop
-
-    # Combine quantitative and qualitative data
-    df_quali = pd.DataFrame(df_quali, columns=_modalities)
-    df_quanti = pd.DataFrame(df_quanti, columns=quanti)
-    df_reconstructed = pd.concat([df_quanti, df_quali], axis=1)
-
-    # Reverse the dummy encoding for categorical variables
-    for var in quali:
-        prefix = var + DUMMIES_SEPARATOR
-        dummies = [col for col in df_reconstructed.columns if col.startswith(prefix)]
-        df_reconstructed[var] = (
-            df_reconstructed[dummies].idxmax(axis=1).apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
-        )
-        df_reconstructed.drop(columns=dummies, inplace=True)
-
-    # Ensure the column order matches the original dataframe
-    df_reconstructed = df_reconstructed[model.original_dtypes.index]
-
-    # Identify the columns that need to be converted to integers
-    int_columns = model.original_dtypes[model.original_dtypes == "int"].index.tolist()
-
-    # Round the values before because astype(int) truncates the decimals
-    df_reconstructed[int_columns] = df_reconstructed[int_columns].round()
-
-    # Convert the data types to the original types
-    df_reconstructed = df_reconstructed.astype(model.original_dtypes)
-
-    return df_reconstructed

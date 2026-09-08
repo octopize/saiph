@@ -17,7 +17,6 @@ from saiph.reduction.famd import (
     fit_transform,
     get_individual_coordinates,
     get_variable_contributions,
-    reconstruct_df_from_model,
     scaler,
     transform,
 )
@@ -49,14 +48,12 @@ def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
         ]
     )
     expected_s: NDArray[np.float64] = np.array([1.224745e00, 0.0])
-    expected_u: NDArray[np.float64] = np.array([[-1.0, 1.0], [1.0, 1.0]])
     expected_explained_var: NDArray[np.float64] = np.array([1.5, 0.0])
     expected_explained_var_ratio: NDArray[np.float64] = np.array([1.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.s, expected_s, atol=0.01)
-    assert_allclose(model.U, expected_u, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     (assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),)
     assert_allclose(model.variable_coord, model.V.T)
@@ -279,38 +276,6 @@ def test_get_variable_contributions_with_constant_variable() -> None:
     contributions, _ = get_variable_contributions(model, df, explode=False)
 
     assert np.isfinite(contributions).all().all()
-
-
-def test_reconstructed_df_from_model_equals_df_minimal(mixed_df: pd.DataFrame) -> None:
-    """Ensure that the reconstructed df from the model is equal to the original df."""
-    df = mixed_df
-    model = fit(df)
-    reconstructed_df = reconstruct_df_from_model(model)
-    # don't check dtypes, model don't know if numerical were int or float
-    assert_frame_equal(df, reconstructed_df, check_dtype=False)
-
-
-def test_reconstructed_df_from_weighted_model_equals_df() -> None:
-    """Ensure that the reconstructed df from the model is equal to the original df."""
-    df = pd.read_csv("./fixtures/iris.csv")
-    model = fit(df, col_weights=[3, 1, 1, 1, 1])  # type: ignore
-    reconstructed_df = reconstruct_df_from_model(model)
-    assert_frame_equal(df, reconstructed_df)
-
-
-# ---------------------------------------------------------------------------
-# Absent / novel modality tests
-# ---------------------------------------------------------------------------
-# These three tests collectively protect the behaviour of scaler() under the
-# conditions that actually occur in the avatar pipeline:
-#
-#   • Privacy metrics fit on 50 % of rows, then transform the other 50 %
-#     (→ holdout may be missing categories seen only in the training half).
-#   • Avatar data is transformed with the original model after generation
-#     (→ rare categories may be absent from the avatar batch).
-#   • Cross-table linkage transforms a child table with a parent-table model
-#     (→ child may have categories never seen in the parent).
-# ---------------------------------------------------------------------------
 
 
 def test_transform_famd_absent_categories_no_performance_warning() -> None:

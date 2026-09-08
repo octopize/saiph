@@ -327,8 +327,7 @@ def test_get_variable_contribution_are_similar_with_reduced_nf() -> None:
     """Verify that get_variable_contributions returns similar contributions with reduced nf."""
     df = pd.read_csv("./fixtures/wbcd.csv")
     model_truncated = fit(df, nf=5)  # nf = nf_max/2
-    df_reconstructed = projection.get_reconstructed_df_from_model(model_truncated)
-    truncated_contributions = get_variable_contributions(model_truncated, df_reconstructed)
+    truncated_contributions = get_variable_contributions(model_truncated, df)
     model_full = fit(df)  # nf = nf_max
     full_contributions = get_variable_contributions(model_full, df)
     # We only look at the first two dimensions
@@ -513,26 +512,6 @@ def test_fit_mca_works_with_different_arguments_for_seed_and_stores_them_in_mode
     """Verify that fit works with different arguments for seed and stores them in model."""
     model = fit(df_mca, seed=starting_seed)
     assert model.seed == stored_seed
-
-
-def test_get_reconstructed_df_from_model_calls_correct_subfunction(
-    quanti_df: pd.DataFrame, quali_df: pd.DataFrame, mixed_df: pd.DataFrame
-) -> None:
-    """Verify that projection.get_reconstructed_df_from_model calls the correct subfunction."""
-    # FAMD
-    model = fit(mixed_df)
-    expect(saiph.reduction.famd).reconstruct_df_from_model(model).once().and_return(None)
-    projection.get_reconstructed_df_from_model(model)
-
-    # MCA
-    model = fit(quali_df)
-    expect(saiph.reduction.mca).reconstruct_df_from_model(model).once().and_return(None)
-    projection.get_reconstructed_df_from_model(model)
-
-    # PCA
-    model = fit(quanti_df)
-    expect(saiph.reduction.pca).reconstruct_df_from_model(model).once().and_return(None)
-    projection.get_reconstructed_df_from_model(model)
 
 
 @pytest.mark.parametrize(

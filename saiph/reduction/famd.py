@@ -111,6 +111,8 @@ def fit(
     # Select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.to_list()
+    if not quali:
+        raise ValueError("FAMD requires at least one categorical variable. Use PCA instead.")
     dummy_categorical = pd.get_dummies(
         df[quali].astype("category"),
         prefix_sep=DUMMIES_SEPARATOR,

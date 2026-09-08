@@ -480,3 +480,8 @@ def test_scaler_encodes_bool_column_identically_to_str_column() -> None:
         unscale_dummies(model_bool, scaler(model_bool, df_bool)),
         unscale_dummies(model_str, scaler(model_str, df_str)),
     )
+
+
+def test_fit_without_categorical_raises(quanti_df: pd.DataFrame) -> None:
+    with pytest.raises(ValueError, match="FAMD requires at least one categorical variable"):
+        fit(quanti_df)

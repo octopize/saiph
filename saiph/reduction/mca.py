@@ -1,6 +1,5 @@
 """MCA projection module."""
 
-from itertools import chain, repeat
 from typing import Any
 
 import numpy as np
@@ -12,6 +11,7 @@ from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.utils.common import (
     column_multiplication,
     diag,
+    expand_column_weights,
     get_dummies_mapping,
     get_explained_variance,
     get_grouped_modality_values,
@@ -51,18 +51,6 @@ def fit(
     # Initiate row and columns weights
     row_weights = get_uniform_row_weights(len(df))
 
-    modality_numbers = []
-    for column in df.columns:
-        modality_numbers += [len(df[column].unique())]
-
-    col_weights_dummies: NDArray[Any] = np.array(
-        list(
-            chain.from_iterable(
-                repeat(i, j) for i, j in zip(_col_weights, modality_numbers, strict=False)
-            )
-        )
-    )
-
     df_scale, _modalities, r, c = center(df)
     df_scale, T, D_c = _diag_compute(df_scale, r, c)
 
@@ -73,6 +61,14 @@ def fit(
         dtype=np.uint8,
     )
     dummies_col_prop = (len(df_dummies) / df_dummies.sum(axis=0)).to_numpy()
+
+    col_weights_dummies = expand_column_weights(
+        _col_weights,
+        df.columns.to_list(),
+        quanti=[],
+        quali=df.columns.to_list(),
+        dummy_categorical=df_dummies.columns.to_list(),
+    )
 
     # Apply the weights and compute the svd
     Z = ((T * col_weights_dummies).T * row_weights).T

@@ -485,3 +485,17 @@ def test_scaler_encodes_bool_column_identically_to_str_column() -> None:
 def test_fit_without_categorical_raises(quanti_df: pd.DataFrame) -> None:
     with pytest.raises(ValueError, match="FAMD requires at least one categorical variable"):
         fit(quanti_df)
+
+
+def test_fit_with_null_categorical_value() -> None:
+    """A null takes no dummy column, so it must not lengthen the weight vector."""
+    df = pd.DataFrame(
+        {
+            "num": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+            "cat": ["a", "b", "a", None, "b", "a"],
+        }
+    )
+    model = fit(df, nf=2, col_weights=np.array([2.0, 3.0]))
+
+    assert list(model.column_weights) == [2.0, 3.0, 3.0]
+    assert model.dummy_categorical == [f"cat{DUMMIES_SEPARATOR}a", f"cat{DUMMIES_SEPARATOR}b"]

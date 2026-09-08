@@ -2,7 +2,6 @@
 
 import sys
 from collections.abc import Callable
-from itertools import chain, repeat
 from typing import Any, cast
 
 import numpy as np
@@ -14,6 +13,7 @@ from saiph.models import Model
 from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.utils.common import (
     column_multiplication,
+    expand_column_weights,
     get_dummies_mapping,
     get_explained_variance,
     get_grouped_modality_values,
@@ -121,7 +121,9 @@ def fit(
     modalities_types = get_modalities_types(df[quali])
 
     row_w = get_uniform_row_weights(len(df))
-    col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
+    col_weights = expand_column_weights(
+        _col_weights, df.columns.to_list(), quanti, quali, dummy_categorical
+    )
 
     df_scaled, mean, std, prop, _modalities = center(df, quanti, quali)
 
@@ -197,33 +199,6 @@ def fit_transform(
     model = fit(df, nf, col_weights, seed=random_gen)
     coord = transform(df, model)
     return coord, model
-
-
-def _col_weights_compute(
-    df: pd.DataFrame, col_weights: NDArray[Any], quanti: list[int], quali: list[int]
-) -> NDArray[Any]:
-    """Calculate weights for columns given what weights the user gave."""
-    # Set the columns and row weights
-    weight_df = pd.DataFrame([col_weights], columns=df.columns)
-    weight_quanti = weight_df[quanti]
-    weight_quali = weight_df[quali]
-
-    # Get the number of modality for each quali variable
-    modality_numbers = []
-    for column in weight_quali.columns:
-        modality_numbers += [len(df[column].unique())]
-
-    # Set weight vector for categorical columns
-    weight_quali_rep = list(
-        chain.from_iterable(
-            repeat(i, j)
-            for i, j in zip(list(weight_quali.iloc[0]), modality_numbers, strict=False)
-        )
-    )
-
-    _col_weights: NDArray[Any] = np.array(list(weight_quanti.iloc[0]) + weight_quali_rep)
-
-    return _col_weights
 
 
 def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:

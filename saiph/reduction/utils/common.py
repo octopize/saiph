@@ -75,6 +75,39 @@ def get_dummies_mapping(columns: list[str], dummy_columns: list[str]) -> dict[st
     )
 
 
+def expand_column_weights(
+    col_weights: NDArray[Any],
+    columns: list[str],
+    quanti: list[str],
+    quali: list[str],
+    dummy_categorical: list[str],
+) -> NDArray[np.float64]:
+    """Repeat each categorical column's weight once per dummy column it produced.
+
+    The caller gives one weight per original column; the scaled matrix has one
+    column per continuous variable followed by one per modality.
+
+    The modality count must come from `dummy_categorical` rather than from
+    `nunique`: `pd.get_dummies` emits no indicator for a null, so counting
+    distinct values makes the weight vector longer than the dummy block.
+
+    Parameters:
+        col_weights: One weight per column of the original dataframe.
+        columns: Columns of the original dataframe, in order.
+        quanti: Continuous column names.
+        quali: Categorical column names.
+        dummy_categorical: Dummy column names, as produced by `pd.get_dummies`.
+
+    Returns:
+        One weight per column of the scaled matrix.
+    """
+    weight_of = dict(zip(columns, col_weights, strict=True))
+    mapping = get_dummies_mapping(quali, dummy_categorical)
+    expanded = [weight_of[col] for col in quanti]
+    expanded += [weight_of[col] for col, dummies in mapping.items() for _ in dummies]
+    return np.array(expanded, dtype=np.float64)
+
+
 TYPES = {
     int: "int",
     np.int_: "int",

@@ -242,3 +242,16 @@ def test_reconstructed_df_from_weighted_model_equals_df() -> None:
     model = fit(df, col_weights=[3, 1, 1, 1, 1, 1, 1, 1, 1, 1])  # type: ignore
     reconstructed_df = reconstruct_df_from_model(model)
     assert_frame_equal(df, reconstructed_df, check_dtype=False)
+
+
+def test_fit_with_null_categorical_value() -> None:
+    """A null takes no dummy column, so it must not lengthen the weight vector."""
+    df = pd.DataFrame(
+        {
+            "c1": ["a", "b", "a", None, "b", "a"],
+            "c2": ["x", "y", "x", "y", "x", "y"],
+        }
+    )
+    model = fit(df, nf=2, col_weights=np.array([2.0, 3.0]))
+
+    assert list(model.column_weights) == [2.0, 2.0, 3.0, 3.0]

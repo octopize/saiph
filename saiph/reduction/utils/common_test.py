@@ -9,6 +9,7 @@ from toolz import concat
 from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.utils.common import (
     column_multiplication,
+    expand_column_weights,
     get_dummies_mapping,
     get_explained_variance,
     get_grouped_modality_values,
@@ -78,3 +79,32 @@ def test_get_explained_variance_returns_correct_variance_and_ratio(
     variance, ratio = get_explained_variance(np.array(s), nb_individuals=3, nf=2)
     np.testing.assert_array_equal(variance, expected_variance)
     np.testing.assert_array_equal(ratio, expected_ratio)
+
+
+def test_expand_column_weights_repeats_a_weight_per_modality() -> None:
+    sep = DUMMIES_SEPARATOR
+    expanded = expand_column_weights(
+        np.array([2.0, 3.0, 5.0]),
+        columns=["num", "tool", "fruit"],
+        quanti=["num"],
+        quali=["tool", "fruit"],
+        dummy_categorical=[
+            f"tool{sep}hammer",
+            f"tool{sep}wrench",
+            f"fruit{sep}apple",
+        ],
+    )
+    assert list(expanded) == [2.0, 3.0, 3.0, 5.0]
+
+
+def test_expand_column_weights_ignores_modalities_without_a_dummy_column() -> None:
+    """A null takes no dummy column, so it must not consume a weight slot."""
+    sep = DUMMIES_SEPARATOR
+    expanded = expand_column_weights(
+        np.array([4.0]),
+        columns=["tool"],
+        quanti=[],
+        quali=["tool"],
+        dummy_categorical=[f"tool{sep}hammer", f"tool{sep}wrench"],
+    )
+    assert list(expanded) == [4.0, 4.0]

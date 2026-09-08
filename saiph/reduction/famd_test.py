@@ -195,9 +195,6 @@ def test_get_variable_contributions(mixed_df: pd.DataFrame) -> None:
         columns=get_projected_column_names(3),
     )
 
-    # The third axis has a singular value of 2.7e-19, and its cos2 divides
-    # floating-point dust by floating-point dust. Any value asserted there measures
-    # the order of the arithmetic rather than anything about the data.
     expected_cos2 = pd.DataFrame.from_dict(
         data={
             "variable_1": [0.897214, 0.002786],
@@ -209,6 +206,11 @@ def test_get_variable_contributions(mixed_df: pd.DataFrame) -> None:
 
     assert_frame_equal(contributions, expected_contributions, check_exact=False, atol=0.0001)
     assert_frame_equal(cos2.iloc[:, :2], expected_cos2, check_exact=False, atol=0.0001)
+    # The third axis has a singular value of 2.7e-19, so every cos2 on it is built from
+    # floating-point dust. The continuous one has that value as a factor and stays
+    # negligible (1e-135); the categorical one divides one dust quadratic by another and
+    # lands anywhere in [0, 1], so there is nothing to assert about it.
+    assert cos2.loc["variable_1", "Dim. 3"] == pytest.approx(0, abs=1e-9)
 
 
 @pytest.mark.parametrize("col_weights", [[2.0, 3.0], None])

@@ -27,7 +27,7 @@ from sklearn.utils import extmath
 
 from saiph.exception import InvalidParameterException
 from saiph.models import Model
-from saiph.reduction import DUMMIES_SEPARATOR, pca
+from saiph.reduction import DUMMIES_SEPARATOR, famd, pca
 from saiph.reduction.utils.common import (
     expand_column_weights,
     get_explained_variance,
@@ -61,15 +61,37 @@ class ScalingParams:
         return len(self.quanti) + len(self.modalities)
 
     @property
+    def prop(self) -> pd.Series:
+        """Proportion of individuals taking each modality.
+
+        A null takes no dummy column, so a column holding one has modality
+        proportions summing to less than 1.
+        """
+        return self.modality_counts / self.n
+
+    @property
     def max_rank(self) -> int:
         """Upper bound on the rank of the scaled matrix.
 
-        Centering the continuous block costs one direction. Centering the dummies of
-        a categorical variable makes them sum to zero, so each categorical variable
-        costs one more: the axes past this count are an arbitrary basis of the null
-        space, not a decomposition of the data.
+        The dummies of a categorical variable sum to one on every row, so after
+        centering they are linearly dependent and the variable costs one direction:
+        the axes past this count are an arbitrary basis of the null space, not a
+        decomposition of the data.
+
+        A null breaks that dependency, because it takes no dummy column and so
+        leaves a row whose dummies sum to zero. A variable holding one therefore
+        keeps its full set of directions.
         """
-        return min(self.n - 1, self.p - len(self.quali))
+        complete = sum(1 for col in self.quali if self._is_complete(col))
+        return min(self.n - 1, self.p - complete)
+
+    def _is_complete(self, col: str) -> bool:
+        """Whether every individual has a value for `col`."""
+        prefix = f"{col}{DUMMIES_SEPARATOR}"
+        counts = self.modality_counts[
+            [name for name in self.modality_counts.index if name.startswith(prefix)]
+        ]
+        return bool(counts.sum() == self.n)
 
     def to_model(self) -> Model:
         """Build the model with the fields pass 1 determines.
@@ -78,14 +100,14 @@ class ScalingParams:
         to fill in. Pass 2 scales its batches through this same object, so it goes
         down the same `scaler` the fitted model will use at transform time.
         """
-        return Model(
+        model = Model(
             original_dtypes=self.original_dtypes,
             original_categorical=self.quali,
             original_continuous=self.quanti,
             dummy_categorical=list(self.modalities),
             modalities_types=self.modalities_types,
-            mean=self.mean,
-            std=self.std,
+            mean=self.mean if self.quanti else None,
+            std=self.std if self.quanti else None,
             _modalities=self.modalities if len(self.modalities) else None,
             column_weights=self.column_weights,
             type=self.method,
@@ -97,6 +119,9 @@ class ScalingParams:
             row_weights=np.empty(0),
             nf=0,
         )
+        if self.method == "famd":
+            model.prop = self.prop
+        return model
 
 
 class ScalingAccumulator:
@@ -161,7 +186,7 @@ class ScalingAccumulator:
             raise ValueError("Cannot fit on zero rows.")
 
         modality_counts = self._ordered_modality_counts()
-        modalities = np.array(modality_counts.index.to_list())
+        modalities = np.array(modality_counts.index.to_list(), dtype=object)
 
         col_weights = (
             np.ones(len(self._columns)) if self._col_weights is None else self._col_weights
@@ -301,6 +326,12 @@ class DecompositionAccumulator:
             )
 
         scaled = self._scale(batch)
+        if not np.isfinite(scaled).all():
+            raise ValueError(
+                "The scaled batch holds non-finite values, which no decomposition "
+                "accepts. A null or an infinity in a continuous column is rejected "
+                "by a whole-table fit for the same reason."
+            )
         weighted = scaled * self.params.column_weights / self.params.n
 
         stacked = weighted if self._R is None else np.vstack([self._R, weighted])
@@ -346,6 +377,12 @@ class DecompositionAccumulator:
         """
         if self.params.method == "pca":
             scaled = pca.scaler(self._model, batch)
+            return np.asarray(scaled, dtype=np.float64)
+
+        if self.params.method == "famd":
+            # The same scaler transform() calls, so a fit and a transform of the
+            # same rows cannot drift apart.
+            scaled = famd.scaler(self._model, batch)
             return np.asarray(scaled, dtype=np.float64)
 
         raise NotImplementedError(f"Unsupported method {self.params.method!r}.")

@@ -5,11 +5,13 @@ import pandas as pd
 import pytest
 from numpy.testing import assert_allclose
 from numpy.typing import NDArray
-from pandas.testing import assert_series_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 from saiph.exception import InvalidParameterException
+from saiph.inverse_transform import inverse_transform
 from saiph.models import Model
-from saiph.reduction import pca
+from saiph.projection import transform
+from saiph.reduction import DUMMIES_SEPARATOR, famd, pca
 from saiph.streaming import (
     DecompositionAccumulator,
     ScalingAccumulator,
@@ -293,3 +295,228 @@ def test_accumulators_can_be_driven_directly(iris_quanti_df: pd.DataFrame) -> No
     streamed = decomposition.finalize()
 
     assert_agrees_with_reference(streamed, pca.fit(df, nf=nf))
+
+
+# ---------------------------------------------------------------------------
+# FAMD
+# ---------------------------------------------------------------------------
+
+
+def streamed_rank(df: pd.DataFrame) -> int:
+    """The rank the streaming fit reports for `df`, pinned against `fit` below."""
+    return _scaling_params(df, size=64).max_rank
+
+
+def whole_table_width(df: pd.DataFrame) -> int:
+    """Number of columns of the scaled matrix.
+
+    Not `min(pd.get_dummies(df).shape)`: that leaves a boolean column alone, while
+    every `fit` casts it to a category first and gives it one dummy per value.
+    """
+    return _scaling_params(df, size=64).p
+
+
+def reference_famd(df: pd.DataFrame, *, nf: int | None = None, **kwargs: object) -> Model:
+    """Fit the whole table down the full-SVD path.
+
+    `get_svd` takes the randomized path when `nf < 0.8 * min(shape)`, and that path
+    is itself approximate, so a reference taken from it would not be one. Passing a
+    smaller `nf` keeps the full path only because the reference is refitted here at
+    full width and truncated afterwards.
+    """
+    width = min(len(df), whole_table_width(df))
+    model = famd.fit(df, nf=width, **kwargs)  # type: ignore[arg-type]
+    if nf is None:
+        return model
+    return _truncated(model, nf)
+
+
+def _truncated(model: Model, nf: int) -> Model:
+    """Keep `nf` components of a model fitted at full width."""
+    assert model.s is not None
+    model.V = model.V[:nf, :]
+    model.s = model.s[:nf]
+    model.explained_var = model.explained_var[:nf]
+    model.explained_var_ratio = model.explained_var_ratio[:nf]
+    model.U = model.U[:, :nf]
+    model.variable_coord = pd.DataFrame(model.V.T)
+    model.nf = nf
+    return model
+
+
+def mixed_table(n: int = 400, seed: int = 3) -> pd.DataFrame:
+    rng = np.random.default_rng(seed)
+    return pd.DataFrame(
+        {
+            "num_1": rng.normal(size=n),
+            "num_2": rng.normal(loc=50, scale=3, size=n),
+            "tool": rng.choice(["wrench", "hammer", "saw"], size=n),
+            "fruit": rng.choice(["apple", "orange"], size=n),
+        }
+    )
+
+
+@pytest.mark.parametrize("size", [1, 3, 11, 97, 400, 1000])
+def test_fit_streaming_famd_equals_fit(size: int) -> None:
+    df = mixed_table()
+    nf = streamed_rank(df)
+
+    reference = reference_famd(df)
+    streamed = fit_streaming(lambda: chunks(df, size), nf=nf)
+
+    assert_agrees_with_reference(streamed, reference)
+
+
+def test_fit_streaming_famd_independent_of_batch_order() -> None:
+    df = mixed_table()
+    nf = streamed_rank(df)
+    shuffled = df.sample(frac=1, random_state=0)
+
+    reference = reference_famd(df)
+    streamed = fit_streaming(lambda: chunks(shuffled, 37), nf=nf)
+
+    assert_agrees_with_reference(streamed, reference)
+
+
+def test_fit_streaming_famd_with_col_weights() -> None:
+    df = mixed_table()
+    nf = streamed_rank(df)
+    col_weights = np.array([3.0, 1.0, 2.0, 1.0])
+
+    reference = reference_famd(df, col_weights=col_weights)
+    streamed = fit_streaming(lambda: chunks(df, 29), nf=nf, col_weights=col_weights)
+
+    assert_agrees_with_reference(streamed, reference)
+
+
+def test_fit_streaming_famd_with_a_modality_only_in_the_last_batch() -> None:
+    """A modality first seen in the last batch still gets its own column.
+
+    This is what forces the two passes: the dummy column it needs did not exist
+    while the earlier batches were scaled, and after centering its entries there
+    are not zero.
+    """
+    df = mixed_table(n=120)
+    df.loc[df.index[-1], "tool"] = "chisel"
+    nf = streamed_rank(df)
+
+    reference = reference_famd(df)
+    streamed = fit_streaming(lambda: chunks(df, 20), nf=nf)
+
+    assert f"tool{DUMMIES_SEPARATOR}chisel" in streamed.dummy_categorical
+    assert_agrees_with_reference(streamed, reference)
+
+
+def test_fit_streaming_famd_with_null_categorical_value() -> None:
+    """A null takes no dummy column, in a batch exactly as in the whole table."""
+    df = mixed_table(n=120)
+    df.loc[df.index[5], "tool"] = None
+    df.loc[df.index[63], "fruit"] = None
+    nf = streamed_rank(df)
+
+    reference = reference_famd(df)
+    streamed = fit_streaming(lambda: chunks(df, 17), nf=nf)
+
+    assert_agrees_with_reference(streamed, reference)
+
+
+def test_fit_streaming_rejects_a_null_continuous_value() -> None:
+    """No decomposition takes a null, and a whole-table fit rejects one too.
+
+    `linalg.svd` refuses a matrix holding one, so the streamed fit says so at the
+    batch that carries it rather than carrying it into the merged factor and
+    failing at the end with a decomposition error.
+    """
+    df = mixed_table(n=120)
+    df.loc[df.index[7], "num_1"] = np.nan
+
+    with pytest.raises(ValueError, match="must not contain infs or NaNs"):
+        reference_famd(df)
+
+    with pytest.raises(ValueError, match="non-finite"):
+        fit_streaming(lambda: chunks(df, 17), nf=4)
+
+
+def test_fit_streaming_famd_with_constant_columns() -> None:
+    df = mixed_table(n=120)
+    df["num_constant"] = 4.0
+    df["cat_constant"] = "only"
+    nf = streamed_rank(df)
+
+    reference = reference_famd(df)
+    streamed = fit_streaming(lambda: chunks(df, 23), nf=nf)
+
+    assert_agrees_with_reference(streamed, reference)
+
+
+def test_fit_streaming_famd_on_a_boolean_column() -> None:
+    """A boolean column is categorical, and its modalities are named True/False."""
+    df = mixed_table(n=80)
+    rng = np.random.default_rng(7)
+    df["flag"] = rng.choice([True, False], size=len(df))
+    nf = streamed_rank(df)
+
+    reference = reference_famd(df)
+    streamed = fit_streaming(lambda: chunks(df, 13), nf=nf)
+
+    assert f"flag{DUMMIES_SEPARATOR}True" in streamed.dummy_categorical
+    assert_agrees_with_reference(streamed, reference)
+
+
+# ---------------------------------------------------------------------------
+# The reported rank
+# ---------------------------------------------------------------------------
+
+
+def rank_cases() -> list[tuple[str, pd.DataFrame]]:
+    df_null_categorical = mixed_table(n=120)
+    df_null_categorical.loc[df_null_categorical.index[5], "tool"] = None
+
+    df_boolean = mixed_table(n=80)
+    df_boolean["flag"] = np.random.default_rng(7).choice([True, False], size=80)
+
+    df_constant = mixed_table(n=120)
+    df_constant["cat_constant"] = "only"
+
+    return [
+        ("mixed", mixed_table(n=120)),
+        ("null categorical", df_null_categorical),
+        ("boolean", df_boolean),
+        ("constant categorical", df_constant),
+    ]
+
+
+@pytest.mark.parametrize(("name", "df"), rank_cases())
+def test_reported_rank_matches_the_whole_table_fit(name: str, df: pd.DataFrame) -> None:
+    """The rank `nf` is validated against must be the one `fit` actually finds.
+
+    Too low and a legitimate `nf` is refused; too high and the fit returns axes
+    that are an arbitrary basis of the null space.
+    """
+    reference = reference_famd(df)
+    assert reference.s is not None
+
+    assert streamed_rank(df) == numerical_rank(reference.s)
+
+
+# ---------------------------------------------------------------------------
+# Round trip
+# ---------------------------------------------------------------------------
+
+
+def test_famd_round_trip_matches_the_whole_table_round_trip() -> None:
+    """transform then inverse_transform gives what the whole-table model gives.
+
+    Stricter than comparing V: transform and inverse_transform use the same V, so
+    a flipped axis cancels and only a real difference in the fit shows up.
+    """
+    df = mixed_table(n=120)
+    nf = streamed_rank(df)
+
+    reference = reference_famd(df, nf=nf)
+    streamed = fit_streaming(lambda: chunks(df, 17), nf=nf)
+
+    back_reference = inverse_transform(transform(df, reference), reference)
+    back_streamed = inverse_transform(transform(df, streamed), streamed)
+
+    assert_frame_equal(back_streamed, back_reference)

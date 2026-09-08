@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from itertools import repeat
 from typing import Any
 
 import numpy as np
@@ -16,7 +15,7 @@ def get_projected_column_names(n: int) -> list[str]:
 
 
 def get_uniform_row_weights(n: int) -> NDArray[np.float64]:
-    return np.array([k for k in repeat(1 / n, n)])
+    return np.full(n, 1 / n, dtype=np.float64)
 
 
 def row_multiplication(df: pd.DataFrame, arr: NDArray[Any]) -> pd.DataFrame:

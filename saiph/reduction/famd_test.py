@@ -15,6 +15,7 @@ from saiph.reduction.famd import (
     center,
     fit,
     fit_transform,
+    get_individual_coordinates,
     get_variable_contributions,
     reconstruct_df_from_model,
     scaler,
@@ -24,6 +25,7 @@ from saiph.reduction.pca import center as center_pca
 from saiph.reduction.pca import fit_transform as fit_pca
 from saiph.reduction.pca import scaler as scaler_pca
 from saiph.reduction.utils.common import get_projected_column_names
+from saiph.reduction.utils.svd import get_svd
 
 
 def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
@@ -196,17 +198,20 @@ def test_get_variable_contributions(mixed_df: pd.DataFrame) -> None:
         columns=get_projected_column_names(3),
     )
 
+    # The third axis has a singular value of 2.7e-19, and its cos2 divides
+    # floating-point dust by floating-point dust. Any value asserted there measures
+    # the order of the arithmetic rather than anything about the data.
     expected_cos2 = pd.DataFrame.from_dict(
         data={
-            "variable_1": [0.897214, 0.002786, 0],
-            "tool": [0.897214, 0.002786, 0.25],
+            "variable_1": [0.897214, 0.002786],
+            "tool": [0.897214, 0.002786],
         },
         orient="index",
-        columns=get_projected_column_names(3),
+        columns=get_projected_column_names(2),
     )
 
     assert_frame_equal(contributions, expected_contributions, check_exact=False, atol=0.0001)
-    assert_frame_equal(cos2, expected_cos2, check_exact=False, atol=0.0001)
+    assert_frame_equal(cos2.iloc[:, :2], expected_cos2, check_exact=False, atol=0.0001)
 
 
 @pytest.mark.parametrize("col_weights", [[2.0, 3.0], None])
@@ -499,3 +504,37 @@ def test_fit_with_null_categorical_value() -> None:
 
     assert list(model.column_weights) == [2.0, 3.0, 3.0]
     assert model.dummy_categorical == [f"cat{DUMMIES_SEPARATOR}a", f"cat{DUMMIES_SEPARATOR}b"]
+
+
+def test_get_individual_coordinates_equals_the_left_singular_vectors() -> None:
+    """The rebuilt coordinates must be the ones the decomposition produced.
+
+    They are rebuilt from the scaled data rather than stored, because one row per
+    individual is the one part of a decomposition whose size grows with the table.
+    """
+    rng = np.random.default_rng(4)
+    n = 60
+    df = pd.DataFrame(
+        {
+            "num_1": rng.normal(size=n),
+            "num_2": rng.normal(size=n),
+            "tool": rng.choice(["a", "b", "c"], size=n),
+            "fruit": rng.choice(["x", "y"], size=n),
+        }
+    )
+    # nf below 0.8 * min(shape) would take the randomized path, whose U and V are
+    # an approximation and do not agree with each other to this tolerance.
+    nf = 7
+
+    for col_weights in (None, np.array([3.0, 1.0, 2.0, 1.0])):
+        model = fit(df, nf=nf, col_weights=col_weights)
+        assert model.s is not None
+
+        # What fit decomposes, and what it does to the left singular vectors after.
+        Z = (scaler(model, df) * model.column_weights).T.multiply(model.row_weights).T
+        U, S, _ = get_svd(Z, nf=nf)
+        expected = (U / np.sqrt(model.row_weights)[:, np.newaxis])[:, :nf] * S[:nf]
+
+        rebuilt = get_individual_coordinates(model, df, nf)
+
+        assert_allclose(rebuilt.to_numpy(), expected, atol=1e-14)

@@ -383,11 +383,7 @@ def compute_categorical_cos2(model: Model, df: pd.DataFrame, min_nf: int) -> pd.
     -------
         dataframe of categorical cos2
     """
-    if model.U is not None and model.s is not None:
-        model_coords = pd.DataFrame(
-            model.U[:, :min_nf] * model.s[:min_nf],
-            columns=get_projected_column_names(min_nf),
-        )
+    model_coords = get_individual_coordinates(model, df, min_nf)
 
     mapping = get_dummies_mapping(model.original_categorical, model.dummy_categorical)
     dummy = pd.get_dummies(
@@ -416,6 +412,24 @@ def compute_categorical_cos2(model: Model, df: pd.DataFrame, min_nf: int) -> pd.
     categorical_cos2 = row_division(categorical_cos2**2, nb_modalities)
 
     return categorical_cos2
+
+
+def get_individual_coordinates(model: Model, df: pd.DataFrame, min_nf: int) -> pd.DataFrame:
+    """Coordinates of the individuals of `df` on the weighted axes.
+
+    These are the left singular vectors scaled by the singular values, rebuilt from
+    the scaled data rather than stored: one row per individual is the one part of a
+    decomposition whose size grows with the table.
+
+    Not `transform(df, model)`, which drops the column weights out of the axes and
+    so only agrees with this up to a per-axis factor when every weight is one.
+    """
+    scaled = scaler(model, df)
+    weighted = column_multiplication(scaled, model.column_weights**1.5)
+    coords = weighted @ model.V[:min_nf].T
+    coords = row_multiplication(coords, np.sqrt(model.row_weights))
+    coords.columns = get_projected_column_names(min_nf)
+    return pd.DataFrame(coords)
 
 
 def compute_continuous_cos2(

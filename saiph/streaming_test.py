@@ -29,8 +29,8 @@ def numerical_rank(s: NDArray[np.float64], rtol: float = 1e-10) -> int:
     """Number of singular values that carry signal.
 
     FAMD and MCA are structurally rank-deficient, and the axes past the rank are an
-    arbitrary basis of the null space in every implementation. Comparing them
-    measures the tie-breaking of the decomposition, not the fit.
+    arbitrary null-space basis in every implementation: comparing them measures the
+    decomposition's tie-breaking, not the fit.
     """
     return int(np.sum(s > rtol * s[0]))
 
@@ -40,8 +40,8 @@ def align_signs(
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Flip each axis of `V` to point the same way as `reference`.
 
-    A singular vector is defined up to sign, and a streaming fit has no left
-    singular vectors to break the tie the same way `fit` does.
+    A singular vector is defined up to sign, and a streaming fit has no left singular
+    vectors to break the tie the way `fit` does.
     """
     signs = np.where((V * reference).sum(axis=1) < 0, -1.0, 1.0)
     return V * signs[:, np.newaxis], reference
@@ -159,10 +159,9 @@ def test_fit_streaming_pca_with_null_continuous_value() -> None:
 def test_fit_streaming_std_is_accurate_on_an_offset_column(offset: float, rtol: float) -> None:
     """The variance update must not be the raw-moment one.
 
-    `fit` requires datetimes as seconds since epoch, so a column whose values sit
-    around 1e9 with a small spread is an ordinary input, not a pathological one.
-    Subtracting two large squares there gives a relative error above 1, while the
-    incremental update stays near 1e-9.
+    `fit` requires datetimes as seconds since epoch, so a column around 1e9 with a
+    small spread is ordinary input. Subtracting two large squares there is off by more
+    than 100%, where the incremental update stays near 1e-9.
     """
     rng = np.random.default_rng(2)
     values = offset + rng.normal(size=200_000)
@@ -310,8 +309,8 @@ def streamed_rank(df: pd.DataFrame) -> int:
 def whole_table_width(df: pd.DataFrame) -> int:
     """Number of columns of the scaled matrix.
 
-    Not `min(pd.get_dummies(df).shape)`: that leaves a boolean column alone, while
-    every `fit` casts it to a category first and gives it one dummy per value.
+    Not `min(pd.get_dummies(df).shape)`, which leaves a boolean column alone while
+    every `fit` casts it to a category and gives it one dummy per value.
     """
     return _scaling_params(df, size=64).p
 
@@ -319,10 +318,8 @@ def whole_table_width(df: pd.DataFrame) -> int:
 def reference_famd(df: pd.DataFrame, *, nf: int | None = None, **kwargs: object) -> Model:
     """Fit the whole table down the full-SVD path.
 
-    `get_svd` takes the randomized path when `nf < 0.8 * min(shape)`, and that path
-    is itself approximate, so a reference taken from it would not be one. Passing a
-    smaller `nf` keeps the full path only because the reference is refitted here at
-    full width and truncated afterwards.
+    `get_svd` takes an approximate randomized path when `nf < 0.8 * min(shape)`, so a
+    reference from it would not be one. A smaller `nf` fits at full width and truncates.
     """
     width = min(len(df), whole_table_width(df))
     model = famd.fit(df, nf=width, **kwargs)  # type: ignore[arg-type]
@@ -391,9 +388,8 @@ def test_fit_streaming_famd_with_col_weights() -> None:
 def test_fit_streaming_famd_with_a_modality_only_in_the_last_batch() -> None:
     """A modality first seen in the last batch still gets its own column.
 
-    This is what forces the two passes: the dummy column it needs did not exist
-    while the earlier batches were scaled, and after centering its entries there
-    are not zero.
+    This forces the two passes: its dummy column did not exist while the earlier
+    batches were scaled, and after centering their entries in it are not zero.
     """
     df = mixed_table(n=120)
     df.loc[df.index[-1], "tool"] = "chisel"
@@ -422,9 +418,8 @@ def test_fit_streaming_famd_with_null_categorical_value() -> None:
 def test_fit_streaming_rejects_a_null_continuous_value() -> None:
     """No decomposition takes a null, and a whole-table fit rejects one too.
 
-    `linalg.svd` refuses a matrix holding one, so the streamed fit says so at the
-    batch that carries it rather than carrying it into the merged factor and
-    failing at the end with a decomposition error.
+    `linalg.svd` refuses a matrix holding one, so the streamed fit reports it at the
+    batch that carries it rather than at the final decomposition.
     """
     df = mixed_table(n=120)
     df.loc[df.index[7], "num_1"] = np.nan
@@ -489,8 +484,7 @@ def rank_cases() -> list[tuple[str, pd.DataFrame]]:
 def test_reported_rank_matches_the_whole_table_fit(name: str, df: pd.DataFrame) -> None:
     """The rank `nf` is validated against must be the one `fit` actually finds.
 
-    Too low and a legitimate `nf` is refused; too high and the fit returns axes
-    that are an arbitrary basis of the null space.
+    Too low refuses a legitimate `nf`; too high returns null-space axes.
     """
     reference = reference_famd(df)
     assert reference.s is not None
@@ -506,8 +500,8 @@ def test_reported_rank_matches_the_whole_table_fit(name: str, df: pd.DataFrame) 
 def test_famd_round_trip_matches_the_whole_table_round_trip() -> None:
     """transform then inverse_transform gives what the whole-table model gives.
 
-    Stricter than comparing V: transform and inverse_transform use the same V, so
-    a flipped axis cancels and only a real difference in the fit shows up.
+    Stricter than comparing V: both use the same V, so a flipped axis cancels and only
+    a real difference in the fit shows.
     """
     df = mixed_table(n=120)
     nf = streamed_rank(df)
@@ -553,8 +547,8 @@ def reference_mca(df: pd.DataFrame, *, nf: int | None = None, **kwargs: object) 
 def test_streamed_mca_scaling_equals_diag_compute() -> None:
     """The row-local formula must equal the code it replaces, not merely the SVD of it.
 
-    `mca.center` and `mca._diag_compute` are what a whole-table fit decomposes, and
-    they cannot stream: they build an `n x p` dense array and an `n x n` diagonal.
+    `mca.center` and `mca._diag_compute` build an `n x p` array and an `n x n` diagonal,
+    which is why they cannot stream.
     """
     df = categorical_table(n=200)
 
@@ -604,9 +598,8 @@ def test_fit_streaming_mca_with_col_weights() -> None:
 def test_fit_streaming_mca_with_null_categorical_value() -> None:
     """The row share `r` is not constant once a column holds a null.
 
-    A row with a null has fewer dummies set, so its share of the dummy matrix is
-    smaller. Substituting `1/n` for it puts a 16% error on the singular values,
-    which this equality would not survive.
+    A row with a null has fewer dummies set, so its share is smaller. Substituting
+    `1/n` costs 16% on the singular values, which this equality would not survive.
     """
     df = categorical_table(n=200)
     df.loc[df.index[3], "tool"] = None

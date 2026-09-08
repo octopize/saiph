@@ -83,22 +83,9 @@ def expand_column_weights(
 ) -> NDArray[np.float64]:
     """Repeat each categorical column's weight once per dummy column it produced.
 
-    The caller gives one weight per original column; the scaled matrix has one
-    column per continuous variable followed by one per modality.
-
-    The modality count must come from `dummy_categorical` rather than from
-    `nunique`: `pd.get_dummies` emits no indicator for a null, so counting
-    distinct values makes the weight vector longer than the dummy block.
-
-    Parameters:
-        col_weights: One weight per column of the original dataframe.
-        columns: Columns of the original dataframe, in order.
-        quanti: Continuous column names.
-        quali: Categorical column names.
-        dummy_categorical: Dummy column names, as produced by `pd.get_dummies`.
-
-    Returns:
-        One weight per column of the scaled matrix.
+    The count must come from `dummy_categorical`, not from `nunique`: `pd.get_dummies`
+    emits no indicator for a null, so distinct values overcount and the weight vector
+    comes out longer than the dummy block.
     """
     weight_of = dict(zip(columns, col_weights, strict=True))
     mapping = get_dummies_mapping(quali, dummy_categorical)

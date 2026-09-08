@@ -1,13 +1,15 @@
-import subprocess
-import sys
+import tracemalloc
+from collections.abc import Iterator
 from pathlib import Path
 from resource import RUSAGE_SELF, getrusage
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import pytest
 
 from saiph.projection import fit
+from saiph.streaming import fit_streaming
 
 # 2024-07-03 @chybz
 # - waaayyy to tied to Python version and other modules
@@ -59,57 +61,64 @@ def test_1m(benchmark: Any) -> None:
     benchmark(fit, df)
 
 
-# ---------------------------------------------------------------------------
-# Streaming fit: peak memory against row count
-# ---------------------------------------------------------------------------
-
 SMALL_ROW_COUNT = 50_000
 LARGE_ROW_COUNT = 800_000
 STREAMING_BATCH_SIZE = 10_000
-# Columns of the scaled matrix per method, to size what a whole-table fit would hold.
+# Columns of the scaled matrix per method.
 SCALED_WIDTH = {"pca": 2, "famd": 7, "mca": 5}
 
 
-def measure_peak_bytes(n_rows: int, method: str) -> int:
-    """Peak resident size of a child process that fits `n_rows` and nothing else.
+def synthesise(n_rows: int, method: str) -> Iterator[pd.DataFrame]:
+    rng = np.random.default_rng(0)
+    produced = 0
+    while produced < n_rows:
+        size = min(STREAMING_BATCH_SIZE, n_rows - produced)
+        produced += size
+        continuous = {
+            "num_1": rng.normal(size=size),
+            "num_2": rng.normal(loc=50, scale=3, size=size),
+        }
+        categorical = {
+            "tool": rng.choice(["wrench", "hammer", "saw"], size=size),
+            "fruit": rng.choice(["apple", "orange"], size=size),
+        }
+        if method == "pca":
+            yield pd.DataFrame(continuous)
+        elif method == "mca":
+            yield pd.DataFrame(categorical)
+        else:
+            yield pd.DataFrame({**continuous, **categorical})
 
-    A child process is what makes this measurable: ru_maxrss is a high-water mark
-    for the whole process, so measuring in the test runner would report whichever
-    earlier test allocated most.
+
+def measure_peak_bytes(n_rows: int, method: str) -> int:
+    """Bytes allocated at peak by one streaming fit.
+
+    tracemalloc rather than ru_maxrss, which is a whole-process high-water mark: it
+    would carry whatever an earlier test allocated, and varies by ~13 MB between runs.
     """
-    completed = subprocess.run(  # noqa: S603
-        [
-            sys.executable,
-            "-m",
-            "saiph.tests.peak_memory",
-            str(n_rows),
-            str(STREAMING_BATCH_SIZE),
-            method,
-        ],
-        capture_output=True,
-        check=True,
-        text=True,
-    )
-    return int(completed.stdout.strip())
+    tracemalloc.start()
+    try:
+        tracemalloc.reset_peak()
+        fit_streaming(lambda: synthesise(n_rows, method), nf=2, method=method)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    return peak
 
 
 @pytest.mark.parametrize("method", ["pca", "famd", "mca"])
 def test_fit_streaming_peak_memory_is_flat_in_row_count(record_property: Any, method: str) -> None:
     """Sixteen times the rows must not cost sixteen times the memory.
 
-    This is the point of the feature, so it is asserted rather than assumed. The
-    bound is the size of the scaled matrix a whole-table fit would have to hold,
-    which is the smallest of the arrays that a streaming fit does not allocate.
-
-    The remaining growth is Model.row_weights, one float per individual.
+    All the growth there is is Model.row_weights, one float per individual, so the
+    bound is that vector. A fit holding the table would exceed it on the scaled matrix
+    alone, before the dataframe.
     """
-    small = measure_peak_bytes(SMALL_ROW_COUNT, method)
-    large = measure_peak_bytes(LARGE_ROW_COUNT, method)
-
-    growth = large - small
-    whole_table_scaled_matrix = LARGE_ROW_COUNT * SCALED_WIDTH[method] * 8
-    row_weights = LARGE_ROW_COUNT * 8
+    growth = measure_peak_bytes(LARGE_ROW_COUNT, method) - measure_peak_bytes(
+        SMALL_ROW_COUNT, method
+    )
+    row_weights_growth = (LARGE_ROW_COUNT - SMALL_ROW_COUNT) * 8
 
     record_property(f"peak_memory_growth_{method}", growth)
-    assert growth < whole_table_scaled_matrix
-    assert growth < 4 * row_weights
+    assert growth < 1.5 * row_weights_growth
+    assert growth < LARGE_ROW_COUNT * SCALED_WIDTH[method] * 8

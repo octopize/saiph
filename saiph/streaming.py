@@ -1,19 +1,15 @@
 """Fit a projection from batches of rows, without ever holding the whole table.
 
-Two passes. Pass 1 accumulates the scaling constants that every row of pass 2
-needs — the mean, the standard deviation, the modality counts. Pass 2 scales
-each batch and folds it into a carried QR factor `R`.
+Pass 1 accumulates the scaling constants every row of pass 2 needs. Pass 2 scales each
+batch and folds it into a carried QR factor `R`.
 
-`R` is what makes the result exact rather than approximate. Writing the scaled
-matrix as `Z = Q R` with orthonormal `Q` gives `Zᵀ Z = Rᵀ R`, and the singular
-values and right singular vectors are determined by `Zᵀ Z` alone, so `R` carries
-them without loss. Stacking the next batch under the carried `R` and refactoring
-keeps that true for every row seen, so the decomposition at the end is the one
-`fit` would have computed on the whole table.
+`R` is what makes the result exact rather than approximate: `Z = Q R` with orthonormal
+`Q` gives `Zᵀ Z = Rᵀ R`, and `S` and `V` are determined by `Zᵀ Z` alone, so stacking the
+next batch under `R` and refactoring drops nothing. Carrying a truncated `S · V` instead,
+as `IncrementalPCA` does, costs about eleven digits.
 
-The left singular vectors are the one part of the decomposition with a row per
-individual. They are not recoverable from `R`, and this is deliberate: a matrix
-of that size is what makes a whole-table fit impossible in the first place.
+There are no left singular vectors: one row per individual is what makes a whole-table
+fit impossible in the first place.
 """
 
 from collections.abc import Callable, Iterable
@@ -42,7 +38,7 @@ _EPS: np.float64 = np.finfo(float).eps
 
 @dataclass
 class ScalingParams:
-    """Everything pass 2 needs to scale a batch, and pass 1 is the only way to know it."""
+    """The pass-1 constants, which are the only thing pass 2 needs beyond each row."""
 
     method: str
     n: int
@@ -54,7 +50,7 @@ class ScalingParams:
     std: pd.Series
     modalities: NDArray[Any]
     column_weights: NDArray[np.float64]
-    # Number of individuals taking each modality, indexed and ordered as `modalities`.
+    # One count per dummy column, in `modalities` order.
     modality_counts: pd.Series
 
     @property
@@ -64,12 +60,12 @@ class ScalingParams:
 
     @property
     def total(self) -> float:
-        """Number of ones in the whole dummy matrix, `X.sum().sum()`."""
+        """Number of ones in the whole dummy matrix."""
         return float(self.modality_counts.sum())
 
     @property
     def column_masses(self) -> NDArray[np.float64]:
-        """Share of the dummy matrix held by each modality, `c` in the MCA scaling."""
+        """`c` in the MCA scaling: each modality's share of the dummy matrix."""
         return np.asarray(self.modality_counts / self.total, dtype=np.float64)
 
     @property
@@ -78,36 +74,25 @@ class ScalingParams:
 
     @property
     def dummies_col_prop(self) -> NDArray[np.float64]:
-        """Number of individuals per individual taking each modality."""
         return np.asarray(self.n / self.modality_counts, dtype=np.float64)
 
     @property
     def prop(self) -> pd.Series:
-        """Proportion of individuals taking each modality.
-
-        A null takes no dummy column, so a column holding one has modality
-        proportions summing to less than 1.
-        """
+        """Proportion of individuals per modality; sums to under 1 for a column with a null."""
         return self.modality_counts / self.n
 
     @property
     def max_rank(self) -> int:
-        """Upper bound on the rank of the scaled matrix.
+        """Upper bound on the rank of the scaled matrix; axes past it span the null space.
 
-        The dummies of a categorical variable sum to one on every row, so after
-        centering they are linearly dependent and the variable costs one direction:
-        the axes past this count are an arbitrary basis of the null space, not a
-        decomposition of the data.
-
-        A null breaks that dependency, because it takes no dummy column and so
-        leaves a row whose dummies sum to zero. A variable holding one therefore
-        keeps its full set of directions.
+        A categorical variable's dummies sum to one on every row, so centering makes them
+        dependent and costs one direction. A null takes no dummy column, leaving a row that
+        sums to zero, which breaks the dependency and gives that variable its rank back.
         """
         complete = sum(1 for col in self.quali if self._is_complete(col))
         return min(self.n - 1, self.p - complete)
 
     def _is_complete(self, col: str) -> bool:
-        """Whether every individual has a value for `col`."""
         prefix = f"{col}{DUMMIES_SEPARATOR}"
         counts = self.modality_counts[
             [name for name in self.modality_counts.index if name.startswith(prefix)]
@@ -115,11 +100,9 @@ class ScalingParams:
         return bool(counts.sum() == self.n)
 
     def to_model(self) -> Model:
-        """Build the model with the fields pass 1 determines.
+        """Build the model, leaving the decomposition fields for `finalize` to fill in.
 
-        The decomposition fields are left empty for `DecompositionAccumulator.finalize`
-        to fill in. Pass 2 scales its batches through this same object, so it goes
-        down the same `scaler` the fitted model will use at transform time.
+        Pass 2 scales through this object, so it uses the `scaler` the fitted model will.
         """
         model = Model(
             original_dtypes=self.original_dtypes,
@@ -150,8 +133,8 @@ class ScalingParams:
 class ScalingAccumulator:
     """Pass 1: accumulate the scaling constants over batches of rows.
 
-    The schema and the choice of method are frozen on the first batch. A later
-    batch that disagrees is an error rather than a silent change of model.
+    The schema and the method are frozen on the first batch, and a later batch that
+    disagrees raises rather than silently changing the model.
     """
 
     def __init__(
@@ -255,8 +238,7 @@ class ScalingAccumulator:
         self._counts = {col: pd.Series(dtype=np.float64) for col in self._quali}
 
         if self._quali and len(batch) > 0:
-            # get_modalities_types reads the row labelled 0, which only the first
-            # batch of an arbitrarily indexed source is guaranteed to have.
+            # get_modalities_types reads the row labelled 0, which only a reset index has.
             quali_batch = batch[self._quali].reset_index(drop=True)
             self._modalities_types = get_modalities_types(quali_batch)
 
@@ -299,8 +281,7 @@ class ScalingAccumulator:
             counts = self._counts[col]
             categories = pd.Series(counts.index.to_list()).astype("category").cat.categories
             counts = counts.reindex(categories)
-            # Take the names from get_dummies itself rather than formatting them here,
-            # so a non-string modality is named the same way in both paths.
+            # Names come from get_dummies so a non-string modality is labelled identically.
             names = pd.get_dummies(
                 pd.Series(pd.Categorical(categories, categories=categories), name=col).to_frame(),
                 prefix_sep=DUMMIES_SEPARATOR,
@@ -351,9 +332,8 @@ class DecompositionAccumulator:
         scaled = self._scale(batch)
         if not np.isfinite(scaled).all():
             raise ValueError(
-                "The scaled batch holds non-finite values, which no decomposition "
-                "accepts. A null or an infinity in a continuous column is rejected "
-                "by a whole-table fit for the same reason."
+                "The scaled batch holds non-finite values. A null or an infinity in a "
+                "continuous column is rejected by a whole-table fit for the same reason."
             )
         weighted = scaled * self.params.column_weights / self.params.n
 
@@ -371,17 +351,13 @@ class DecompositionAccumulator:
             )
 
         _, S, Vt = np.linalg.svd(self._R, full_matrices=False)
-        # The U-based decision sklearn defaults to needs the left singular vectors,
-        # which a streaming fit does not have.
+        # sklearn's default U-based decision needs left singular vectors, which there are none of.
         _, Vt = extmath.svd_flip(None, Vt, u_based_decision=False)
         if self.params.method != "mca":
-            # mca.fit leaves the column weights in its right singular vectors, and
-            # mca.transform carries D_c to compensate. Dividing them out here would
-            # rescale every axis by 1/sqrt(weight).
+            # mca.fit alone leaves the weights in V and lets transform carry D_c instead.
             Vt = Vt / np.sqrt(self.params.column_weights)
 
-        # S holds every singular value, so the ratio is against the true total
-        # variance rather than against the truncated sum a partial SVD would give.
+        # S is every singular value, so this ratio is against the true total variance.
         explained_var, explained_var_ratio = get_explained_variance(S, self.params.n, self.nf)
 
         model = self._model
@@ -400,18 +376,13 @@ class DecompositionAccumulator:
         return model
 
     def _scale(self, batch: pd.DataFrame) -> NDArray[np.float64]:
-        """Scale a batch exactly as `fit` scales the whole table.
-
-        Every constant this needs comes from pass 1, which is what makes the
-        operation row-local and so batchable.
-        """
+        """Scale a batch exactly as `fit` scales the whole table."""
         if self.params.method == "pca":
             scaled = pca.scaler(self._model, batch)
             return np.asarray(scaled, dtype=np.float64)
 
         if self.params.method == "famd":
-            # The same scaler transform() calls, so a fit and a transform of the
-            # same rows cannot drift apart.
+            # The scaler transform() calls, so fit and transform cannot drift apart.
             scaled = famd.scaler(self._model, batch)
             return np.asarray(scaled, dtype=np.float64)
 
@@ -421,23 +392,12 @@ class DecompositionAccumulator:
         raise NotImplementedError(f"Unsupported method {self.params.method!r}.")
 
     def _scale_mca(self, batch: pd.DataFrame) -> NDArray[np.float64]:
-        """Scale a batch of dummies the way `mca.center` and `mca._diag_compute` do.
+        """`mca.center` and `mca._diag_compute` per row, since those build `n x p` arrays.
 
-        Those two build an `n x p` dense array and an `n x n` diagonal, so MCA is the
-        method that runs out of memory first. Written per row instead:
+            T_ij = (X_ij / total - r_i c_j) / ((eps + sqrt(r_i)) (eps + sqrt(c_j)))
 
-            T_ij = (X_ij / total - r_i c_j)
-                   / ((eps + sqrt(r_i)) (eps + sqrt(c_j)))
-
-        with `total` the number of ones in the whole dummy matrix, `c` the share of
-        it held by each modality, and `r_i` this row's share of it. `total` and `c`
-        come from pass 1; `r_i` is this row's own dummies, so nothing here reaches
-        outside the row.
-
-        `r_i` must stay per row. It equals `1/n` only while every individual has a
-        value in every column: pd.get_dummies emits no indicator for a null, so a
-        row holding one sums to less. Substituting `1/n` puts a 16% error on the
-        singular values of a table with nulls.
+        `r_i` must stay per row: it is `1/n` only while no individual has a null, and
+        substituting `1/n` costs 16% on the singular values of a table that does.
         """
         dummies = pd.get_dummies(
             batch.astype("category"),
@@ -470,24 +430,22 @@ def fit_streaming(
     Datetimes must be stored as numbers of seconds since epoch.
 
     Parameters:
-        batches: A callable returning a fresh iterable of batches. It is called
-            twice, once per pass, so a bare iterator will not do.
+        batches: Callable returning a fresh iterable of batches. Called once per pass,
+            so an iterator will not do.
         nf: Number of components to keep.
         col_weights: Weight assigned to each variable in the projection
             (more weight = more importance in the axes). One per original column.
-        method: "pca", "mca" or "famd". Inferred from the dtypes of the first
-            batch when not given.
-        seed: Seed stored on the model for later use by inverse_transform.
+        method: "pca", "mca" or "famd". Inferred from the first batch's dtypes if absent.
+        seed: Seed stored on the model, for inverse_transform.
 
     Returns:
         model: The model for transforming new data.
     """
     if not callable(batches):
         raise InvalidParameterException(
-            "Expected 'batches' to be a callable returning a fresh iterable of "
-            f"batches, got {type(batches).__name__} instead. An iterator would be "
-            "exhausted by the first of the two passes, and the fit would silently "
-            "see no rows on the second."
+            "Expected 'batches' to be a callable returning a fresh iterable, got "
+            f"{type(batches).__name__} instead: an iterator is exhausted by pass 1, "
+            "leaving pass 2 to fit on no rows."
         )
 
     scaling = ScalingAccumulator(method=method, col_weights=col_weights)

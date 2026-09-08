@@ -412,14 +412,10 @@ def compute_categorical_cos2(model: Model, df: pd.DataFrame, min_nf: int) -> pd.
 
 
 def get_individual_coordinates(model: Model, df: pd.DataFrame, min_nf: int) -> pd.DataFrame:
-    """Coordinates of the individuals of `df` on the weighted axes.
+    """`U * s` for the individuals of `df`, rebuilt rather than stored on the model.
 
-    These are the left singular vectors scaled by the singular values, rebuilt from
-    the scaled data rather than stored: one row per individual is the one part of a
-    decomposition whose size grows with the table.
-
-    Not `transform(df, model)`, which drops the column weights out of the axes and
-    so only agrees with this up to a per-axis factor when every weight is one.
+    Not `transform(df, model)`: that divides the column weights out of the axes, so it
+    agrees only up to a uniform factor, and only when every weight is one.
     """
     scaled = scaler(model, df)
     weighted = column_multiplication(scaled, model.column_weights**1.5)

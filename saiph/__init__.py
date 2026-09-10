@@ -8,7 +8,7 @@ from .streaming import (
 )
 
 # Also modify in pyproject.toml
-__version__ = "2.0.13"
+__version__ = "3.0.0"
 
 __all__ = [
     "DecompositionAccumulator",

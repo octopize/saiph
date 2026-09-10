@@ -1,0 +1,531 @@
+"""Fit a projection from batches of rows, without ever holding the whole table.
+
+Pass 1 accumulates the scaling constants every row of pass 2 needs. Pass 2 scales each
+batch and folds it into a carried QR factor `R`.
+
+`R` is what makes the result exact rather than approximate: `Z = Q R` with orthonormal
+`Q` gives `Zᵀ Z = Rᵀ R`, and `S` and `V` are determined by `Zᵀ Z` alone, so stacking the
+next batch under `R` and refactoring drops nothing. Carrying a truncated `S · V` instead,
+as `IncrementalPCA` does, costs about eleven digits.
+
+There are no left singular vectors: one row per individual is what makes a whole-table
+fit impossible in the first place.
+
+References:
+    QR decomposition, and why `R` shares the singular values and right singular vectors
+    of `Z`: https://en.wikipedia.org/wiki/QR_decomposition and T. F. Chan, "An improved
+    algorithm for computing the singular value decomposition", ACM TOMS 8(1), 1982,
+    https://doi.org/10.1145/355984.355990
+
+    Merging `R` across row blocks is tall-skinny QR (TSQR): Demmel, Grigori, Hoemmen &
+    Langou, "Communication-optimal parallel and sequential QR and LU factorizations",
+    SIAM J. Sci. Comput. 34(1), 2012, https://doi.org/10.1137/080731992
+
+    The approximate alternative, which merges truncated decompositions instead:
+    https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.IncrementalPCA.html
+
+    The mean and variance update: Chan, Golub & LeVeque, "Algorithms for computing the
+    sample variance: analysis and recommendations", The American Statistician 37(3),
+    1983, https://doi.org/10.1080/00031305.1983.10483115
+"""
+
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass
+from typing import Any, cast
+
+import numpy as np
+import pandas as pd
+from numpy.typing import NDArray
+from sklearn.utils import extmath
+
+from saiph.exception import InvalidParameterException
+from saiph.models import Model
+from saiph.reduction import DUMMIES_SEPARATOR, famd, pca
+from saiph.reduction.utils.common import (
+    expand_column_weights,
+    get_explained_variance,
+    get_modalities_types,
+    get_uniform_row_weights,
+)
+
+METHODS = ("pca", "famd", "mca")
+
+_EPS: np.float64 = np.finfo(float).eps
+
+
+@dataclass
+class ScalingParams:
+    """The pass-1 constants, which are the only thing pass 2 needs beyond each row."""
+
+    method: str
+    n: int
+    original_dtypes: pd.Series
+    quanti: list[str]
+    quali: list[str]
+    modalities_types: dict[str, str]
+    mean: pd.Series
+    std: pd.Series
+    modalities: NDArray[Any]
+    column_weights: NDArray[np.float64]
+    # One count per dummy column, in `modalities` order.
+    modality_counts: pd.Series
+
+    @property
+    def n_scaled_columns(self) -> int:
+        """Number of columns of the scaled matrix: continuous columns plus modalities."""
+        return len(self.quanti) + len(self.modalities)
+
+    @property
+    def total_dummy_count(self) -> float:
+        """Number of ones in the whole dummy matrix."""
+        return float(self.modality_counts.sum())
+
+    @property
+    def column_masses(self) -> NDArray[np.float64]:
+        """`c` in the MCA scaling: each modality's share of the dummy matrix."""
+        return np.asarray(self.modality_counts / self.total_dummy_count, dtype=np.float64)
+
+    @property
+    def inverse_sqrt_column_masses(self) -> NDArray[np.float64]:
+        """The diagonal matrix an MCA carries as `Model.D_c`."""
+        return np.diag(1 / (_EPS + np.sqrt(self.column_masses)))
+
+    @property
+    def dummies_col_prop(self) -> NDArray[np.float64]:
+        return np.asarray(self.n / self.modality_counts, dtype=np.float64)
+
+    @property
+    def prop(self) -> pd.Series:
+        """Proportion of individuals per modality; sums to under 1 for a column with a null."""
+        return self.modality_counts / self.n
+
+    @property
+    def max_rank(self) -> int:
+        """Upper bound on the rank of the scaled matrix; axes past it span the null space.
+
+        A categorical variable's dummies sum to one on every row, so centering makes them
+        dependent and costs one direction. A null takes no dummy column, leaving a row that
+        sums to zero, which breaks the dependency and gives that variable its rank back.
+        """
+        complete = sum(1 for col in self.quali if self._is_complete(col))
+        return min(self.n - 1, self.n_scaled_columns - complete)
+
+    def _is_complete(self, col: str) -> bool:
+        prefix = f"{col}{DUMMIES_SEPARATOR}"
+        counts = self.modality_counts[
+            [name for name in self.modality_counts.index if name.startswith(prefix)]
+        ]
+        return bool(counts.sum() == self.n)
+
+    def to_model(self) -> Model:
+        """Build the model, leaving the decomposition fields for `finalize` to fill in.
+
+        Pass 2 scales through this object, so it uses the `scaler` the fitted model will.
+        """
+        model = Model(
+            original_dtypes=self.original_dtypes,
+            original_categorical=self.quali,
+            original_continuous=self.quanti,
+            dummy_categorical=list(self.modalities),
+            modalities_types=self.modalities_types,
+            mean=self.mean if self.quanti else None,
+            std=self.std if self.quanti else None,
+            _modalities=self.modalities if len(self.modalities) else None,
+            column_weights=self.column_weights,
+            type=self.method,
+            V=np.empty((0, 0)),
+            explained_var=np.empty(0),
+            explained_var_ratio=np.empty(0),
+            variable_coord=pd.DataFrame(),
+            row_weights=np.empty(0),
+            nf=0,
+        )
+        if self.method == "famd":
+            model.prop = self.prop
+        if self.method == "mca":
+            model.D_c = self.inverse_sqrt_column_masses
+            model.dummies_col_prop = self.dummies_col_prop
+        return model
+
+
+def _update_mean_and_variance(
+    batch: NDArray[np.float64],
+    last_mean: NDArray[np.float64],
+    last_variance: NDArray[np.float64],
+    last_count: NDArray[np.float64],
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """Fold a batch into a running mean and population variance, per column.
+
+    The Youngs & Cramer update, which corrects the running variance by the drift
+    between the two means rather than by subtracting one large square from another.
+    Accumulating `sum(x**2)` instead has a relative error above 100% on a column of
+    unit-variance values offset to 1e9 — and `fit` requires datetimes as seconds since
+    epoch, so such a column is ordinary input. See the module references.
+
+    Nulls are skipped, as `np.mean` and `np.std` skip them, so each column carries its
+    own count of the individuals that had a value.
+    """
+    present = ~np.isnan(batch)
+    batch_count = present.sum(axis=0).astype(np.float64)
+    total_count = last_count + batch_count
+
+    last_sum = last_mean * last_count
+    batch_sum = np.nansum(batch, axis=0)
+
+    # A column can be entirely null in this batch, so every division here has an empty
+    # case. np.nanvar would be the obvious way to get the batch variance, but it warns
+    # on an empty slice, and the test suite turns warnings into errors.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        mean = np.where(total_count > 0, (last_sum + batch_sum) / total_count, 0.0)
+        batch_mean = batch_sum / batch_count
+        drift = last_sum / last_count - batch_mean
+        # Each block's variance was taken about its own mean, and the two disagree.
+        correction = last_count * batch_count / total_count * drift**2
+
+    unnormalized = last_variance * last_count + np.nansum((batch - batch_mean) ** 2, axis=0)
+    unnormalized += np.where((last_count > 0) & (batch_count > 0), correction, 0.0)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        variance = np.where(total_count > 0, unnormalized / total_count, 0.0)
+
+    return mean, variance, total_count
+
+
+class ScalingAccumulator:
+    """Pass 1: accumulate the scaling constants over batches of rows.
+
+    `partial_fit` then `finalize`, after
+    `sklearn.decomposition.IncrementalPCA.partial_fit`:
+    https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.IncrementalPCA.html
+
+    The schema and the method are frozen on the first batch, and a later batch that
+    disagrees raises rather than silently changing the model.
+    """
+
+    def __init__(
+        self,
+        *,
+        method: str | None = None,
+        col_weights: NDArray[np.float64] | None = None,
+    ) -> None:
+        if method is not None and method not in METHODS:
+            raise InvalidParameterException(
+                f"Expected 'method' to be one of {METHODS} or None, got {method!r} instead."
+            )
+        self._requested_method = method
+        self._col_weights = col_weights
+
+        self._n = 0
+        self._columns: list[str] | None = None
+        self._original_dtypes: pd.Series | None = None
+        self._quanti: list[str] = []
+        self._quali: list[str] = []
+        self._modalities_types: dict[str, str] = {}
+        self._mean: NDArray[np.float64] = np.zeros(0)
+        self._var: NDArray[np.float64] = np.zeros(0)
+        self._seen: NDArray[np.float64] = np.zeros(0)
+        self._counts: dict[str, pd.Series] = {}
+
+    def partial_fit(self, batch: pd.DataFrame) -> None:
+        """Accumulate one batch of rows."""
+        if self._columns is None:
+            self._freeze_schema(batch)
+        else:
+            self._check_schema(batch)
+
+        if len(batch) == 0:
+            return
+
+        self._n += len(batch)
+
+        if self._quanti:
+            values = batch[self._quanti].to_numpy(dtype=np.float64)
+            self._mean, self._var, self._seen = _update_mean_and_variance(
+                values, self._mean, self._var, self._seen
+            )
+
+        for col in self._quali:
+            # value_counts drops nulls, as pd.get_dummies does.
+            counts = batch[col].value_counts()
+            self._counts[col] = self._counts[col].add(counts, fill_value=0)
+
+    def finalize(self) -> ScalingParams:
+        """Close pass 1 and return the constants pass 2 needs."""
+        if self._columns is None or self._original_dtypes is None:
+            raise ValueError("No batch was accumulated. Call partial_fit() at least once.")
+        if self._n == 0:
+            raise ValueError("Cannot fit on zero rows.")
+
+        modality_counts = self._ordered_modality_counts()
+        modalities = np.array(modality_counts.index.to_list(), dtype=object)
+
+        col_weights = (
+            np.ones(len(self._columns)) if self._col_weights is None else self._col_weights
+        )
+        column_weights = expand_column_weights(
+            col_weights,
+            self._columns,
+            self._quanti,
+            self._quali,
+            list(modalities),
+        )
+
+        return ScalingParams(
+            method=self._method(),
+            n=self._n,
+            original_dtypes=self._original_dtypes,
+            quanti=self._quanti,
+            quali=self._quali,
+            modalities_types=self._modalities_types,
+            mean=pd.Series(self._mean, index=self._quanti),
+            std=pd.Series(np.sqrt(self._var), index=self._quanti),
+            modalities=modalities,
+            column_weights=column_weights,
+            modality_counts=modality_counts,
+        )
+
+    def _freeze_schema(self, batch: pd.DataFrame) -> None:
+        self._columns = batch.columns.to_list()
+        self._original_dtypes = batch.dtypes
+        self._quanti = batch.select_dtypes(include=["int", "float", "number"]).columns.to_list()
+        self._quali = batch.select_dtypes(exclude=["int", "float", "number"]).columns.to_list()
+
+        datetime_cols = batch.select_dtypes(include=["datetime", "datetimetz"]).columns.to_list()
+        if datetime_cols:
+            raise ValueError(
+                f"DataFrame contains datetime column(s): {datetime_cols}. "
+                "Convert them to numeric (e.g. seconds since epoch) before fitting."
+            )
+
+        self._mean = np.zeros(len(self._quanti))
+        self._var = np.zeros(len(self._quanti))
+        self._seen = np.zeros(len(self._quanti))
+        self._counts = {col: pd.Series(dtype=np.float64) for col in self._quali}
+
+        if self._quali and len(batch) > 0:
+            # get_modalities_types reads the row labelled 0, which only a reset index has.
+            quali_batch = batch[self._quali].reset_index(drop=True)
+            self._modalities_types = get_modalities_types(quali_batch)
+
+        if self._col_weights is not None and len(self._col_weights) != len(self._columns):
+            raise InvalidParameterException(
+                f"Expected one column weight per column, got {len(self._col_weights)} "
+                f"weights for {len(self._columns)} columns."
+            )
+
+    def _check_schema(self, batch: pd.DataFrame) -> None:
+        if batch.columns.to_list() != self._columns:
+            raise ValueError(
+                "Expected every batch to have the same columns in the same order. "
+                f"Got {batch.columns.to_list()}, expected {self._columns}."
+            )
+        differing = [
+            col
+            for col, dtype in batch.dtypes.items()
+            if dtype != self._original_dtypes[col]  # type: ignore[index]
+        ]
+        if differing:
+            raise ValueError(
+                f"Expected every batch to have the same dtypes. Column(s) {differing} "
+                "changed dtype between batches, which would change the fitted model."
+            )
+
+    def _method(self) -> str:
+        if self._requested_method is not None:
+            return self._requested_method
+        if not self._quali:
+            return "pca"
+        if not self._quanti:
+            return "mca"
+        return "famd"
+
+    def _ordered_modality_counts(self) -> pd.Series:
+        """Counts per dummy column, named and ordered as pd.get_dummies would."""
+        per_column = []
+        for col in self._quali:
+            counts = self._counts[col]
+            categories = pd.Series(counts.index.to_list()).astype("category").cat.categories
+            counts = counts.reindex(categories)
+            # Names come from get_dummies so a non-string modality is labelled identically.
+            names = pd.get_dummies(
+                pd.Series(pd.Categorical(categories, categories=categories), name=col).to_frame(),
+                prefix_sep=DUMMIES_SEPARATOR,
+                dtype=np.uint8,
+            ).columns.to_list()
+            per_column.append(pd.Series(counts.to_numpy(), index=names, dtype=np.float64))
+
+        if not per_column:
+            return pd.Series(dtype=np.float64)
+        return pd.concat(per_column)
+
+
+class DecompositionAccumulator:
+    """Pass 2: scale each batch and fold it into the carried QR factor.
+
+    Merging `R = qr(vstack([R, Z]))` across row blocks is tall-skinny QR
+    (https://doi.org/10.1137/080731992), and `R` shares the singular values and right
+    singular vectors of the whole scaled matrix (https://doi.org/10.1145/355984.355990),
+    so the decomposition at the end is exact rather than an approximation of what a
+    whole-table `fit` would compute. See the module references.
+    """
+
+    def __init__(
+        self,
+        params: ScalingParams,
+        nf: int,
+        *,
+        seed: int | np.random.Generator | None = None,
+    ) -> None:
+        if nf <= 0 or nf > params.max_rank:
+            raise InvalidParameterException(
+                "Expected number of components to be in "
+                f"0 < 'nf' <= {params.max_rank}, got {nf} instead."
+            )
+        self.params = params
+        self.nf = nf
+        self._random_gen = (
+            seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
+        )
+        self._model = params.to_model()
+        self._R: NDArray[np.float64] | None = None
+        self._rows_seen = 0
+
+    def partial_fit(self, batch: pd.DataFrame) -> None:
+        """Scale one batch of rows and merge it into the carried factor."""
+        if len(batch) == 0:
+            return
+        self._rows_seen += len(batch)
+        if self._rows_seen > self.params.n:
+            raise ValueError(
+                f"Pass 2 has seen more rows ({self._rows_seen}) than pass 1 counted "
+                f"({self.params.n}). The batches must be the same on both passes."
+            )
+
+        scaled = self._scale(batch)
+        if not np.isfinite(scaled).all():
+            raise ValueError(
+                "The scaled batch holds non-finite values. A null or an infinity in a "
+                "continuous column is rejected by a whole-table fit for the same reason."
+            )
+        weighted = scaled * self.params.column_weights / self.params.n
+
+        stacked = weighted if self._R is None else np.vstack([self._R, weighted])
+        self._R = cast(NDArray[np.float64], np.linalg.qr(stacked, mode="r"))
+
+    def finalize(self) -> Model:
+        """Decompose the carried factor and return the fitted model."""
+        if self._R is None:
+            raise ValueError("No batch was accumulated. Call partial_fit() at least once.")
+        if self._rows_seen != self.params.n:
+            raise ValueError(
+                f"Pass 2 saw {self._rows_seen} rows but pass 1 counted {self.params.n}. "
+                "The batches must be the same on both passes."
+            )
+
+        _, S, Vt = np.linalg.svd(self._R, full_matrices=False)
+        # sklearn's default U-based decision needs left singular vectors, which there are none of.
+        _, Vt = extmath.svd_flip(None, Vt, u_based_decision=False)
+        if self.params.method != "mca":
+            # mca.fit alone leaves the weights in V and lets transform carry D_c instead.
+            Vt = Vt / np.sqrt(self.params.column_weights)
+
+        # S is every singular value, so this ratio is against the true total variance.
+        explained_var, explained_var_ratio = get_explained_variance(S, self.params.n, self.nf)
+
+        model = self._model
+        model.V = Vt[: self.nf, :]
+        model.s = S[: self.nf]
+        model.explained_var = explained_var
+        model.explained_var_ratio = explained_var_ratio
+        if self.params.method == "mca":
+            model.variable_coord = pd.DataFrame(self.params.inverse_sqrt_column_masses @ model.V.T)
+        else:
+            model.variable_coord = pd.DataFrame(model.V.T)
+        model.row_weights = get_uniform_row_weights(self.params.n)
+        model.nf = self.nf
+        model.seed = int(self._random_gen.integers(0, 2**32 - 1))
+        model.is_fitted = True
+        return model
+
+    def _scale(self, batch: pd.DataFrame) -> NDArray[np.float64]:
+        """Scale a batch exactly as `fit` scales the whole table."""
+        if self.params.method == "pca":
+            scaled = pca.scaler(self._model, batch)
+            return np.asarray(scaled, dtype=np.float64)
+
+        if self.params.method == "famd":
+            # The scaler transform() calls, so fit and transform cannot drift apart.
+            scaled = famd.scaler(self._model, batch)
+            return np.asarray(scaled, dtype=np.float64)
+
+        if self.params.method == "mca":
+            return self._scale_mca(batch)
+
+        raise NotImplementedError(f"Unsupported method {self.params.method!r}.")
+
+    def _scale_mca(self, batch: pd.DataFrame) -> NDArray[np.float64]:
+        """`mca.center` and `mca._diag_compute` per row, since those build `n x p` arrays.
+
+            T_ij = (X_ij / total - r_i c_j) / ((eps + sqrt(r_i)) (eps + sqrt(c_j)))
+
+        `r_i` must stay per row: it is `1/n` only while no individual has a null, and
+        substituting `1/n` costs 16% on the singular values of a table that does.
+        """
+        dummies = pd.get_dummies(
+            batch.astype("category"),
+            prefix_sep=DUMMIES_SEPARATOR,
+            dtype=np.uint8,
+        )
+        X = dummies.reindex(columns=self.params.modalities, fill_value=np.uint8(0)).to_numpy(
+            dtype=np.float64
+        )
+        total = self.params.total_dummy_count
+        c = self.params.column_masses
+
+        r = X.sum(axis=1) / total
+        centered = X / total - np.outer(r, c)
+        scaled = centered / (_EPS + np.sqrt(c))
+        row_scaled: NDArray[np.float64] = scaled / (_EPS + np.sqrt(r))[:, np.newaxis]
+        return row_scaled
+
+
+def fit_streaming(
+    batches: Callable[[], Iterable[pd.DataFrame]],
+    nf: int,
+    *,
+    col_weights: NDArray[np.float64] | None = None,
+    method: str | None = None,
+    seed: int | np.random.Generator | None = None,
+) -> Model:
+    """Fit a PCA, MCA or FAMD model from batches of rows.
+
+    Datetimes must be stored as numbers of seconds since epoch.
+
+    Parameters:
+        batches: Callable returning a fresh iterable of batches. Called once per pass,
+            so an iterator will not do.
+        nf: Number of components to keep.
+        col_weights: Weight assigned to each variable in the projection
+            (more weight = more importance in the axes). One per original column.
+        method: "pca", "mca" or "famd". Inferred from the first batch's dtypes if absent.
+        seed: Seed stored on the model, for inverse_transform.
+
+    Returns:
+        model: The model for transforming new data.
+    """
+    if not callable(batches):
+        raise InvalidParameterException(
+            "Expected 'batches' to be a callable returning a fresh iterable, got "
+            f"{type(batches).__name__} instead: an iterator is exhausted by pass 1, "
+            "leaving pass 2 to fit on no rows."
+        )
+
+    scaling = ScalingAccumulator(method=method, col_weights=col_weights)
+    for batch in batches():
+        scaling.partial_fit(batch)
+    params = scaling.finalize()
+
+    decomposition = DecompositionAccumulator(params, nf=nf, seed=seed)
+    for batch in batches():
+        decomposition.partial_fit(batch)
+    return decomposition.finalize()

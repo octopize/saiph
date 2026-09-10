@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from itertools import repeat
 from typing import Any
 
 import numpy as np
@@ -16,7 +15,7 @@ def get_projected_column_names(n: int) -> list[str]:
 
 
 def get_uniform_row_weights(n: int) -> NDArray[np.float64]:
-    return np.array([k for k in repeat(1 / n, n)])
+    return np.full(n, 1 / n, dtype=np.float64)
 
 
 def row_multiplication(df: pd.DataFrame, arr: NDArray[Any]) -> pd.DataFrame:
@@ -73,6 +72,26 @@ def get_dummies_mapping(columns: list[str], dummy_columns: list[str]) -> dict[st
             for col in columns
         }
     )
+
+
+def expand_column_weights(
+    col_weights: NDArray[Any],
+    columns: list[str],
+    quanti: list[str],
+    quali: list[str],
+    dummy_categorical: list[str],
+) -> NDArray[np.float64]:
+    """Repeat each categorical column's weight once per dummy column it produced.
+
+    The count must come from `dummy_categorical`, not from `nunique`: `pd.get_dummies`
+    emits no indicator for a null, so distinct values overcount and the weight vector
+    comes out longer than the dummy block.
+    """
+    weight_of = dict(zip(columns, col_weights, strict=True))
+    mapping = get_dummies_mapping(quali, dummy_categorical)
+    expanded = [weight_of[col] for col in quanti]
+    expanded += [weight_of[col] for col, dummies in mapping.items() for _ in dummies]
+    return np.array(expanded, dtype=np.float64)
 
 
 TYPES = {

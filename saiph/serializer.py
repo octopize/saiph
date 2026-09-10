@@ -18,7 +18,7 @@ class SerializedModel:
 
 class ModelJSONSerializer:
     # !Make sure to update the version if you change NumpyPandasEncoder or ModelJSONSerializer
-    VERSION = "2.0"
+    VERSION = "3.0"
 
     @classmethod
     def dumps(self, model: Model) -> bytes:

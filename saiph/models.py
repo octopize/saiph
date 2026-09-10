@@ -37,8 +37,6 @@ class Model:
     V: NDArray[np.float64]
     # Modality type of the first individuals
     modalities_types: dict[str, str]
-    # Orthogonal matrix with left singular vectors as columns.
-    U: NDArray[np.float64]
     # Singular values
     s: NDArray[np.float64] | None = None
 

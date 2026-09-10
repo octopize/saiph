@@ -15,6 +15,14 @@ saiph.models
    :undoc-members:
    :show-inheritance:
 
+saiph.streaming
+---------------
+
+.. automodule:: saiph.streaming
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 saiph.famd
 ----------
 

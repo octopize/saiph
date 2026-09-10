@@ -2,7 +2,6 @@
 
 import sys
 from collections.abc import Callable
-from itertools import chain, repeat
 from typing import Any, cast
 
 import numpy as np
@@ -14,6 +13,7 @@ from saiph.models import Model
 from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.utils.common import (
     column_multiplication,
+    expand_column_weights,
     get_dummies_mapping,
     get_explained_variance,
     get_grouped_modality_values,
@@ -111,6 +111,8 @@ def fit(
     # Select the categorical and continuous columns
     quanti = df.select_dtypes(include=["int", "float", "number"]).columns.to_list()
     quali = df.select_dtypes(exclude=["int", "float", "number"]).columns.to_list()
+    if not quali:
+        raise ValueError("FAMD requires at least one categorical variable. Use PCA instead.")
     dummy_categorical = pd.get_dummies(
         df[quali].astype("category"),
         prefix_sep=DUMMIES_SEPARATOR,
@@ -119,7 +121,9 @@ def fit(
     modalities_types = get_modalities_types(df[quali])
 
     row_w = get_uniform_row_weights(len(df))
-    col_weights = _col_weights_compute(df, _col_weights, quanti, quali)
+    col_weights = expand_column_weights(
+        _col_weights, df.columns.to_list(), quanti, quali, dummy_categorical
+    )
 
     df_scaled, mean, std, prop, _modalities = center(df, quanti, quali)
 
@@ -127,19 +131,17 @@ def fit(
     Z = df_scaled.multiply(col_weights).T.multiply(row_w).T
 
     # Compute the svd
-    _U, S, _Vt = (
+    _, S, _Vt = (
         get_svd(Z.todense(), nf=nf, random_gen=random_gen)
         if isinstance(Z, scipy.sparse.spmatrix)
         else get_svd(Z, nf=nf, random_gen=random_gen)
     )
 
-    U = ((_U.T) / np.sqrt(row_w)).T
     Vt = _Vt / np.sqrt(col_weights)
 
     explained_var, explained_var_ratio = get_explained_variance(S, df.shape[0], nf)
 
     # Retain only the nf higher singular values
-    U = U[:, :nf]
     S = S[:nf]
     Vt = Vt[:nf, :]
     # we use the random generator to generate a new seed for the model
@@ -149,7 +151,6 @@ def fit(
         original_categorical=quali,
         original_continuous=quanti,
         dummy_categorical=dummy_categorical,
-        U=U,
         V=Vt,
         s=S,
         explained_var=explained_var,
@@ -195,33 +196,6 @@ def fit_transform(
     model = fit(df, nf, col_weights, seed=random_gen)
     coord = transform(df, model)
     return coord, model
-
-
-def _col_weights_compute(
-    df: pd.DataFrame, col_weights: NDArray[Any], quanti: list[int], quali: list[int]
-) -> NDArray[Any]:
-    """Calculate weights for columns given what weights the user gave."""
-    # Set the columns and row weights
-    weight_df = pd.DataFrame([col_weights], columns=df.columns)
-    weight_quanti = weight_df[quanti]
-    weight_quali = weight_df[quali]
-
-    # Get the number of modality for each quali variable
-    modality_numbers = []
-    for column in weight_quali.columns:
-        modality_numbers += [len(df[column].unique())]
-
-    # Set weight vector for categorical columns
-    weight_quali_rep = list(
-        chain.from_iterable(
-            repeat(i, j)
-            for i, j in zip(list(weight_quali.iloc[0]), modality_numbers, strict=False)
-        )
-    )
-
-    _col_weights: NDArray[Any] = np.array(list(weight_quanti.iloc[0]) + weight_quali_rep)
-
-    return _col_weights
 
 
 def scaler(model: Model, df: pd.DataFrame) -> pd.DataFrame:
@@ -406,11 +380,7 @@ def compute_categorical_cos2(model: Model, df: pd.DataFrame, min_nf: int) -> pd.
     -------
         dataframe of categorical cos2
     """
-    if model.U is not None and model.s is not None:
-        model_coords = pd.DataFrame(
-            model.U[:, :min_nf] * model.s[:min_nf],
-            columns=get_projected_column_names(min_nf),
-        )
+    model_coords = get_individual_coordinates(model, df, min_nf)
 
     mapping = get_dummies_mapping(model.original_categorical, model.dummy_categorical)
     dummy = pd.get_dummies(
@@ -439,6 +409,20 @@ def compute_categorical_cos2(model: Model, df: pd.DataFrame, min_nf: int) -> pd.
     categorical_cos2 = row_division(categorical_cos2**2, nb_modalities)
 
     return categorical_cos2
+
+
+def get_individual_coordinates(model: Model, df: pd.DataFrame, min_nf: int) -> pd.DataFrame:
+    """`U * s` for the individuals of `df`, rebuilt rather than stored on the model.
+
+    Not `transform(df, model)`: that divides the column weights out of the axes, so it
+    agrees only up to a uniform factor, and only when every weight is one.
+    """
+    scaled = scaler(model, df)
+    weighted = column_multiplication(scaled, model.column_weights**1.5)
+    coords = weighted @ model.V[:min_nf].T
+    coords = row_multiplication(coords, np.sqrt(model.row_weights))
+    coords.columns = get_projected_column_names(min_nf)
+    return pd.DataFrame(coords)
 
 
 def compute_continuous_cos2(
@@ -534,81 +518,3 @@ def _compute_cos2_single_category(
     )
     single_category_cos2: NDArray[np.float64] = np.array(cos2) / summed_weights_without_zeros
     return single_category_cos2
-
-
-def reconstruct_df_from_model(model: Model) -> pd.DataFrame:
-    """Reconstruct a DataFrame from a fitted model.
-
-    Note: if nf < df.shape[1], reconstructed df will not be exactly the same.
-    The more nf < df.shape[1], the more the reconstructed df will differ.
-    the degree of difference is linked to the unused explained variance.
-
-    Parameters:
-        model: Model computed by fit.
-
-    Returns:
-        df: The reconstructed DataFrame.
-    """
-    # Extract the necessary components from the model
-    if model.s is None or model.mean is None or model.std is None or model.prop is None:
-        raise ValueError("Model has not been fitted. Call fit() to create a Model instance.")
-    U = model.U
-    S = model.s
-    V = model.V
-    row_w = model.row_weights
-    col_weights = model.column_weights
-    mean = model.mean.values
-    std = model.std.values
-    prop = model.prop.values
-    _modalities = model._modalities
-    quanti = model.original_continuous
-    quali = model.original_categorical
-
-    # Construct the diagonal matrix of singular values
-    Sigma = np.diag(S)
-
-    # Reconstruct the weighted and scaled matrix Z
-    Z = np.dot(U, np.dot(Sigma, V))
-
-    # Undo the row and column weighting
-    Z = Z / np.sqrt(row_w)[:, np.newaxis]
-    Z = Z / np.sqrt(col_weights)
-
-    # Split Z back into quantitative and qualitative parts
-    n_quanti = len(quanti)
-    df_quanti_scaled = Z[:, :n_quanti]
-    df_quali_scaled = Z[:, n_quanti:]
-
-    # Reverse the scaling for quantitative variables
-    df_quanti = df_quanti_scaled * std + mean
-
-    # Reverse the scaling for qualitative variables
-    df_quali = df_quali_scaled * np.sqrt(prop) + prop
-
-    # Combine quantitative and qualitative data
-    df_quali = pd.DataFrame(df_quali, columns=_modalities)
-    df_quanti = pd.DataFrame(df_quanti, columns=quanti)
-    df_reconstructed = pd.concat([df_quanti, df_quali], axis=1)
-
-    # Reverse the dummy encoding for categorical variables
-    for var in quali:
-        prefix = var + DUMMIES_SEPARATOR
-        dummies = [col for col in df_reconstructed.columns if col.startswith(prefix)]
-        df_reconstructed[var] = (
-            df_reconstructed[dummies].idxmax(axis=1).apply(lambda x: x.split(DUMMIES_SEPARATOR)[1])
-        )
-        df_reconstructed.drop(columns=dummies, inplace=True)
-
-    # Ensure the column order matches the original dataframe
-    df_reconstructed = df_reconstructed[model.original_dtypes.index]
-
-    # Identify the columns that need to be converted to integers
-    int_columns = model.original_dtypes[model.original_dtypes == "int"].index.tolist()
-
-    # Round the values before because astype(int) truncates the decimals
-    df_reconstructed[int_columns] = df_reconstructed[int_columns].round()
-
-    # Convert the data types to the original types
-    df_reconstructed = df_reconstructed.astype(model.original_dtypes)
-
-    return df_reconstructed

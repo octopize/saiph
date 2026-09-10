@@ -42,14 +42,12 @@ def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
         ]
     )
     expected_s: NDArray[np.float64] = np.array([1.224745e00, 1])
-    expected_u: NDArray[np.float64] = np.array([[1.0, 1.0], [-1.0, 1.0]])
     expected_explained_var: NDArray[np.float64] = np.array([1.5, 1.0])
     expected_explained_var_ratio: NDArray[np.float64] = np.array([0.6, 0.4])
 
     assert_frame_equal(abs(result), abs(expected_result), check_exact=False, atol=0.01)
     assert_allclose(np.abs(model.V), np.abs(expected_v), atol=0.01)
     assert_allclose(model.s, expected_s, atol=0.01)
-    assert_allclose(np.abs(model.U), np.abs(expected_u), atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     (assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),)
     assert_allclose(model.variable_coord, model.V.T)

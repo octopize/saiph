@@ -15,8 +15,8 @@ from saiph.reduction.famd import (
     center,
     fit,
     fit_transform,
+    get_individual_coordinates,
     get_variable_contributions,
-    reconstruct_df_from_model,
     scaler,
     transform,
 )
@@ -24,6 +24,7 @@ from saiph.reduction.pca import center as center_pca
 from saiph.reduction.pca import fit_transform as fit_pca
 from saiph.reduction.pca import scaler as scaler_pca
 from saiph.reduction.utils.common import get_projected_column_names
+from saiph.reduction.utils.svd import get_svd
 
 
 def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
@@ -47,14 +48,12 @@ def test_fit_mix(mixed_df2: pd.DataFrame) -> None:
         ]
     )
     expected_s: NDArray[np.float64] = np.array([1.224745e00, 0.0])
-    expected_u: NDArray[np.float64] = np.array([[-1.0, 1.0], [1.0, 1.0]])
     expected_explained_var: NDArray[np.float64] = np.array([1.5, 0.0])
     expected_explained_var_ratio: NDArray[np.float64] = np.array([1.0, 0.0])
 
     assert_frame_equal(result, expected_result, check_exact=False, atol=0.01)
     assert_allclose(model.V, expected_v, atol=0.01)
     assert_allclose(model.s, expected_s, atol=0.01)
-    assert_allclose(model.U, expected_u, atol=0.01)
     assert_allclose(model.explained_var, expected_explained_var, atol=0.01)
     (assert_allclose(model.explained_var_ratio, expected_explained_var_ratio, atol=0.01),)
     assert_allclose(model.variable_coord, model.V.T)
@@ -198,15 +197,20 @@ def test_get_variable_contributions(mixed_df: pd.DataFrame) -> None:
 
     expected_cos2 = pd.DataFrame.from_dict(
         data={
-            "variable_1": [0.897214, 0.002786, 0],
-            "tool": [0.897214, 0.002786, 0.25],
+            "variable_1": [0.897214, 0.002786],
+            "tool": [0.897214, 0.002786],
         },
         orient="index",
-        columns=get_projected_column_names(3),
+        columns=get_projected_column_names(2),
     )
 
     assert_frame_equal(contributions, expected_contributions, check_exact=False, atol=0.0001)
-    assert_frame_equal(cos2, expected_cos2, check_exact=False, atol=0.0001)
+    assert_frame_equal(cos2.iloc[:, :2], expected_cos2, check_exact=False, atol=0.0001)
+    # The third axis has a singular value of 2.7e-19, so every cos2 on it is built from
+    # floating-point dust. The continuous one has that value as a factor and stays
+    # negligible (1e-135); the categorical one divides one dust quadratic by another and
+    # lands anywhere in [0, 1], so there is nothing to assert about it.
+    assert cos2.loc["variable_1", "Dim. 3"] == pytest.approx(0, abs=1e-9)
 
 
 @pytest.mark.parametrize("col_weights", [[2.0, 3.0], None])
@@ -274,38 +278,6 @@ def test_get_variable_contributions_with_constant_variable() -> None:
     contributions, _ = get_variable_contributions(model, df, explode=False)
 
     assert np.isfinite(contributions).all().all()
-
-
-def test_reconstructed_df_from_model_equals_df_minimal(mixed_df: pd.DataFrame) -> None:
-    """Ensure that the reconstructed df from the model is equal to the original df."""
-    df = mixed_df
-    model = fit(df)
-    reconstructed_df = reconstruct_df_from_model(model)
-    # don't check dtypes, model don't know if numerical were int or float
-    assert_frame_equal(df, reconstructed_df, check_dtype=False)
-
-
-def test_reconstructed_df_from_weighted_model_equals_df() -> None:
-    """Ensure that the reconstructed df from the model is equal to the original df."""
-    df = pd.read_csv("./fixtures/iris.csv")
-    model = fit(df, col_weights=[3, 1, 1, 1, 1])  # type: ignore
-    reconstructed_df = reconstruct_df_from_model(model)
-    assert_frame_equal(df, reconstructed_df)
-
-
-# ---------------------------------------------------------------------------
-# Absent / novel modality tests
-# ---------------------------------------------------------------------------
-# These three tests collectively protect the behaviour of scaler() under the
-# conditions that actually occur in the avatar pipeline:
-#
-#   • Privacy metrics fit on 50 % of rows, then transform the other 50 %
-#     (→ holdout may be missing categories seen only in the training half).
-#   • Avatar data is transformed with the original model after generation
-#     (→ rare categories may be absent from the avatar batch).
-#   • Cross-table linkage transforms a child table with a parent-table model
-#     (→ child may have categories never seen in the parent).
-# ---------------------------------------------------------------------------
 
 
 def test_transform_famd_absent_categories_no_performance_warning() -> None:
@@ -480,3 +452,56 @@ def test_scaler_encodes_bool_column_identically_to_str_column() -> None:
         unscale_dummies(model_bool, scaler(model_bool, df_bool)),
         unscale_dummies(model_str, scaler(model_str, df_str)),
     )
+
+
+def test_fit_without_categorical_raises(quanti_df: pd.DataFrame) -> None:
+    with pytest.raises(ValueError, match="FAMD requires at least one categorical variable"):
+        fit(quanti_df)
+
+
+def test_fit_with_null_categorical_value() -> None:
+    """A null takes no dummy column, so it must not lengthen the weight vector."""
+    df = pd.DataFrame(
+        {
+            "num": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+            "cat": ["a", "b", "a", None, "b", "a"],
+        }
+    )
+    model = fit(df, nf=2, col_weights=np.array([2.0, 3.0]))
+
+    assert list(model.column_weights) == [2.0, 3.0, 3.0]
+    assert model.dummy_categorical == [f"cat{DUMMIES_SEPARATOR}a", f"cat{DUMMIES_SEPARATOR}b"]
+
+
+def test_get_individual_coordinates_equals_the_left_singular_vectors() -> None:
+    """The rebuilt coordinates must be the ones the decomposition produced.
+
+    They are rebuilt from the scaled data rather than stored, because one row per
+    individual is the one part of a decomposition whose size grows with the table.
+    """
+    rng = np.random.default_rng(4)
+    n = 60
+    df = pd.DataFrame(
+        {
+            "num_1": rng.normal(size=n),
+            "num_2": rng.normal(size=n),
+            "tool": rng.choice(["a", "b", "c"], size=n),
+            "fruit": rng.choice(["x", "y"], size=n),
+        }
+    )
+    # nf below 0.8 * min(shape) would take the randomized path, whose U and V are
+    # an approximation and do not agree with each other to this tolerance.
+    nf = 7
+
+    for col_weights in (None, np.array([3.0, 1.0, 2.0, 1.0])):
+        model = fit(df, nf=nf, col_weights=col_weights)
+        assert model.s is not None
+
+        # What fit decomposes, and what it does to the left singular vectors after.
+        Z = (scaler(model, df) * model.column_weights).T.multiply(model.row_weights).T
+        U, S, _ = get_svd(Z, nf=nf)
+        expected = (U / np.sqrt(model.row_weights)[:, np.newaxis])[:, :nf] * S[:nf]
+
+        rebuilt = get_individual_coordinates(model, df, nf)
+
+        assert_allclose(rebuilt.to_numpy(), expected, atol=1e-14)

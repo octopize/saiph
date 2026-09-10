@@ -11,7 +11,6 @@ from saiph.reduction.mca import (
     fit,
     fit_transform,
     get_variable_contributions,
-    reconstruct_df_from_model,
     transform,
 )
 from saiph.reduction.utils.common import get_projected_column_names
@@ -123,7 +122,6 @@ def test_fit_zero_same_df() -> None:
         "explained_var",
         "variable_coord",
         "variable_coord",
-        "U",
         "s",
         "mean",
         "std",
@@ -228,17 +226,14 @@ def test_get_variable_contributions_sum_is_100_with_col_weights_random_mca(
     assert_series_equal(summed_contributions, pd.Series([100.0] * 4), check_index=False)
 
 
-def test_reconstructed_df_from_model_equals_df_minimal(quali_df: pd.DataFrame) -> None:
-    """Ensure that the reconstructed df from the model is equal to the original df."""
-    df = quali_df
-    model = fit(df)
-    reconstructed_df = reconstruct_df_from_model(model)
-    assert_frame_equal(df, reconstructed_df, check_dtype=False)
+def test_fit_with_null_categorical_value() -> None:
+    """A null takes no dummy column, so it must not lengthen the weight vector."""
+    df = pd.DataFrame(
+        {
+            "c1": ["a", "b", "a", None, "b", "a"],
+            "c2": ["x", "y", "x", "y", "x", "y"],
+        }
+    )
+    model = fit(df, nf=2, col_weights=np.array([2.0, 3.0]))
 
-
-def test_reconstructed_df_from_weighted_model_equals_df() -> None:
-    """Ensure that the reconstructed df from the model is equal to the original df."""
-    df = pd.read_csv("./fixtures/wbcd.csv").astype(str)
-    model = fit(df, col_weights=[3, 1, 1, 1, 1, 1, 1, 1, 1, 1])  # type: ignore
-    reconstructed_df = reconstruct_df_from_model(model)
-    assert_frame_equal(df, reconstructed_df, check_dtype=False)
+    assert list(model.column_weights) == [2.0, 2.0, 3.0, 3.0]

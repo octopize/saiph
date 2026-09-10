@@ -10,6 +10,23 @@ as `IncrementalPCA` does, costs about eleven digits.
 
 There are no left singular vectors: one row per individual is what makes a whole-table
 fit impossible in the first place.
+
+References:
+    QR decomposition, and why `R` shares the singular values and right singular vectors
+    of `Z`: https://en.wikipedia.org/wiki/QR_decomposition and T. F. Chan, "An improved
+    algorithm for computing the singular value decomposition", ACM TOMS 8(1), 1982,
+    https://doi.org/10.1145/355984.355990
+
+    Merging `R` across row blocks is tall-skinny QR (TSQR): Demmel, Grigori, Hoemmen &
+    Langou, "Communication-optimal parallel and sequential QR and LU factorizations",
+    SIAM J. Sci. Comput. 34(1), 2012, https://doi.org/10.1137/080731992
+
+    The approximate alternative, which merges truncated decompositions instead:
+    https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.IncrementalPCA.html
+
+    The mean and variance update: Chan, Golub & LeVeque, "Algorithms for computing the
+    sample variance: analysis and recommendations", The American Statistician 37(3),
+    1983, https://doi.org/10.1080/00031305.1983.10483115
 """
 
 from collections.abc import Callable, Iterable
@@ -54,22 +71,23 @@ class ScalingParams:
     modality_counts: pd.Series
 
     @property
-    def p(self) -> int:
-        """Number of columns of the scaled matrix."""
+    def n_scaled_columns(self) -> int:
+        """Number of columns of the scaled matrix: continuous columns plus modalities."""
         return len(self.quanti) + len(self.modalities)
 
     @property
-    def total(self) -> float:
+    def total_dummy_count(self) -> float:
         """Number of ones in the whole dummy matrix."""
         return float(self.modality_counts.sum())
 
     @property
     def column_masses(self) -> NDArray[np.float64]:
         """`c` in the MCA scaling: each modality's share of the dummy matrix."""
-        return np.asarray(self.modality_counts / self.total, dtype=np.float64)
+        return np.asarray(self.modality_counts / self.total_dummy_count, dtype=np.float64)
 
     @property
-    def D_c(self) -> NDArray[np.float64]:
+    def inverse_sqrt_column_masses(self) -> NDArray[np.float64]:
+        """The diagonal matrix an MCA carries as `Model.D_c`."""
         return np.diag(1 / (_EPS + np.sqrt(self.column_masses)))
 
     @property
@@ -90,7 +108,7 @@ class ScalingParams:
         sums to zero, which breaks the dependency and gives that variable its rank back.
         """
         complete = sum(1 for col in self.quali if self._is_complete(col))
-        return min(self.n - 1, self.p - complete)
+        return min(self.n - 1, self.n_scaled_columns - complete)
 
     def _is_complete(self, col: str) -> bool:
         prefix = f"{col}{DUMMIES_SEPARATOR}"
@@ -125,13 +143,60 @@ class ScalingParams:
         if self.method == "famd":
             model.prop = self.prop
         if self.method == "mca":
-            model.D_c = self.D_c
+            model.D_c = self.inverse_sqrt_column_masses
             model.dummies_col_prop = self.dummies_col_prop
         return model
 
 
+def _update_mean_and_variance(
+    batch: NDArray[np.float64],
+    last_mean: NDArray[np.float64],
+    last_variance: NDArray[np.float64],
+    last_count: NDArray[np.float64],
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """Fold a batch into a running mean and population variance, per column.
+
+    The Youngs & Cramer update, which corrects the running variance by the drift
+    between the two means rather than by subtracting one large square from another.
+    Accumulating `sum(x**2)` instead has a relative error above 100% on a column of
+    unit-variance values offset to 1e9 — and `fit` requires datetimes as seconds since
+    epoch, so such a column is ordinary input. See the module references.
+
+    Nulls are skipped, as `np.mean` and `np.std` skip them, so each column carries its
+    own count of the individuals that had a value.
+    """
+    present = ~np.isnan(batch)
+    batch_count = present.sum(axis=0).astype(np.float64)
+    total_count = last_count + batch_count
+
+    last_sum = last_mean * last_count
+    batch_sum = np.nansum(batch, axis=0)
+
+    # A column can be entirely null in this batch, so every division here has an empty
+    # case. np.nanvar would be the obvious way to get the batch variance, but it warns
+    # on an empty slice, and the test suite turns warnings into errors.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        mean = np.where(total_count > 0, (last_sum + batch_sum) / total_count, 0.0)
+        batch_mean = batch_sum / batch_count
+        drift = last_sum / last_count - batch_mean
+        # Each block's variance was taken about its own mean, and the two disagree.
+        correction = last_count * batch_count / total_count * drift**2
+
+    unnormalized = last_variance * last_count + np.nansum((batch - batch_mean) ** 2, axis=0)
+    unnormalized += np.where((last_count > 0) & (batch_count > 0), correction, 0.0)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        variance = np.where(total_count > 0, unnormalized / total_count, 0.0)
+
+    return mean, variance, total_count
+
+
 class ScalingAccumulator:
     """Pass 1: accumulate the scaling constants over batches of rows.
+
+    `partial_fit` then `finalize`, after
+    `sklearn.decomposition.IncrementalPCA.partial_fit`:
+    https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.IncrementalPCA.html
 
     The schema and the method are frozen on the first batch, and a later batch that
     disagrees raises rather than silently changing the model.
@@ -175,7 +240,7 @@ class ScalingAccumulator:
 
         if self._quanti:
             values = batch[self._quanti].to_numpy(dtype=np.float64)
-            self._mean, self._var, self._seen = extmath._incremental_mean_and_var(
+            self._mean, self._var, self._seen = _update_mean_and_variance(
                 values, self._mean, self._var, self._seen
             )
 
@@ -295,7 +360,14 @@ class ScalingAccumulator:
 
 
 class DecompositionAccumulator:
-    """Pass 2: scale each batch and fold it into the carried QR factor."""
+    """Pass 2: scale each batch and fold it into the carried QR factor.
+
+    Merging `R = qr(vstack([R, Z]))` across row blocks is tall-skinny QR
+    (https://doi.org/10.1137/080731992), and `R` shares the singular values and right
+    singular vectors of the whole scaled matrix (https://doi.org/10.1145/355984.355990),
+    so the decomposition at the end is exact rather than an approximation of what a
+    whole-table `fit` would compute. See the module references.
+    """
 
     def __init__(
         self,
@@ -366,7 +438,7 @@ class DecompositionAccumulator:
         model.explained_var = explained_var
         model.explained_var_ratio = explained_var_ratio
         if self.params.method == "mca":
-            model.variable_coord = pd.DataFrame(self.params.D_c @ model.V.T)
+            model.variable_coord = pd.DataFrame(self.params.inverse_sqrt_column_masses @ model.V.T)
         else:
             model.variable_coord = pd.DataFrame(model.V.T)
         model.row_weights = get_uniform_row_weights(self.params.n)
@@ -407,7 +479,7 @@ class DecompositionAccumulator:
         X = dummies.reindex(columns=self.params.modalities, fill_value=np.uint8(0)).to_numpy(
             dtype=np.float64
         )
-        total = self.params.total
+        total = self.params.total_dummy_count
         c = self.params.column_masses
 
         r = X.sum(axis=1) / total

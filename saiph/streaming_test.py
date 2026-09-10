@@ -308,7 +308,7 @@ def test_accumulators_can_be_driven_directly(iris_quanti_df: pd.DataFrame) -> No
     params = scaling.finalize()
 
     assert params.method == "pca"
-    assert params.p == 4
+    assert params.n_scaled_columns == 4
     assert params.n == len(df)
 
     decomposition = DecompositionAccumulator(params, nf=nf)
@@ -335,7 +335,7 @@ def whole_table_width(df: pd.DataFrame) -> int:
     Not `min(pd.get_dummies(df).shape)`, which leaves a boolean column alone while
     every `fit` casts it to a category and gives it one dummy per value.
     """
-    return _scaling_params(df, size=64).p
+    return _scaling_params(df, size=64).n_scaled_columns
 
 
 def reference_famd(df: pd.DataFrame, *, nf: int | None = None, **kwargs: object) -> Model:
@@ -696,3 +696,19 @@ def test_assert_method_fields_agree_rejects_a_field_the_method_disagrees_on(
 
     with pytest.raises(AssertionError, match=message):
         assert_method_fields_agree(streamed, reference, rtol=1e-11)
+
+
+def test_fit_streaming_with_a_batch_whose_column_is_entirely_null() -> None:
+    """A column can hold no value at all in one batch, and one row is a legal batch.
+
+    The variance update has an empty case per column for exactly this, and pytest turns
+    the warning numpy raises on an empty slice into an error.
+    """
+    rng = np.random.default_rng(11)
+    df = pd.DataFrame({"a": rng.normal(size=30), "b": rng.normal(size=30)})
+    df.loc[df.index[4], "a"] = np.nan
+
+    params = _scaling_params(df, size=1)
+
+    assert_series_equal(params.mean, df.mean(), rtol=1e-12)
+    assert_series_equal(params.std, df.std(ddof=0), rtol=1e-12, check_names=False)

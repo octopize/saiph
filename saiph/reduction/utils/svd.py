@@ -10,7 +10,7 @@ def get_svd(
     nf: int | None = None,
     *,
     svd_flip: bool = True,
-    random_gen: np.random.Generator = np.random.default_rng(),
+    random_gen: np.random.Generator | None = None,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """Compute Singular Value Decomposition.
 
@@ -20,7 +20,7 @@ def get_svd(
         nf: target number of dimensions to retain (number of singular values). Default `None`.
             It keeps the `nf` higher singular values and nf associated singular vectors.
         svd_flip: Whether to use svd_flip on U and V or not. Default `True`
-        seed: random seed. Default `None`
+        random_gen: random generator. Default `None`, which uses a new unseeded generator.
 
     Returns:
     -------
@@ -49,7 +49,7 @@ def get_randomized_subspace_iteration(
     l_retained_dimensions: int,
     *,
     q: int = 2,
-    random_gen: np.random.Generator = np.random.default_rng(),
+    random_gen: np.random.Generator | None = None,
 ) -> NDArray[np.float64]:
     """Generate a subspace for more efficient SVD computation using random methods.
 
@@ -63,12 +63,14 @@ def get_randomized_subspace_iteration(
         l_retained_dimensions: target number of retained dimensions, l<min(m,n)
         q: exponent of the power method. The higher this exponent, the more precise will be
             the SVD, but more complex to compute. Default `2`
-        seed: random seed. Default `None`
+        random_gen: random generator. Default `None`, which uses a new unseeded generator.
 
     Returns:
     -------
         Q: matrix whose range approximates the range of A, shape (m, l)
     """
+    if random_gen is None:
+        random_gen = np.random.default_rng()
     m, n = A.shape
     omega = random_gen.normal(loc=0, scale=1, size=(n, l_retained_dimensions))
 
@@ -89,7 +91,7 @@ def get_direct_randomized_svd(
     A: NDArray[np.float64],
     l_retained_dimensions: int,
     q: int = 2,
-    random_gen: np.random.Generator = np.random.default_rng(),
+    random_gen: np.random.Generator | None = None,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """Compute a fixed-rank SVD approximation using random methods.
 
@@ -106,7 +108,7 @@ def get_direct_randomized_svd(
         l_retained_dimensions: target number of retained dimensions, l<min(m,n)
         q: exponent of the power method. Higher this exponent, the more precise will be
         the SVD, but more complex to compute.
-        seed: random seed. Default `None`
+        random_gen: random generator. Default `None`, which uses a new unseeded generator.
 
     Returns:
     -------

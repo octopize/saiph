@@ -151,3 +151,16 @@ def test_usage_of_randomized_svd(matrix: pd.DataFrame) -> None:
     assert_array_almost_equal(U, expected_U, decimal=8)
     assert_array_almost_equal(S, expected_S, decimal=8)
     assert_array_almost_equal(Vt, expected_Vt, decimal=8)
+
+
+def test_get_svd_without_random_gen_does_not_share_state_between_calls(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verify that each call without `random_gen` makes its own generator."""
+    monkeypatch.setattr(np.random, "default_rng", lambda: np.random.Generator(np.random.PCG64(0)))
+    matrix = np.random.Generator(np.random.PCG64(1)).normal(size=(50, 20))
+
+    _, S_first, _ = get_svd(matrix, nf=5)
+    _, S_second, _ = get_svd(matrix, nf=5)
+
+    assert_array_almost_equal(S_first, S_second, decimal=12)

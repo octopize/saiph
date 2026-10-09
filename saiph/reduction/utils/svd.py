@@ -1,8 +1,12 @@
+import logging
+
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 from scipy import linalg
 from sklearn.utils import extmath
+
+logger = logging.getLogger(__name__)
 
 
 def get_svd(
@@ -36,7 +40,13 @@ def get_svd(
 
     else:
         # Compute a regular full SVD
-        U, S, Vt = linalg.svd(df, full_matrices=False)
+        try:
+            U, S, Vt = linalg.svd(df, full_matrices=False)
+        except linalg.LinAlgError:
+            # gesdd (the default driver) can fail to converge on some valid inputs,
+            # e.g. rank-deficient matrices with tiny values. gesvd is slower but more robust.
+            logger.warning("SVD with gesdd did not converge, retrying with gesvd.")
+            U, S, Vt = linalg.svd(df, full_matrices=False, lapack_driver="gesvd")
 
     if svd_flip:
         U, Vt = extmath.svd_flip(U, Vt)

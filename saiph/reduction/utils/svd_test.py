@@ -1,8 +1,12 @@
+import logging
+from typing import Any
+
 import numpy as np
 import pandas as pd
 import pytest
 from numpy.testing import assert_array_almost_equal
 from numpy.typing import NDArray
+from scipy import linalg
 
 from saiph.reduction.utils.svd import (
     get_direct_randomized_svd,
@@ -164,3 +168,48 @@ def test_get_svd_without_random_gen_does_not_share_state_between_calls(
     _, S_second, _ = get_svd(matrix, nf=5)
 
     assert_array_almost_equal(S_first, S_second, decimal=12)
+
+
+def test_full_svd_falls_back_to_gesvd_when_gesdd_does_not_converge(
+    matrix: pd.DataFrame,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Verify that `get_svd` retries with gesvd when gesdd raises `LinAlgError`."""
+    expected_U, expected_S, expected_Vt = get_svd(matrix, nf=None)
+
+    original_svd = linalg.svd
+    drivers: list[str] = []
+
+    def svd_failing_on_gesdd(*args: Any, lapack_driver: str = "gesdd", **kwargs: Any) -> Any:
+        drivers.append(lapack_driver)
+        if lapack_driver == "gesdd":
+            raise linalg.LinAlgError("SVD did not converge")
+        return original_svd(*args, lapack_driver=lapack_driver, **kwargs)
+
+    monkeypatch.setattr(linalg, "svd", svd_failing_on_gesdd)
+
+    with caplog.at_level(logging.WARNING, logger="saiph.reduction.utils.svd"):
+        U, S, Vt = get_svd(matrix, nf=None)
+
+    assert drivers == ["gesdd", "gesvd"]
+    assert "retrying with gesvd" in caplog.text
+    assert_array_almost_equal(S, expected_S, decimal=6)
+    # Compare only the components with non-zero singular values: the null space basis
+    # is arbitrary and can differ between drivers.
+    assert_array_almost_equal(U[:, :2], expected_U[:, :2], decimal=6)
+    assert_array_almost_equal(Vt[:2], expected_Vt[:2], decimal=6)
+
+
+def test_full_svd_raises_when_gesvd_does_not_converge(
+    matrix: pd.DataFrame, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify that `get_svd` raises the gesvd error when both drivers fail."""
+
+    def svd_always_failing(*args: Any, lapack_driver: str = "gesdd", **kwargs: Any) -> Any:
+        raise linalg.LinAlgError(f"{lapack_driver} did not converge")
+
+    monkeypatch.setattr(linalg, "svd", svd_always_failing)
+
+    with pytest.raises(linalg.LinAlgError, match="gesvd did not converge"):
+        get_svd(matrix, nf=None)

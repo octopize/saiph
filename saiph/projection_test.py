@@ -4,7 +4,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import pytest
-from doubles import expect
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
@@ -353,43 +352,71 @@ def test_get_variable_contribution_are_similar_with_reduced_nf() -> None:
     assert percentage_difference < 20
 
 
+class _RecordingStub:
+    """Stand-in for a function that records its calls and returns a fixed value."""
+
+    def __init__(self, return_value: Any) -> None:
+        self.return_value = return_value
+        self.calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        self.calls.append((args, kwargs))
+        return self.return_value
+
+    def assert_called_once_with(self, *args: Any, **kwargs: Any) -> None:
+        assert len(self.calls) == 1
+        called_args, called_kwargs = self.calls[0]
+        assert len(called_args) == len(args)
+        assert all(called is expected for called, expected in zip(called_args, args))
+        assert called_kwargs == kwargs
+
+
 def test_get_variable_contributions_calls_correct_subfunction(
-    quanti_df: pd.DataFrame, quali_df: pd.DataFrame, mixed_df: pd.DataFrame
+    quanti_df: pd.DataFrame,
+    quali_df: pd.DataFrame,
+    mixed_df: pd.DataFrame,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Verify that projection.get_variable_contributions calls the correct subfunction."""
     # FAMD
     model = fit(mixed_df)
-    expect(saiph.reduction.famd).get_variable_contributions(
-        model, mixed_df, explode=False
-    ).once().and_return((None, None))
+    famd_stub = _RecordingStub((None, None))
+    monkeypatch.setattr(saiph.reduction.famd, "get_variable_contributions", famd_stub)
     projection.get_variable_contributions(model, mixed_df)
+    famd_stub.assert_called_once_with(model, mixed_df, explode=False)
 
     # MCA
     model = fit(quali_df)
-    expect(saiph.reduction.mca).get_variable_contributions(
-        model, quali_df, explode=False
-    ).once().and_return(None)
+    mca_stub = _RecordingStub(None)
+    monkeypatch.setattr(saiph.reduction.mca, "get_variable_contributions", mca_stub)
     projection.get_variable_contributions(model, quali_df)
+    mca_stub.assert_called_once_with(model, quali_df, explode=False)
 
     # PCA
     model = fit(quanti_df)
-    expect(saiph.projection).get_variable_correlation(model, quanti_df).once().and_return(
-        pd.DataFrame([1, 2, 3])
-    )
+    pca_stub = _RecordingStub(pd.DataFrame([1, 2, 3]))
+    monkeypatch.setattr(saiph.projection, "get_variable_correlation", pca_stub)
     projection.get_variable_contributions(model, quanti_df)
+    pca_stub.assert_called_once_with(model, quanti_df)
 
 
-def test_stats_calls_correct_subfunction(quali_df: pd.DataFrame, mixed_df: pd.DataFrame) -> None:
+def test_stats_calls_correct_subfunction(
+    quali_df: pd.DataFrame, mixed_df: pd.DataFrame, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Verify that projection.stats calls the correct subfunction."""
     # FAMD
     model = fit(mixed_df)
-    expect(saiph.reduction.famd).stats(model, mixed_df, explode=False).once().and_return(model)
+    famd_stub = _RecordingStub(model)
+    monkeypatch.setattr(saiph.reduction.famd, "stats", famd_stub)
+    projection.stats(model, mixed_df)
+    famd_stub.assert_called_once_with(model, mixed_df, explode=False)
 
     # MCA
-    projection.stats(model, mixed_df)
     model = fit(quali_df)
-    expect(saiph.reduction.mca).stats(model, quali_df, explode=False).once().and_return(model)
+    mca_stub = _RecordingStub(model)
+    monkeypatch.setattr(saiph.reduction.mca, "stats", mca_stub)
     projection.stats(model, quali_df)
+    mca_stub.assert_called_once_with(model, quali_df, explode=False)
 
     # FIXME: Can't test PCA as it has no subfunction associated to it
 

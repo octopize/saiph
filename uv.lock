@@ -417,15 +417,6 @@ wheels = [
 ]
 
 [[package]]
-name = "doubles"
-version = "1.5.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "six" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/41/46/51d6d6b10dd6aa982aa7efa30d5285cfbda70026aa0f52c512024a52ae11/doubles-1.5.3.tar.gz", hash = "sha256:3332349ea9683dc65f5866362f9f27b25cd35b1ad239db3c9d83ca5473665eba", size = 16835, upload-time = "2018-10-18T16:18:42.666Z" }
-
-[[package]]
 name = "executing"
 version = "2.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2168,7 +2159,6 @@ matplotlib = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "doubles" },
     { name = "faker" },
     { name = "flit" },
     { name = "ipdb" },
@@ -2205,7 +2195,6 @@ provides-extras = ["matplotlib"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "doubles", specifier = ">=1.5.3" },
     { name = "faker", specifier = ">=13.6.0" },
     { name = "flit", specifier = ">=3.4.0" },
     { name = "ipdb", specifier = ">=0.13.9" },

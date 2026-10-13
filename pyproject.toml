@@ -35,7 +35,6 @@ dev = [
     "Faker>=13.6.0",
     "tqdm>=4.64.0",
     "pytest-benchmark>=4.0.0",
-    "doubles>=1.5.3",
     "ipdb>=0.13.9",
 ]
 doc = [
@@ -92,9 +91,5 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "toolz.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "doubles.*"
 ignore_missing_imports = true
 

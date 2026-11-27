@@ -43,6 +43,7 @@ from saiph.models import Model
 from saiph.reduction import DUMMIES_SEPARATOR, famd, pca
 from saiph.reduction.utils.common import (
     expand_column_weights,
+    get_dummies_mapping,
     get_explained_variance,
     get_modalities_types,
     get_uniform_row_weights,
@@ -107,15 +108,13 @@ class ScalingParams:
         dependent and costs one direction. A null takes no dummy column, leaving a row that
         sums to zero, which breaks the dependency and gives that variable its rank back.
         """
-        complete = sum(1 for col in self.quali if self._is_complete(col))
+        mapping = get_dummies_mapping(self.quali, list(self.modality_counts.index))
+        complete = sum(1 for dummies in mapping.values() if self._is_complete(dummies))
         return min(self.n - 1, self.n_scaled_columns - complete)
 
-    def _is_complete(self, col: str) -> bool:
-        prefix = f"{col}{DUMMIES_SEPARATOR}"
-        counts = self.modality_counts[
-            [name for name in self.modality_counts.index if name.startswith(prefix)]
-        ]
-        return bool(counts.sum() == self.n)
+    def _is_complete(self, dummies: list[str]) -> bool:
+        """Whether the modalities of one column count every row: no row holds a null."""
+        return bool(self.modality_counts[dummies].sum() == self.n)
 
     def to_model(self) -> Model:
         """Build the model, leaving the decomposition fields for `finalize` to fill in.

@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from typing import Any, cast
 
@@ -13,6 +14,7 @@ from saiph.models import Model
 from saiph.reduction import DUMMIES_SEPARATOR
 from saiph.reduction.famd import (
     center,
+    compute_categorical_cos2,
     fit,
     fit_transform,
     get_individual_coordinates,
@@ -23,7 +25,11 @@ from saiph.reduction.famd import (
 from saiph.reduction.pca import center as center_pca
 from saiph.reduction.pca import fit_transform as fit_pca
 from saiph.reduction.pca import scaler as scaler_pca
-from saiph.reduction.utils.common import get_projected_column_names
+from saiph.reduction.utils.common import (
+    get_dummies_mapping,
+    get_projected_column_names,
+    row_division,
+)
 from saiph.reduction.utils.svd import get_svd
 
 
@@ -505,3 +511,56 @@ def test_get_individual_coordinates_equals_the_left_singular_vectors() -> None:
         rebuilt = get_individual_coordinates(model, df, nf)
 
         assert_allclose(rebuilt.to_numpy(), expected, atol=1e-14)
+
+
+def _cos2_of_one_category_by_modality(
+    single_category_df: pd.DataFrame, model: Model, coords: pd.DataFrame
+) -> NDArray[np.float64]:
+    """The categorical cos2 as it was computed before, one modality at a time."""
+    _, n_cols = single_category_df.shape
+    cos2 = []
+    for coord_col in coords.columns:
+        weighted_coord = coords[coord_col].values * model.row_weights
+        p_values = np.zeros(n_cols)
+        for i, col in enumerate(single_category_df.columns):
+            dummy_values = single_category_df[col].values
+            if model.prop is not None:
+                p_values[i] = (dummy_values * weighted_coord).sum() ** 2 / model.prop[col]
+        cos2.append(p_values.sum())
+    all_weighted_coords = (coords.values**2).T * model.row_weights
+    summed_weights = all_weighted_coords.sum(axis=1)
+    summed_weights_without_zeros = np.where(
+        summed_weights <= sys.float_info.min, 1, summed_weights
+    )
+    result: NDArray[np.float64] = np.array(cos2) / summed_weights_without_zeros
+    return result
+
+
+def test_compute_categorical_cos2_is_the_one_computed_modality_by_modality(
+    wbcd_mixed_df: pd.DataFrame,
+) -> None:
+    """The cos2 read in one matrix product is the one of the loop over the modalities."""
+    df = wbcd_mixed_df
+    nf = 4
+    _, model = fit_transform(df, nf=nf)
+    cos2 = compute_categorical_cos2(model, df, nf)
+
+    coords = get_individual_coordinates(model, df, nf)
+    mapping = get_dummies_mapping(model.original_categorical, model.dummy_categorical)
+    dummy = pd.get_dummies(
+        df[model.original_categorical].astype("category"),
+        prefix_sep=DUMMIES_SEPARATOR,
+        dtype=np.uint8,
+    )
+    nb_modalities = df[model.original_categorical].nunique() - 1
+    expected = pd.DataFrame.from_dict(
+        {
+            col: _cos2_of_one_category_by_modality(dummy[dummies], model, coords)
+            for col, dummies in mapping.items()
+        },
+        orient="index",
+        columns=get_projected_column_names(nf),
+    )
+    expected = row_division(expected**2, nb_modalities)
+
+    assert_frame_equal(cos2, expected)

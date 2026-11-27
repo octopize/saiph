@@ -388,14 +388,7 @@ def compute_categorical_cos2(model: Model, df: pd.DataFrame, min_nf: int) -> pd.
         prefix_sep=DUMMIES_SEPARATOR,
         dtype=np.uint8,
     )
-    # Compute the categorical cos2 for each original column
-    all_category_cos = {}
-    for original_col, dummy_columns in mapping.items():
-        # FIXME: Kept this for legacy: Why - 1 ? nb_modalities += [nb_dummy_columns - 1] #
-        # for each dimension
-        all_category_cos[original_col] = _compute_cos2_single_category(
-            dummy[dummy_columns], model, model_coords
-        )
+    all_category_cos = _compute_cos2_of_each_category(mapping, dummy, model, model_coords)
 
     # FIXME: Why - 1 ?
     nb_modalities = df[model.original_categorical].nunique() - 1
@@ -477,44 +470,54 @@ def _compute_svd(
     return s, weighted_U, eigenvalues
 
 
-def _compute_cos2_single_category(
-    single_category_df: pd.DataFrame, model: Model, coords: pd.DataFrame
-) -> NDArray[np.float64]:
-    """Compute cos2 for a single original category.
+def _compute_cos2_of_each_category(
+    mapping: dict[str, list[str]], dummy: pd.DataFrame, model: Model, coords: pd.DataFrame
+) -> dict[str, NDArray[np.float64]]:
+    """Compute the cos2 of each original categorical variable, for each axis.
+
+    For one axis and one modality, the squared weighted sum of the coordinates of the
+    individuals that hold the modality, over the proportion of the modality; summed over the
+    modalities of a variable, over the weighted sum of the squared coordinates. Every modality
+    is read in one matrix product, not one pandas column at a time.
 
     Parameters
     ----------
-    single_category_df:
-        dummy dataframe of a single original category
+    mapping :
+        the dummy columns of each original categorical variable, in order
+    dummy :
+        the dummy dataframe of the original categorical variables
     model :
-        _description_
+        model
     coords :
-        projections of the data used to created the axes
+        projections of the data used to create the axes
 
     Returns:
     -------
-        cos2 of the single category
+        the cos2 of each original categorical variable, one value per axis
     """
-    _, n_cols = single_category_df.shape
-    cos2 = []
-    for coord_col in coords.columns:
-        weighted_coord = coords[coord_col].values * model.row_weights
-        p_values = np.zeros(n_cols)
+    row_weights = np.asarray(model.row_weights, dtype=np.float64)
+    weighted_coords = coords.to_numpy(dtype=np.float64) * row_weights[:, None]
 
-        for i, col in enumerate(single_category_df.columns):
-            dummy_values = single_category_df[col].values
-            if model.prop is not None:
-                p_values[i] = (dummy_values * weighted_coord).sum() ** 2 / model.prop[col]
-
-        p = p_values.sum()
-        cos2.append(p)
-
-    all_weighted_coords = (coords.values**2).T * model.row_weights
-    summed_weights = all_weighted_coords.sum(axis=1)
-
+    summed_weights = ((coords.to_numpy(dtype=np.float64) ** 2) * row_weights[:, None]).sum(axis=0)
     # Remove zeros to avoid division by zero when a df contains a constant variable
     summed_weights_without_zeros = np.where(
         summed_weights <= sys.float_info.min, 1, summed_weights
     )
-    single_category_cos2: NDArray[np.float64] = np.array(cos2) / summed_weights_without_zeros
-    return single_category_cos2
+
+    dummy_columns = [col for columns in mapping.values() for col in columns]
+    if model.prop is not None and dummy_columns:
+        values = dummy[dummy_columns].to_numpy(dtype=np.float64)
+        prop = model.prop[dummy_columns].to_numpy(dtype=np.float64)
+        scores = (values.T @ weighted_coords) ** 2 / prop[:, None]
+    else:
+        scores = np.zeros((len(dummy_columns), coords.shape[1]), dtype=np.float64)
+
+    all_category_cos: dict[str, NDArray[np.float64]] = {}
+    start = 0
+    for original_col, columns in mapping.items():
+        end = start + len(columns)
+        all_category_cos[original_col] = (
+            scores[start:end].sum(axis=0) / summed_weights_without_zeros
+        )
+        start = end
+    return all_category_cos

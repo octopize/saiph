@@ -65,13 +65,23 @@ def get_modalities_types(df: pd.DataFrame) -> dict[str, str]:
 
 
 def get_dummies_mapping(columns: list[str], dummy_columns: list[str]) -> dict[str, list[str]]:
-    """Get mapping between original column and all dummy columns."""
-    return OrderedDict(
-        {
-            col: list(filter(lambda c: c.startswith(f"{col}{DUMMIES_SEPARATOR}"), dummy_columns))
-            for col in columns
-        }
-    )
+    """Get mapping between original column and all dummy columns.
+
+    A dummy column belongs to every column whose name, followed by the separator, starts its
+    own name, in the order of `dummy_columns`. The dummy columns are read once: a column of
+    thousands of modalities and thousands of columns no longer cost their product.
+    """
+    mapping: dict[str, list[str]] = OrderedDict((col, []) for col in columns)
+    prefixes = {f"{col}{DUMMIES_SEPARATOR}": col for col in columns}
+    for dummy in dummy_columns:
+        # Every prefix of the dummy that ends with the separator names a candidate column.
+        end = dummy.find(DUMMIES_SEPARATOR)
+        while end != -1:
+            col = prefixes.get(dummy[: end + len(DUMMIES_SEPARATOR)])
+            if col is not None:
+                mapping[col].append(dummy)
+            end = dummy.find(DUMMIES_SEPARATOR, end + 1)
+    return mapping
 
 
 def expand_column_weights(

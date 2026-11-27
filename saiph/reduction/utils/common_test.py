@@ -108,3 +108,39 @@ def test_expand_column_weights_ignores_modalities_without_a_dummy_column() -> No
         dummy_categorical=[f"tool{sep}hammer", f"tool{sep}wrench"],
     )
     assert list(expanded) == [4.0, 4.0]
+
+
+def test_get_dummies_mapping_keeps_the_order_and_the_ambiguous_prefixes() -> None:
+    """A dummy belongs to every column whose name and the separator start its own name, in
+    the order of the dummy columns; a column with no dummy maps to an empty list."""
+    sep = DUMMIES_SEPARATOR
+    columns = ["tool", f"tool{sep}kind", "fruit", "empty"]
+    dummy_columns = [
+        f"fruit{sep}pear",
+        f"tool{sep}kind{sep}saw",
+        f"tool{sep}hammer",
+        f"fruit{sep}apple",
+        f"other{sep}x",
+    ]
+
+    result = get_dummies_mapping(columns, dummy_columns)
+
+    assert list(result) == columns
+    assert result == {
+        "tool": [f"tool{sep}kind{sep}saw", f"tool{sep}hammer"],
+        f"tool{sep}kind": [f"tool{sep}kind{sep}saw"],
+        "fruit": [f"fruit{sep}pear", f"fruit{sep}apple"],
+        "empty": [],
+    }
+
+
+def test_get_dummies_mapping_reads_the_dummies_once() -> None:
+    """Thousands of columns and of dummies cost their sum, not their product."""
+    sep = DUMMIES_SEPARATOR
+    columns = [f"col{i}" for i in range(3000)]
+    dummy_columns = [f"col{i}{sep}{m}" for i in range(3000) for m in range(3)]
+
+    result = get_dummies_mapping(columns, dummy_columns)
+
+    assert len(result) == 3000
+    assert all(len(dummies) == 3 for dummies in result.values())
